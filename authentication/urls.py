@@ -34,4 +34,25 @@ urlpatterns = [
         name='logout'
     ),
 
+
+    # Role-based access control
+
+    path(
+        'unauthorized/',
+        views.unauthorized,
+        name='unauthorized'
+    ),
+
+    path(
+        'dashboard/organizer/',
+        views.organizer_dashboard,
+        name='organizer_dashboard'
+    ),
+
+    path(
+        'dashboard/attendee/',
+        views.attendee_dashboard,
+        name='attendee_dashboard'
+    ),
+
 ]

@@ -113,3 +113,7 @@ STATIC_URL = 'static/'
 
 # Activate the custom user model containing the 3 required roles
 AUTH_USER_MODEL = 'authentication.User'
+
+# Authentication redirects (used by @login_required and logout)
+LOGIN_URL = 'login'
+LOGOUT_REDIRECT_URL = 'login'
