@@ -24,3 +24,12 @@ def register(request):
 @login_not_required
 def register_success(request):
     return render(request, 'authentication/register_success.html')
+
+
+## Template pages views
+
+
+
+
+def home(request):
+    return render(request, 'base.html')
