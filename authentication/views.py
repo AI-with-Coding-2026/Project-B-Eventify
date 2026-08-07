@@ -3,7 +3,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.shortcuts import redirect, render
 
+from .decorators import role_required
 from .forms import UserRegistrationForm
+from .models import UserRole
 
 
 # -------------------------
@@ -101,3 +103,21 @@ def logout_view(request):
     logout(request)
 
     return redirect('login')
+
+
+# -------------------------
+# Role-based access control
+# -------------------------
+
+def unauthorized(request):
+    return render(request, 'authentication/unauthorized.html', status=403)
+
+
+@role_required(UserRole.ORGANIZER)
+def organizer_dashboard(request):
+    return render(request, 'authentication/organizer_dashboard.html')
+
+
+@role_required(UserRole.ATTENDEE)
+def attendee_dashboard(request):
+    return render(request, 'authentication/attendee_dashboard.html')
