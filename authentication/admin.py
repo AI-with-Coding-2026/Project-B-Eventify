@@ -1,7 +1,7 @@
 from django import forms
-from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
+from .admin_site import eventify_admin_site
 from .models import User, UserRole
 
 
@@ -48,7 +48,6 @@ class CustomUserChangeForm(forms.ModelForm):
         return role
 
 
-@admin.register(User)
 class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'email', 'role', 'is_staff', 'is_active')
     list_filter = ('role', 'is_staff', 'is_active')
@@ -65,7 +64,7 @@ class CustomUserAdmin(UserAdmin):
     def get_form(self, request, obj=None, **kwargs):
         defaults = {'form': CustomUserChangeForm if obj else CustomUserCreationForm}
         defaults.update(kwargs)
-        form = super().get_form(request, obj, **kwargs)
+        form = super().get_form(request, obj, **defaults)
 
         class RequestAwareForm(form):
             def __init__(self, *args, **inner_kwargs):
@@ -74,7 +73,21 @@ class CustomUserAdmin(UserAdmin):
 
         return RequestAwareForm
 
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_admin
+
+    def has_add_permission(self, request):
+        return request.user.is_admin
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_admin
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_admin
+
     def save_model(self, request, obj, form, change):
-        if obj.role == UserRole.ADMIN:
-            obj.is_staff = True
+        obj.is_staff = obj.role == UserRole.ADMIN
         super().save_model(request, obj, form, change)
+
+
+eventify_admin_site.register(User, CustomUserAdmin)

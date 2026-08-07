@@ -106,3 +106,57 @@ class RegisterViewTests(TestCase):
         self.assertRedirects(response, reverse('register_success'))
         user = User.objects.get(username='vieworg')
         self.assertEqual(user.role, UserRole.ORGANIZER)
+
+
+class AdminAccessTests(TestCase):
+    def setUp(self):
+        self.admin_user = User.objects.create_user(
+            'adminuser',
+            'adminuser@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.organizer = User.objects.create_user(
+            'organizeruser',
+            'organizeruser@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+
+    def test_admin_dashboard_is_available_to_admin_role(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse('admin_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Admin Dashboard')
+
+    def test_admin_dashboard_redirects_non_admin_users_to_admin_login(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(reverse('admin_dashboard'))
+
+        login_url = reverse('eventify_admin:login')
+        self.assertRedirects(
+            response,
+            f'{login_url}?next={reverse("admin_dashboard")}',
+        )
+
+    def test_custom_admin_site_is_mounted_and_restricted_to_admin_role(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse('eventify_admin:index'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Eventify Administration')
+
+    def test_admin_role_can_view_users_in_custom_admin_site(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(
+            reverse('eventify_admin:authentication_user_changelist')
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.organizer.username)
