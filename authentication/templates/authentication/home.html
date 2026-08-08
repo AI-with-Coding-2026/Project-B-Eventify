@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventify</title>
+</head>
+<body>
+    <h1>Welcome to Eventify</h1>
+    {% if user.is_authenticated %}
+        <p>Signed in as {{ user.username }} ({{ user.get_role_display }}).</p>
+    {% else %}
+        <p><a href="{% url 'register' %}">Create an account</a></p>
+    {% endif %}
+</body>
+</html>

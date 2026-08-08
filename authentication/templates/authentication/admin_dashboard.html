@@ -1,0 +1,23 @@
+{% extends "authentication/base.html" %}
+
+{% block title %}Admin Dashboard — Eventify{% endblock %}
+
+{% block content %}
+<h1>Admin Dashboard</h1>
+<p>Welcome, {{ user.username }}. You have full administrative access.</p>
+
+<section>
+    <h2>Platform Overview</h2>
+    <ul>
+        <li><strong>Total users:</strong> {{ total_users }}</li>
+        <li><strong>Admins:</strong> {{ admin_count }}</li>
+        <li><strong>Organizers:</strong> {{ organizer_count }}</li>
+        <li><strong>Attendees:</strong> {{ attendee_count }}</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Administrative Actions</h2>
+    <p><a href="{% url 'eventify_admin:index' %}">Open Django Admin Panel</a></p>
+</section>
+{% endblock %}
