@@ -1,20 +1,60 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+# Eventify
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+Eventify is a Django-based event management platform that allows users to interact with events according to their roles.
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+The project is being developed as a community project, with different contributors working on separate Git branches.
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+## Current Project
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+The current development work includes the user account and authentication system.
+
+The system supports three main user roles:
+
+- **Admin** — manages the platform.
+
+- **Organizer** — creates and manages events.
+
+- **Attendee** — participates in events.
+
+## Technologies Used
+
+- Python
+
+- Django 6.0.7
+
+- Django REST Framework
+
+- Pillow
+
+- PyMySQL
+
+- Python Decouple
+
+- SQLite/MySQL depending on the development configuration
+
+## Project Structure
+
+```text
+
+Project-B-Eventify/
+
+│
+
+├── authentication/       # Authentication and user account functionality
+
+├── Eventify/             # Main Django application/project configuration
+
+├── eventPlatform/        # Project configuration
+
+├── templates/            # HTML templates
+
+├── [manage.py](http://manage.py)             # Django management script
+
+├── requirements.txt      # Python dependencies
+
+├── env.example           # Example environment variables
+
+├── .gitignore            # Files excluded from Git
+
+└── [README.md](http://README.md)             # Project documentation
+
