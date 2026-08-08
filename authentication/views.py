@@ -1,4 +1,6 @@
 from django.contrib.auth.decorators import login_not_required
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
 from django.shortcuts import redirect, render
 
 from .decorators import admin_required
@@ -6,22 +8,36 @@ from .forms import UserRegistrationForm
 from .models import User, UserRole
 
 
+# -------------------------
+# Person 1:
+# -------------------------
+
 @login_not_required
 def register(request):
+
     if request.user.is_authenticated:
         if request.user.is_admin:
             return redirect('admin_dashboard')
         return redirect('home')
 
     if request.method == 'POST':
+
         form = UserRegistrationForm(request.POST)
+
         if form.is_valid():
             form.save()
             return redirect('register_success')
+
     else:
         form = UserRegistrationForm()
 
-    return render(request, 'authentication/register.html', {'form': form})
+
+    return render(
+        request,
+        'authentication/register.html',
+        {'form': form}
+    )
+
 
 
 @login_not_required
