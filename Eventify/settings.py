@@ -116,3 +116,6 @@ AUTH_USER_MODEL = 'authentication.User'
 
 # Admin-only views redirect unauthenticated users to the custom admin login.
 LOGIN_URL = 'eventify_admin:login'
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
