@@ -111,6 +111,11 @@ class RegisterViewTests(TestCase):
 class RoleBasedAccessControlTests(TestCase):
     def setUp(self):
         self.client = Client()
+        self.admin = User.objects.create_superuser(
+            'admin_rbac',
+            'admin_rbac@example.com',
+            'pass123',
+        )
         self.organizer = User.objects.create_user(
             'organizer_rbac',
             'organizer_rbac@example.com',
@@ -136,7 +141,7 @@ class RoleBasedAccessControlTests(TestCase):
     def test_attendee_cannot_access_organizer_dashboard(self):
         self.client.login(username='attendee_rbac', password='pass123')
         response = self.client.get(reverse('organizer_dashboard'))
-        self.assertRedirects(response, reverse('unauthorized'))
+        self.assertEqual(response.status_code, 403)
 
     def test_attendee_can_access_attendee_dashboard(self):
         self.client.login(username='attendee_rbac', password='pass123')
@@ -146,7 +151,17 @@ class RoleBasedAccessControlTests(TestCase):
     def test_organizer_cannot_access_attendee_dashboard(self):
         self.client.login(username='organizer_rbac', password='pass123')
         response = self.client.get(reverse('attendee_dashboard'))
-        self.assertRedirects(response, reverse('unauthorized'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_access_organizer_dashboard(self):
+        self.client.login(username='admin_rbac', password='pass123')
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_can_access_attendee_dashboard(self):
+        self.client.login(username='admin_rbac', password='pass123')
+        response = self.client.get(reverse('attendee_dashboard'))
+        self.assertEqual(response.status_code, 200)
 
     def test_login_redirects_organizer_to_dashboard(self):
         response = self.client.post(
