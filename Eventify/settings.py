@@ -114,6 +114,8 @@ STATIC_URL = 'static/'
 # Activate the custom user model containing the 3 required roles
 AUTH_USER_MODEL = 'authentication.User'
 
-# Authentication redirects (used by @login_required and logout)
-LOGIN_URL = 'login'
-LOGOUT_REDIRECT_URL = 'login'
+# Admin-only views redirect unauthenticated users to the custom admin login.
+LOGIN_URL = 'eventify_admin:login'
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

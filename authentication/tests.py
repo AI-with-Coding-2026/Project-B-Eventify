@@ -1,9 +1,12 @@
-from django.core.exceptions import ValidationError
-from django.test import Client, TestCase
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.http import HttpResponse
+from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
+from unittest.mock import patch
 
 from .forms import UserRegistrationForm
 from .models import User, UserRole
+from . import views
 
 
 class UserRoleModelTests(TestCase):
@@ -176,3 +179,111 @@ class RoleBasedAccessControlTests(TestCase):
             {'username': 'attendee_rbac', 'password': 'pass123'},
         )
         self.assertRedirects(response, reverse('attendee_dashboard'))
+
+
+class AdminAccessTests(TestCase):
+    def setUp(self):
+        self.admin_user = User.objects.create_user(
+            'adminuser',
+            'adminuser@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.organizer = User.objects.create_user(
+            'organizeruser',
+            'organizeruser@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+
+    def test_admin_dashboard_is_available_to_admin_role(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse('admin_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Admin Dashboard')
+
+    def test_admin_dashboard_redirects_non_admin_users_to_admin_login(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(reverse('admin_dashboard'))
+
+        login_url = reverse('eventify_admin:login')
+        self.assertRedirects(
+            response,
+            f'{login_url}?next={reverse("admin_dashboard")}',
+        )
+
+    def test_custom_admin_site_is_mounted_and_restricted_to_admin_role(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse('eventify_admin:index'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Eventify Administration')
+
+    def test_admin_role_can_view_users_in_custom_admin_site(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(
+            reverse('eventify_admin:authentication_user_changelist')
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.organizer.username)
+
+
+class RoleDashboardAccessTests(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.admin = User.objects.create_user(
+            'dashboardadmin',
+            'dashboardadmin@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.organizer = User.objects.create_user(
+            'dashboardorganizer',
+            'dashboardorganizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            'dashboardattendee',
+            'dashboardattendee@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+
+    def test_admin_can_access_organizer_and_attendee_dashboards(self):
+        request = self.factory.get('/dashboard/organizer/')
+        request.user = self.admin
+        with patch('authentication.views.render', return_value=HttpResponse()) as render:
+            self.assertEqual(views.organizer_dashboard(request).status_code, 200)
+            render.assert_called_once_with(
+                request,
+                'authentication/organizer_dashboard.html',
+            )
+
+        request = self.factory.get('/dashboard/attendee/')
+        request.user = self.admin
+        with patch('authentication.views.render', return_value=HttpResponse()) as render:
+            self.assertEqual(views.attendee_dashboard(request).status_code, 200)
+            render.assert_called_once_with(
+                request,
+                'authentication/attendee_dashboard.html',
+            )
+
+    def test_organizer_and_attendee_remain_isolated(self):
+        request = self.factory.get('/dashboard/attendee/')
+        request.user = self.organizer
+        with self.assertRaises(PermissionDenied):
+            views.attendee_dashboard(request)
+
+        request = self.factory.get('/dashboard/organizer/')
+        request.user = self.attendee
+        with self.assertRaises(PermissionDenied):
+            views.organizer_dashboard(request)

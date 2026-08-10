@@ -3,9 +3,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.shortcuts import redirect, render
 
-from .decorators import role_required
+from .decorators import admin_required, role_required
 from .forms import UserRegistrationForm
-from .models import UserRole
+from .models import User, UserRole
 
 
 # -------------------------
@@ -16,7 +16,9 @@ from .models import UserRole
 def register(request):
 
     if request.user.is_authenticated:
-        return redirect('admin:index')
+        if request.user.is_admin:
+            return redirect('admin_dashboard')
+        return redirect('home')
 
     if request.method == 'POST':
 
@@ -40,84 +42,61 @@ def register(request):
 
 @login_not_required
 def register_success(request):
-
-    return render(
-        request,
-        'authentication/register_success.html'
-    )
+    return render(request, 'authentication/register_success.html')
 
 
+@login_not_required
+def home(request):
+    return render(request, 'authentication/home.html')
 
-# -------------------------
-# Person 2: 
-# -------------------------
 
+@admin_required
+def admin_dashboard(request):
+    users = User.objects.all()
+    context = {
+        'total_users': users.count(),
+        'admin_count': users.filter(role=UserRole.ADMIN).count(),
+        'organizer_count': users.filter(role=UserRole.ORGANIZER).count(),
+        'attendee_count': users.filter(role=UserRole.ATTENDEE).count(),
+    }
+    return render(request, 'authentication/admin_dashboard.html', context)
+
+
+@login_not_required
 def login_view(request):
-
-    if request.method == "POST":
-
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-
-
+    if request.method == 'POST':
         user = authenticate(
             request,
-            username=username,
-            password=password
+            username=request.POST.get('username'),
+            password=request.POST.get('password'),
         )
-
-
-        if user is not None:
-
-            login(request, user)
-
-
-            # Role available after login
-            if user.is_admin:
-                return redirect('admin:index')
-
-            elif user.is_organizer:
-                return redirect('organizer_dashboard')
-
-            elif user.is_attendee:
-                return redirect('attendee_dashboard')
-
-
+        if user is None:
+            messages.error(request, 'Invalid username or password')
         else:
+            login(request, user)
+            if user.is_admin:
+                return redirect('admin_dashboard')
+            if user.is_organizer:
+                return redirect('organizer_dashboard')
+            return redirect('attendee_dashboard')
 
-            messages.error(
-                request,
-                "Invalid username or password"
-            )
-
-
-    return render(
-        request,
-        'authentication/login.html'
-    )
-
+    return render(request, 'authentication/login.html')
 
 
 def logout_view(request):
-
     logout(request)
-
     return redirect('login')
 
 
-# -------------------------
-# Role-based access control
-# -------------------------
-
 def unauthorized(request):
-    return render(request, 'authentication/unauthorized.html', status=403)
+    return render(request, 'authentication/unauthorized.html')
 
 
-@role_required(UserRole.ORGANIZER)
+@role_required(UserRole.ADMIN, UserRole.ORGANIZER)
 def organizer_dashboard(request):
     return render(request, 'authentication/organizer_dashboard.html')
 
 
-@role_required(UserRole.ATTENDEE)
+@role_required(UserRole.ADMIN, UserRole.ATTENDEE)
 def attendee_dashboard(request):
     return render(request, 'authentication/attendee_dashboard.html')
