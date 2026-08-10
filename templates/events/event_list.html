@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}My Events Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">My Events</h1>
+        <a href="{% url 'event_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+            + Create New Event
+        </a>
+    </div>
+
+    {% if events %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for event in events %}
+                <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 flex flex-col">
+                    {% if event.poster_image %}
+                        <img src="{{ event.poster_image.url }}" alt="{{ event.title }}" class="w-full h-48 object-cover">
+                    {% else %}
+                        <div class="w-full h-48 bg-gray-100 flex items-center justify-center">
+                            <span class="text-gray-400">No Image</span>
+                        </div>
+                    {% endif %}
+                    <div class="p-5 flex-grow">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">{{ event.title }}</h3>
+                        <p class="text-sm text-gray-500 mb-4 line-clamp-3">{{ event.description }}</p>
+                        <div class="text-sm text-gray-600 space-y-1">
+                            <p><strong>Date:</strong> {{ event.date|date:"F j, Y, P" }}</p>
+                            <p><strong>Location:</strong> {{ event.location }}</p>
+                            <p><strong>Tickets:</strong> {{ event.max_tickets }} @ ${{ event.ticket_price }}</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-5 py-3 border-t border-gray-200 flex justify-end space-x-3">
+                        <a href="{% url 'event_edit' event.pk %}" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Edit</a>
+                        <a href="{% url 'event_delete' event.pk %}" class="text-red-600 hover:text-red-900 text-sm font-medium">Delete</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-white rounded-lg shadow-sm p-10 text-center border border-gray-200">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No events found</h3>
+            <p class="mt-1 text-sm text-gray-500">Get started by creating your first event.</p>
+            <div class="mt-6">
+                <a href="{% url 'event_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                    + Create Event
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

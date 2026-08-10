@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Delete Event{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-2">Delete Event</h3>
+        <p class="text-sm text-gray-500 mb-6">
+            Are you sure you want to delete the event <strong>"{{ object.title }}"</strong>? This action cannot be undone and will permanently remove the event and its poster image.
+        </p>
+        
+        <form method="post" class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+            {% csrf_token %}
+            <a href="{% url 'dashboard' %}" class="inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
+                Yes, Delete Event
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
