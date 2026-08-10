@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ event.title }} | Eventify
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+
+                <h2 class="mb-3">
+                    {{ event.title }}
+                </h2>
+
+                <p class="text-muted">
+                    Organized by {{ event.organizer.username }}
+                </p>
+
+                <hr>
+
+                <p>
+                    <strong>Description:</strong><br>
+                    {{ event.description }}
+                </p>
+
+                <p>
+                    <strong>Date:</strong>
+                    {{ event.date }}
+                </p>
+
+                <p>
+                    <strong>Location:</strong>
+                    {{ event.location }}
+                </p>
+
+                <a
+                    href="{% url 'event_list' %}"
+                    class="btn btn-secondary"
+                >
+                    Back to Events
+                </a>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

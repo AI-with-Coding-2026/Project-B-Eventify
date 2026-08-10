@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}
+Register | Eventify
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+
+                <h2 class="text-center mb-4">
+                    Create Account
+                </h2>
+
+                <form method="post">
+                    {% csrf_token %}
+                
+                    <div class="mb-3">
+                        {{ form.username.label_tag }}
+                        {{ form.username }}
+                    
+                        {% if form.username.help_text %}
+                            <div class="form-text">
+                                {{ form.username.help_text }}
+                            </div>
+                        {% endif %}
+                    
+                        {% for error in form.username.errors %}
+                            <div class="text-danger small">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                
+                    <div class="mb-3">
+                        {{ form.first_name.label_tag }}
+                        {{ form.first_name }}
+                        {{ form.first_name.errors }}
+                    </div>
+                
+                    <div class="mb-3">
+                        {{ form.last_name.label_tag }}
+                        {{ form.last_name }}
+                        {{ form.last_name.errors }}
+                    </div>
+                
+                    <div class="mb-3">
+                        {{ form.email.label_tag }}
+                        {{ form.email }}
+                        {{ form.email.errors }}
+                    </div>
+                
+                    <div class="mb-3">
+                        {{ form.role.label_tag }}
+                        {{ form.role }}
+                        {{ form.role.errors }}
+                    </div>
+                
+                    <div class="mb-3">
+                        {{ form.password1.label_tag }}
+                        {{ form.password1 }}
+                    
+                        {% if form.password1.help_text %}
+                            <div class="form-text">
+                                {{ form.password1.help_text|safe }}
+                            </div>
+                        {% endif %}
+                    
+                        {% for error in form.password1.errors %}
+                            <div class="text-danger small">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                
+                    <div class="mb-3">
+                        {{ form.password2.label_tag }}
+                        {{ form.password2 }}
+                    
+                        {% for error in form.password2.errors %}
+                            <div class="text-danger small">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                
+                    <button
+                        type="submit"
+                        class="btn btn-primary w-100"
+                    >
+                        Register
+                    </button>
+                </form>
+
+                {% endblock %}

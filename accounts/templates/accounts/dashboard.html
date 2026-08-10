@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}
+Dashboard | Eventify
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+
+                <h2 class="mb-3">
+                    Welcome, {{ user.first_name|default:user.username }}!
+                </h2>
+
+                <p class="text-muted">
+                    You are logged in to Eventify.
+                </p>
+
+                <hr>
+
+                <div class="mb-3">
+                    <strong>Username:</strong>
+                    {{ user.username }}
+                </div>
+
+                <div class="mb-3">
+                    <strong>Full name:</strong>
+                    {{ user.first_name }} {{ user.last_name }}
+                </div>
+
+                <div class="mb-3">
+                    <strong>Email:</strong>
+                    {{ user.email }}
+                </div>
+
+                <div class="mb-3">
+                    <strong>Role:</strong>
+                    <span class="badge bg-primary">
+                        {{ user.get_role_display }}
+                    </span>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
