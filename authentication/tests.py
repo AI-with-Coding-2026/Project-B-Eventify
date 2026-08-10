@@ -1,4 +1,4 @@
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
@@ -111,6 +111,76 @@ class RegisterViewTests(TestCase):
         self.assertEqual(user.role, UserRole.ORGANIZER)
 
 
+class RoleBasedAccessControlTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_superuser(
+            'admin_rbac',
+            'admin_rbac@example.com',
+            'pass123',
+        )
+        self.organizer = User.objects.create_user(
+            'organizer_rbac',
+            'organizer_rbac@example.com',
+            'pass123',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            'attendee_rbac',
+            'attendee_rbac@example.com',
+            'pass123',
+            role=UserRole.ATTENDEE,
+        )
+
+    def test_unauthenticated_user_redirected_to_login(self):
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('organizer_dashboard')}")
+
+    def test_organizer_can_access_organizer_dashboard(self):
+        self.client.login(username='organizer_rbac', password='pass123')
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_attendee_cannot_access_organizer_dashboard(self):
+        self.client.login(username='attendee_rbac', password='pass123')
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_attendee_can_access_attendee_dashboard(self):
+        self.client.login(username='attendee_rbac', password='pass123')
+        response = self.client.get(reverse('attendee_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_organizer_cannot_access_attendee_dashboard(self):
+        self.client.login(username='organizer_rbac', password='pass123')
+        response = self.client.get(reverse('attendee_dashboard'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_access_organizer_dashboard(self):
+        self.client.login(username='admin_rbac', password='pass123')
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_can_access_attendee_dashboard(self):
+        self.client.login(username='admin_rbac', password='pass123')
+        response = self.client.get(reverse('attendee_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_login_redirects_organizer_to_dashboard(self):
+        response = self.client.post(
+            reverse('login'),
+            {'username': 'organizer_rbac', 'password': 'pass123'},
+        )
+        self.assertRedirects(response, reverse('organizer_dashboard'))
+
+    def test_login_redirects_attendee_to_dashboard(self):
+        response = self.client.post(
+            reverse('login'),
+            {'username': 'attendee_rbac', 'password': 'pass123'},
+        )
+        self.assertRedirects(response, reverse('attendee_dashboard'))
+
+
 class AdminAccessTests(TestCase):
     def setUp(self):
         self.admin_user = User.objects.create_user(
@@ -210,12 +280,10 @@ class RoleDashboardAccessTests(TestCase):
     def test_organizer_and_attendee_remain_isolated(self):
         request = self.factory.get('/dashboard/attendee/')
         request.user = self.organizer
-        with patch('authentication.decorators.redirect') as redirect:
+        with self.assertRaises(PermissionDenied):
             views.attendee_dashboard(request)
-            redirect.assert_called_once_with('unauthorized')
 
         request = self.factory.get('/dashboard/organizer/')
         request.user = self.attendee
-        with patch('authentication.decorators.redirect') as redirect:
+        with self.assertRaises(PermissionDenied):
             views.organizer_dashboard(request)
-            redirect.assert_called_once_with('unauthorized')
