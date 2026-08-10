@@ -110,7 +110,7 @@ def logout_view(request):
 # -------------------------
 
 def unauthorized(request):
-    return render(request, 'authentication/unauthorized.html', status=403)
+    return render(request, 'authentication/unauthorized.html')
 
 
 @role_required(UserRole.ORGANIZER)
