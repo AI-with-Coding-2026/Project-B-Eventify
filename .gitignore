@@ -1,12 +1,5 @@
-<<<<<<< HEAD
-__pycache__/
-*.pyc
-.env
-venv/
-.venv/
-*.sqlite3
-=======
 # Virtual environment
+venv/
 .venv/
 
 # Python cache
@@ -14,16 +7,17 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Django development database
+# Django development database & media uploads
 db.sqlite3
+*.sqlite3
+media/
 
 # Environment variables
 .env
 
-# macOS
+# OS / Editor files
 .DS_Store
-
-# Cursor
+.vscode/
 .cursor/
 
 # Static collection
@@ -33,4 +27,3 @@ staticfiles/
 .coverage
 htmlcov/
 .pytest_cache/
->>>>>>> 67b8828 (Initial Eventify account system)

@@ -1,23 +1,43 @@
-{% extends "authentication/base.html" %}
+{% extends 'base.html' %}
 
 {% block title %}Admin Dashboard — Eventify{% endblock %}
 
 {% block content %}
-<h1>Admin Dashboard</h1>
-<p>Welcome, {{ user.username }}. You have full administrative access.</p>
+<section class="dashboard-card">
+    <p class="eyebrow">Admin Dashboard</p>
 
-<section>
-    <h2>Platform Overview</h2>
-    <ul>
-        <li><strong>Total users:</strong> {{ total_users }}</li>
-        <li><strong>Admins:</strong> {{ admin_count }}</li>
-        <li><strong>Organizers:</strong> {{ organizer_count }}</li>
-        <li><strong>Attendees:</strong> {{ attendee_count }}</li>
-    </ul>
-</section>
+    <h1>Welcome, {{ user.full_name }}</h1>
 
-<section>
-    <h2>Administrative Actions</h2>
-    <p><a href="{% url 'eventify_admin:index' %}">Open Django Admin Panel</a></p>
+    <p class="subtitle">
+        You have full administrative access to the platform.
+    </p>
+
+    <div class="account-details">
+        <div class="detail-row">
+            <span>Total users</span>
+            <strong>{{ total_users }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Admins</span>
+            <strong>{{ admin_count }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Organizers</span>
+            <strong>{{ organizer_count }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Attendees</span>
+            <strong>{{ attendee_count }}</strong>
+        </div>
+    </div>
+
+    <div class="role-message">
+        <a href="{% url 'eventify_admin:index' %}">
+            Open Django Admin Panel
+        </a>
+    </div>
 </section>
 {% endblock %}

@@ -6,12 +6,8 @@ import sys
 
 def main():
     """Run administrative tasks."""
-<<<<<<< HEAD
     # CORRECTION ICI : Remplacement de omnistock par Eventify
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Eventify.settings')
-=======
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'event_platform.settings')
->>>>>>> 67b8828 (Initial Eventify account system)
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

@@ -69,6 +69,11 @@ class User(AbstractUser):
         if self.is_superuser and self.role != UserRole.ADMIN:
             raise ValidationError({'role': 'Superusers must have the Admin role.'})
 
+    @property
+    def full_name(self):
+        name = self.get_full_name().strip()
+        return name or self.username
+
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)

@@ -25,8 +25,22 @@ def register(request):
         form = UserRegistrationForm(request.POST)
 
         if form.is_valid():
-            form.save()
-            return redirect('register_success')
+            user = form.save()
+
+            # Auto-login after successful registration.
+            login(request, user)
+
+            messages.success(
+                request,
+                'Your account was created successfully.',
+            )
+
+            # Redirect to the role-appropriate dashboard.
+            if user.is_admin:
+                return redirect('admin_dashboard')
+            if user.is_organizer:
+                return redirect('organizer_dashboard')
+            return redirect('attendee_dashboard')
 
     else:
         form = UserRegistrationForm()
@@ -37,12 +51,6 @@ def register(request):
         'authentication/register.html',
         {'form': form}
     )
-
-
-
-@login_not_required
-def register_success(request):
-    return render(request, 'authentication/register_success.html')
 
 
 @login_not_required
@@ -64,6 +72,13 @@ def admin_dashboard(request):
 
 @login_not_required
 def login_view(request):
+    if request.user.is_authenticated:
+        if request.user.is_admin:
+            return redirect('admin_dashboard')
+        if request.user.is_organizer:
+            return redirect('organizer_dashboard')
+        return redirect('attendee_dashboard')
+
     if request.method == 'POST':
         user = authenticate(
             request,
@@ -71,7 +86,7 @@ def login_view(request):
             password=request.POST.get('password'),
         )
         if user is None:
-            messages.error(request, 'Invalid username or password')
+            messages.error(request, 'Invalid username or password.')
         else:
             login(request, user)
             if user.is_admin:
@@ -85,6 +100,7 @@ def login_view(request):
 
 def logout_view(request):
     logout(request)
+    messages.success(request, 'You have been logged out.')
     return redirect('login')
 
 

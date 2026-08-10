@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Event — Eventify{% endblock %}
+
+{% block content %}
+<section class="auth-card" style="width: min(100%, 550px);">
+    <h1 style="color: var(--error);">Confirm Delete</h1>
+
+    <p class="subtitle">
+        Are you sure you want to delete the event <strong>"{{ event.title }}"</strong>?
+    </p>
+
+    <div class="account-details" style="margin-bottom: 24px;">
+        <div class="detail-row">
+            <span>Date</span>
+            <strong>{{ event.date|date:"F j, Y @ g:i A" }}</strong>
+        </div>
+        <div class="detail-row">
+            <span>Location</span>
+            <strong>{{ event.location }}</strong>
+        </div>
+        <div class="detail-row">
+            <span>Ticket Price</span>
+            <strong>${{ event.ticket_price }}</strong>
+        </div>
+        {% if event.poster %}
+            <div class="detail-row">
+                <span>Poster Image</span>
+                <strong>Will be permanently deleted</strong>
+            </div>
+        {% endif %}
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div style="display: flex; gap: 12px;">
+            <button type="submit" class="btn-danger" style="flex: 1; padding: 13px 18px; font-size: 16px; text-align: center;">
+                Yes, Delete Event
+            </button>
+            <a href="{% url 'organizer_event_list' %}" class="btn-secondary" style="padding: 13px 18px; font-size: 16px; text-align: center;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</section>
+{% endblock %}

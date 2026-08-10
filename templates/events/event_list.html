@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}My Events — Eventify{% endblock %}
+
+{% block content %}
+<div class="events-header">
+    <div>
+        <p class="eyebrow">Organizer Dashboard</p>
+        <h1 style="margin: 0;">My Events</h1>
+    </div>
+
+    <a href="{% url 'event_create' %}" class="btn-create">
+        + Create New Event
+    </a>
+</div>
+
+{% if events %}
+    <div class="events-grid">
+        {% for event in events %}
+            <article class="event-card">
+                {% if event.poster %}
+                    <img src="{{ event.poster.url }}" alt="{{ event.title }} Poster" class="event-poster">
+                {% else %}
+                    <div class="event-poster-placeholder">
+                        {{ event.title|slice:":2"|upper }}
+                    </div>
+                {% endif %}
+
+                <div class="event-card-body">
+                    <h2 class="event-title">{{ event.title }}</h2>
+
+                    <div class="event-meta">
+                        <span>📅 {{ event.date|date:"F j, Y @ g:i A" }}</span>
+                        <span>📍 {{ event.location }}</span>
+                        <span>🎟️ ${{ event.ticket_price }} / ticket (Max {{ event.max_tickets }})</span>
+                    </div>
+
+                    <p class="event-description">
+                        {{ event.description }}
+                    </p>
+
+                    <div class="event-footer">
+                        <span class="event-badge">
+                            Created {{ event.created_at|date:"M j, Y" }}
+                        </span>
+
+                        <div class="action-buttons">
+                            <a href="{% url 'event_edit' event.pk %}" class="btn-secondary">
+                                Edit
+                            </a>
+                            <a href="{% url 'event_delete' event.pk %}" class="btn-danger">
+                                Delete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <h3>No Events Created Yet</h3>
+        <p>You haven't created any events. Click the button below to get started!</p>
+        <a href="{% url 'event_create' %}" class="btn-create">
+            + Create Your First Event
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

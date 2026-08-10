@@ -1,12 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Attendee Dashboard</title>
-</head>
-<body>
-    <h1>Attendee Dashboard</h1>
-    <p>Welcome, {{ user.username }}. You are logged in as an Attendee.</p>
-    <p><a href="{% url 'logout' %}">Log out</a></p>
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block title %}Attendee Dashboard — Eventify{% endblock %}
+
+{% block content %}
+<section class="dashboard-card">
+    <p class="eyebrow">Attendee Dashboard</p>
+
+    <h1>Welcome, {{ user.full_name }}</h1>
+
+    <p class="subtitle">
+        You are logged in as an Attendee.
+    </p>
+
+    <div class="account-details">
+        <div class="detail-row">
+            <span>Name</span>
+            <strong>{{ user.get_full_name }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Email</span>
+            <strong>{{ user.email }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Role</span>
+            <strong>{{ user.get_role_display }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Account created</span>
+            <strong>{{ user.date_joined|date:"F j, Y" }}</strong>
+        </div>
+    </div>
+
+    <div class="role-message">
+        You will be able to browse events and book tickets here.
+    </div>
+</section>
+{% endblock %}

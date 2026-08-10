@@ -1,12 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Organizer Dashboard</title>
-</head>
-<body>
-    <h1>Organizer Dashboard</h1>
-    <p>Welcome, {{ user.username }}. You are logged in as an Organizer.</p>
-    <p><a href="{% url 'logout' %}">Log out</a></p>
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block title %}Organizer Dashboard — Eventify{% endblock %}
+
+{% block content %}
+<section class="dashboard-card">
+    <p class="eyebrow">Organizer Dashboard</p>
+
+    <h1>Welcome, {{ user.full_name }}</h1>
+
+    <p class="subtitle">
+        You are logged in as an Organizer.
+    </p>
+
+    <div class="account-details">
+        <div class="detail-row">
+            <span>Name</span>
+            <strong>{{ user.get_full_name }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Email</span>
+            <strong>{{ user.email }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Role</span>
+            <strong>{{ user.get_role_display }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Account created</span>
+            <strong>{{ user.date_joined|date:"F j, Y" }}</strong>
+        </div>
+    </div>
+
+    <div class="role-message" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div>
+            <strong>Event Management:</strong> Create and manage your events.
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <a href="{% url 'organizer_event_list' %}" class="btn-secondary">
+                View My Events
+            </a>
+            <a href="{% url 'event_create' %}" class="btn-create">
+                + Create Event
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

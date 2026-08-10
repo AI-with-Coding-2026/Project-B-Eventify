@@ -1,16 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eventify</title>
-</head>
-<body>
+{% extends 'base.html' %}
+
+{% block title %}Eventify — Event Management Platform{% endblock %}
+
+{% block content %}
+<section class="auth-card">
     <h1>Welcome to Eventify</h1>
+
     {% if user.is_authenticated %}
-        <p>Signed in as {{ user.username }} ({{ user.get_role_display }}).</p>
+        <p class="subtitle">
+            Signed in as {{ user.full_name }} ({{ user.get_role_display }}).
+        </p>
+
+        <div class="account-details">
+            <div class="detail-row">
+                <span>Username</span>
+                <strong>{{ user.username }}</strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Email</span>
+                <strong>{{ user.email }}</strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Role</span>
+                <strong>{{ user.get_role_display }}</strong>
+            </div>
+        </div>
+
+        <div class="role-message">
+            {% if user.is_admin %}
+                You have administrator access.
+                <a href="{% url 'admin_dashboard' %}">Go to Admin Dashboard</a>
+            {% elif user.is_organizer %}
+                You can create and manage events.
+                <a href="{% url 'organizer_dashboard' %}">Go to Organizer Dashboard</a>
+            {% elif user.is_attendee %}
+                You can browse events and book tickets.
+                <a href="{% url 'attendee_dashboard' %}">Go to Attendee Dashboard</a>
+            {% endif %}
+        </div>
     {% else %}
-        <p><a href="{% url 'register' %}">Create an account</a></p>
+        <p class="subtitle">
+            Your all-in-one event management platform.
+            Create, manage, and attend events with ease.
+        </p>
+
+        <a href="{% url 'register' %}" class="primary-button" style="display: block; text-align: center;">
+            Get started
+        </a>
+
+        <p class="form-footer">
+            Already have an account?
+
+            <a href="{% url 'login' %}">
+                Log in
+            </a>
+        </p>
     {% endif %}
-</body>
-</html>
+</section>
+{% endblock %}

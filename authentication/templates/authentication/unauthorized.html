@@ -1,12 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Access Denied</title>
-</head>
-<body>
+{% extends 'base.html' %}
+
+{% block title %}Access Denied — Eventify{% endblock %}
+
+{% block content %}
+<section class="auth-card">
     <h1>Access Denied</h1>
-    <p>You do not have permission to view this page.</p>
-    <p><a href="{% url 'login' %}">Return to login</a></p>
-</body>
-</html>
+
+    <p class="subtitle">
+        You do not have permission to view this page.
+    </p>
+
+    <a href="{% url 'home' %}" class="primary-button" style="display: block; text-align: center;">
+        Go to Home
+    </a>
+
+    <p class="form-footer">
+        Think this is a mistake?
+
+        <a href="{% url 'login' %}">
+            Log in with a different account
+        </a>
+    </p>
+</section>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} — Eventify{% endblock %}
+
+{% block content %}
+<section class="auth-card" style="width: min(100%, 650px);">
+    <h1>{{ title }}</h1>
+
+    <p class="subtitle">
+        Fill in the details below to {{ action|lower }} your event.
+    </p>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                </label>
+
+                {% if field.name == 'poster' and event and event.poster %}
+                    <div class="poster-preview-box">
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 6px;">Current Poster:</p>
+                        <img src="{{ event.poster.url }}" alt="Current Poster" class="poster-preview-img">
+                    </div>
+                {% endif %}
+
+                {{ field }}
+
+                {% if field.help_text %}
+                    <div class="help-text">
+                        {{ field.help_text|safe }}
+                    </div>
+                {% endif %}
+
+                {% for error in field.errors %}
+                    <div class="field-error">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button type="submit" class="primary-button" style="flex: 1;">
+                {{ action }} Event
+            </button>
+            <a href="{% url 'organizer_event_list' %}" class="btn-secondary" style="padding: 13px 18px; font-size: 16px;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</section>
+{% endblock %}
