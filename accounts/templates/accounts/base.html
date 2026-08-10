@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Platform</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        nav { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #ccc; }
+        nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
+        nav span { margin-right: 15px; color: #555; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        input, select { width: 100%; padding: 8px; margin: 5px 0 15px 0; box-sizing: border-box; }
+        .errorlist { color: red; list-style: none; padding: 0; }
+    </style>
+</head>
+<body>
+    <nav>
+        {% if user.is_authenticated %}
+            <span>Hello, {{ user.name }} ({{ user.role }})</span>
+            <a href="{% url 'logout' %}">Logout</a>
+        {% else %}
+            <a href="{% url 'login' %}">Login</a>
+            <a href="{% url 'register' %}">Register</a>
+        {% endif %}
+    </nav>
+    {% block content %}{% endblock %}
+</body>
+</html>
