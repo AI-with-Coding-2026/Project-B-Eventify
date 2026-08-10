@@ -1,27 +1,64 @@
+from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
-from .models import CustomUser
-
-INPUT_CLASSES = (
-    'w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 '
-    'placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none '
-    'focus:ring-2 focus:ring-indigo-500/20 transition-colors'
-)
+from .models import User
 
 
-class CustomUserCreationForm(UserCreationForm):
+class RegistrationForm(UserCreationForm):
+    first_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label="First name",
+    )
+
+    last_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label="Last name",
+    )
+
+    email = forms.EmailField(
+        required=True,
+        label="Email address",
+    )
+
+    role = forms.ChoiceField(
+        choices=[
+            (User.Role.ORGANIZER, "Organizer"),
+            (User.Role.ATTENDEE, "Attendee"),
+        ],
+        label="Account role",
+    )
+
     class Meta:
-        model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name', 'role')
+        model = User
+        fields = [
+            "first_name",
+            "last_name",
+            "email",
+            "role",
+            "password1",
+            "password2",
+        ]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.update({'class': INPUT_CLASSES})
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError(
+                "An account with this email address already exists."
+            )
+
+        return email
 
 
-class StyledAuthenticationForm(AuthenticationForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.update({'class': INPUT_CLASSES})
+class EmailAuthenticationForm(AuthenticationForm):
+    username = forms.EmailField(
+        label="Email address",
+        widget=forms.EmailInput(
+            attrs={
+                "autofocus": True,
+                "autocomplete": "email",
+            }
+        ),
+    )

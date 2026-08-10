@@ -1,12 +1,78 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Event Platform{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% block title %}Event Platform{% endblock %}
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{% static 'css/style.css' %}"
+    >
 </head>
-<body class="min-h-screen bg-gray-100 antialiased">
-    {% block content %}{% endblock %}
+
+<body>
+    <header class="site-header">
+        <nav class="navigation">
+            <a class="brand" href="{% url 'home' %}">
+                Event Platform
+            </a>
+
+            <div class="navigation-links">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}">
+                        Dashboard
+                    </a>
+
+                    <form
+                        method="post"
+                        action="{% url 'logout' %}"
+                        class="logout-form"
+                    >
+                        {% csrf_token %}
+
+                        <button
+                            type="submit"
+                            class="link-button"
+                        >
+                            Log out
+                        </button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}">
+                        Log in
+                    </a>
+
+                    <a href="{% url 'register' %}">
+                        Register
+                    </a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main class="page-container">
+        {% if messages %}
+            <section class="messages">
+                {% for message in messages %}
+                    <div class="message {{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </section>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
 </body>
 </html>
