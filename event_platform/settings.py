@@ -38,6 +38,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts',
+<<<<<<< HEAD
+    'events',
+    
+=======
+>>>>>>> origin/main
 ]
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
