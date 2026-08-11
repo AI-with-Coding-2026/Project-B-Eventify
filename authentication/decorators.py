@@ -76,9 +76,7 @@ def admin_required(view_func):
         if request.user.role == UserRole.ADMIN:
             return view_func(request, *args, **kwargs)
 
-        return redirect(
-            f"/admin/login/?next={request.get_full_path()}"
-        )
+        return redirect('unauthorized')
 
     return wrapped_view
 
