@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Home | Event Platform
+{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-2xl px-6 py-16 text-center">
+    <h1 class="text-3xl font-semibold text-gray-900">Welcome to Event Platform</h1>
+
+    {% if user.is_authenticated %}
+        <p class="mt-4 text-gray-600">
+            Signed in as {{ user.get_username }} ({{ user.get_role_display }}).
+        </p>
+        <p class="mt-6">
+            <a class="text-blue-600 underline" href="{% url 'logout' %}">Log out</a>
+        </p>
+    {% else %}
+        <p class="mt-4 text-gray-600">
+            Create an account or log in to get started.
+        </p>
+        <p class="mt-6 space-x-4">
+            <a class="text-blue-600 underline" href="{% url 'signup' %}">Create an account</a>
+            <a class="text-blue-600 underline" href="{% url 'login' %}">Log in</a>
+        </p>
+    {% endif %}
+</section>
+{% endblock %}
