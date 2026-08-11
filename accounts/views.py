@@ -7,7 +7,7 @@ from .forms import CustomUserCreationForm, StyledAuthenticationForm
 
 class SignUpView(CreateView):
     form_class = CustomUserCreationForm
-    template_name = 'accounts/signup.html'
+    template_name = 'accounts/register.html'
     success_url = reverse_lazy('login')
 
 
