@@ -1,8 +1,5 @@
 from django.contrib.admin import AdminSite
-<<<<<<< HEAD
-=======
 from django.shortcuts import redirect
->>>>>>> origin/main
 
 
 class EventifyAdminSite(AdminSite):
@@ -19,10 +16,6 @@ class EventifyAdminSite(AdminSite):
             and request.user.is_admin
         )
 
-<<<<<<< HEAD
-
-eventify_admin_site = EventifyAdminSite(name='eventify_admin')
-=======
     def admin_view(self, view, cacheable=False):
         inner = super().admin_view(view, cacheable=cacheable)
 
@@ -35,5 +28,3 @@ eventify_admin_site = EventifyAdminSite(name='eventify_admin')
 
 
 eventify_admin_site = EventifyAdminSite(name='eventify_admin')
-
->>>>>>> origin/main
