@@ -28,7 +28,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'authentication',  # Added custom authentication application here
-    'events',  # Event listing app for Sprint 2'
+    'events', # Event listing app for Sprint 2
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container my-4">
+    <h1>Upcoming Events</h1>
+    {% for event in events %}
+        <p>{{ event.title }} — {{ event.date }} — ${{ event.price }} — {{ event.category }}</p>
+    {% empty %}
+        <p>No events found.</p>
+    {% endfor %}
+</div>
+{% endblock %}
