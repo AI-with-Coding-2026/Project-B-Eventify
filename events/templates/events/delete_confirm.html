@@ -1,0 +1,22 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Delete Event - Eventify{% endblock %}
+
+{% block content %}
+<div class="card delete-confirm">
+    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">Delete Event</h2>
+    <p style="color: var(--text-light);">Are you sure you want to delete <strong style="color: var(--text);">"{{ event.title }}"</strong>? This action cannot be undone.</p>
+    
+    {% if event.poster %}
+        <img src="{{ event.poster.url }}" alt="{{ event.title }}">
+    {% endif %}
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="delete-actions">
+            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+            <a href="{% url 'my_events' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

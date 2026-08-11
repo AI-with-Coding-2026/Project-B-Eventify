@@ -1,10 +1,24 @@
 {% extends 'accounts/base.html' %}
 
 {% block content %}
-<h1>Welcome to the Event Platform</h1>
-{% if user.is_authenticated %}
-    <p>You are logged in as <strong>{{ user.role }}</strong>.</p>
-{% else %}
-    <p>Please <a href="{% url 'login' %}">log in</a> or <a href="{% url 'register' %}">register</a> to continue.</p>
-{% endif %}
+<div style="text-align: center; padding: 4rem 1rem;">
+    <h1 style="font-size: 3rem; font-weight: 800; margin-bottom: 1rem; letter-spacing: -1px;">Welcome to Eventify</h1>
+    <p style="font-size: 1.25rem; color: var(--text-light); max-width: 600px; margin: 0 auto 2rem;">
+        The easiest way to discover and manage amazing events.
+    </p>
+    
+    {% if user.is_authenticated %}
+        <p style="font-size: 1.1rem; margin-bottom: 1rem;">
+            You are logged in as <span class="role-badge">{{ user.role }}</span>
+        </p>
+        {% if user.role == 'organizer' %}
+            <a href="{% url 'my_events' %}" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.75rem 2rem;">Go to My Events</a>
+        {% endif %}
+    {% else %}
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <a href="{% url 'login' %}" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.75rem 2rem;">Get Started</a>
+            <a href="{% url 'register' %}" class="btn btn-secondary" style="font-size: 1.1rem; padding: 0.75rem 2rem;">Create Account</a>
+        </div>
+    {% endif %}
+</div>
 {% endblock %}
