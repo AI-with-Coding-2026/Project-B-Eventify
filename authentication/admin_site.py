@@ -1,8 +1,5 @@
 from django.contrib.admin import AdminSite
-<<<<<<< HEAD
-=======
 from django.shortcuts import redirect
->>>>>>> origin/main
 
 
 class EventifyAdminSite(AdminSite):
@@ -13,17 +10,15 @@ class EventifyAdminSite(AdminSite):
     index_title = 'Administrative Dashboard'
 
     def has_permission(self, request):
+        """Vérifie si l'utilisateur est actif, connecté et possède le rôle admin."""
         return (
             request.user.is_active
             and request.user.is_authenticated
-            and request.user.is_admin
+            and getattr(request.user, 'is_admin', False)
         )
 
-<<<<<<< HEAD
-
-eventify_admin_site = EventifyAdminSite(name='eventify_admin')
-=======
     def admin_view(self, view, cacheable=False):
+        """Redirige les utilisateurs connectés non autorisés vers la page 'unauthorized'."""
         inner = super().admin_view(view, cacheable=cacheable)
 
         def wrapper(request, *args, **kwargs):
@@ -34,6 +29,5 @@ eventify_admin_site = EventifyAdminSite(name='eventify_admin')
         return wrapper
 
 
+# Instance unique du site d'administration
 eventify_admin_site = EventifyAdminSite(name='eventify_admin')
-
->>>>>>> origin/main
