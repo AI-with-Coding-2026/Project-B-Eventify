@@ -1,5 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
 
 from .models import UserRole
 
@@ -8,7 +8,8 @@ class RoleRequiredMixin(LoginRequiredMixin):
     """
     Class-based view mixin that requires authentication and an allowed role.
 
-    Admin users always have full access. Unauthorized users receive 403 Forbidden.
+    Admin users always have full access.
+    Unauthorized users are redirected to /unauthorized/.
 
     Usage:
         class OrganizerDashboardView(RoleRequiredMixin, TemplateView):
@@ -17,11 +18,12 @@ class RoleRequiredMixin(LoginRequiredMixin):
     """
     allowed_roles = ()
     login_url = 'login'
+    redirect_url = 'unauthorized'
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
         user_role = request.user.role
         if user_role != UserRole.ADMIN and user_role not in self.allowed_roles:
-            raise PermissionDenied
+            return redirect(self.redirect_url)
         return super(LoginRequiredMixin, self).dispatch(request, *args, **kwargs)
