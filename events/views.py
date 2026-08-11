@@ -12,7 +12,12 @@ def organizer_required(user):
 
 @login_required
 def event_list(request):
-    events = Event.objects.all().order_by("-date")
+    if not organizer_required(request.user):
+        raise PermissionDenied
+
+    events = Event.objects.filter(
+        organizer=request.user
+    ).order_by("-date")
 
     return render(
         request,
@@ -50,6 +55,9 @@ def event_create(request):
 
 @login_required
 def event_edit(request, pk):
+    if not organizer_required(request.user):
+        raise PermissionDenied
+
     event = get_object_or_404(Event, pk=pk)
 
     if event.organizer != request.user:
@@ -90,6 +98,9 @@ def event_edit(request, pk):
 
 @login_required
 def event_delete(request, pk):
+    if not organizer_required(request.user):
+        raise PermissionDenied
+
     event = get_object_or_404(Event, pk=pk)
 
     if event.organizer != request.user:
