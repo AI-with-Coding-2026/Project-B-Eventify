@@ -16,19 +16,20 @@ class Command(BaseCommand):
         email = options['email']
         password = options['password']
 
-        user, created = User.objects.get_or_create(
-            username=username,
-            defaults={'email': email},
-        )
-        user.email = email
-        user.role = 'admin'
-        user.is_staff = True
-        user.is_superuser = True
-        user.is_active = True
-        user.set_password(password)
-        user.save()
+        user = User.objects.filter(username=username).first()
+        if user is None:
+            User.objects.create_superuser(username, email, password)
+            action = 'Created'
+        else:
+            user.email = email
+            user.role = 'admin'
+            user.is_staff = True
+            user.is_superuser = True
+            user.is_active = True
+            user.set_password(password)
+            user.save()
+            action = 'Updated'
 
-        action = 'Created' if created else 'Updated'
         self.stdout.write(
             self.style.SUCCESS(
                 f'{action} admin user "{username}". '
