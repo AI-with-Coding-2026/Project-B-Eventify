@@ -1,13 +1,6 @@
-<<<<<<< HEAD
-__pycache__/
-*.pyc
-.env
-venv/
-.venv/
-*.sqlite3
-=======
 # Virtual environment
 .venv/
+venv/
 
 # Python cache
 __pycache__/
@@ -33,4 +26,3 @@ staticfiles/
 .coverage
 htmlcov/
 .pytest_cache/
->>>>>>> 67b8828 (Initial Eventify account system)

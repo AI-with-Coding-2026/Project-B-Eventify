@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events</title>
+</head>
+<body>
+
+    <h1>Events</h1>
+
+    {% if user.is_authenticated and user.role == "organizer" %}
+        <p>
+            <a href="{% url 'event_create' %}">Create New Event</a>
+        </p>
+    {% endif %}
+
+    {% for event in events %}
+        <hr>
+
+        <h2>{{ event.title }}</h2>
+
+        <p>{{ event.description }}</p>
+        <p>Location: {{ event.location }}</p>
+        <p>Date: {{ event.date }}</p>
+        <p>Ticket price: {{ event.ticket_price }}</p>
+        <p>Maximum tickets: {{ event.max_tickets }}</p>
+        <p>Organizer: {{ event.organizer.username }}</p>
+
+        {% if event.poster %}
+            <img
+                src="{{ event.poster.url }}"
+                alt="{{ event.title }}"
+                width="250"
+            >
+        {% endif %}
+
+        {% if event.organizer == user %}
+            <p>
+                <a href="{% url 'event_edit' event.pk %}">
+                    Edit
+                </a>
+
+                <a href="{% url 'event_delete' event.pk %}">
+                    Delete
+                </a>
+            </p>
+        {% endif %}
+
+    {% empty %}
+        <p>No events have been created yet.</p>
+    {% endfor %}
+
+</body>
+</html>
