@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 from django.core.exceptions import ValidationError
+=======
+from django.core.exceptions import PermissionDenied, ValidationError
+>>>>>>> origin/main
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
@@ -111,6 +115,79 @@ class RegisterViewTests(TestCase):
         self.assertEqual(user.role, UserRole.ORGANIZER)
 
 
+<<<<<<< HEAD
+=======
+class RoleBasedAccessControlTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_superuser(
+            'admin_rbac',
+            'admin_rbac@example.com',
+            'pass123',
+        )
+        self.organizer = User.objects.create_user(
+            'organizer_rbac',
+            'organizer_rbac@example.com',
+            'pass123',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            'attendee_rbac',
+            'attendee_rbac@example.com',
+            'pass123',
+            role=UserRole.ATTENDEE,
+        )
+
+    def test_unauthenticated_user_redirected_to_login(self):
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('organizer_dashboard')}")
+
+    def test_organizer_can_access_organizer_dashboard(self):
+        self.client.login(username='organizer_rbac', password='pass123')
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_attendee_cannot_access_organizer_dashboard(self):
+        self.client.login(username='attendee_rbac', password='pass123')
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_attendee_can_access_attendee_dashboard(self):
+        self.client.login(username='attendee_rbac', password='pass123')
+        response = self.client.get(reverse('attendee_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_organizer_cannot_access_attendee_dashboard(self):
+        self.client.login(username='organizer_rbac', password='pass123')
+        response = self.client.get(reverse('attendee_dashboard'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_access_organizer_dashboard(self):
+        self.client.login(username='admin_rbac', password='pass123')
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_can_access_attendee_dashboard(self):
+        self.client.login(username='admin_rbac', password='pass123')
+        response = self.client.get(reverse('attendee_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_login_redirects_organizer_to_dashboard(self):
+        response = self.client.post(
+            reverse('login'),
+            {'username': 'organizer_rbac', 'password': 'pass123'},
+        )
+        self.assertRedirects(response, reverse('organizer_dashboard'))
+
+    def test_login_redirects_attendee_to_dashboard(self):
+        response = self.client.post(
+            reverse('login'),
+            {'username': 'attendee_rbac', 'password': 'pass123'},
+        )
+        self.assertRedirects(response, reverse('attendee_dashboard'))
+
+
+>>>>>>> origin/main
 class AdminAccessTests(TestCase):
     def setUp(self):
         self.admin_user = User.objects.create_user(
@@ -126,6 +203,15 @@ class AdminAccessTests(TestCase):
             'strong-pass-123',
             role=UserRole.ORGANIZER,
         )
+<<<<<<< HEAD
+=======
+        self.attendee = User.objects.create_user(
+            'attendeeuser',
+            'attendeeuser@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+>>>>>>> origin/main
 
     def test_admin_dashboard_is_available_to_admin_role(self):
         self.client.force_login(self.admin_user)
@@ -135,6 +221,7 @@ class AdminAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Admin Dashboard')
 
+<<<<<<< HEAD
     def test_admin_dashboard_redirects_non_admin_users_to_admin_login(self):
         self.client.force_login(self.organizer)
 
@@ -145,6 +232,25 @@ class AdminAccessTests(TestCase):
             response,
             f'{login_url}?next={reverse("admin_dashboard")}',
         )
+=======
+    def test_admin_dashboard_denies_organizer_with_unauthorized(self):
+        """Organizer accessing admin dashboard gets redirected to /unauthorized/ (403)."""
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(reverse('admin_dashboard'), follow=True)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTemplateUsed(response, 'authentication/unauthorized.html')
+
+    def test_admin_dashboard_denies_attendee_with_unauthorized(self):
+        """Attendee accessing admin dashboard gets redirected to /unauthorized/ (403)."""
+        self.client.force_login(self.attendee)
+
+        response = self.client.get(reverse('admin_dashboard'), follow=True)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTemplateUsed(response, 'authentication/unauthorized.html')
+>>>>>>> origin/main
 
     def test_custom_admin_site_is_mounted_and_restricted_to_admin_role(self):
         self.client.force_login(self.admin_user)
@@ -164,6 +270,27 @@ class AdminAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.organizer.username)
 
+<<<<<<< HEAD
+=======
+    def test_custom_admin_site_denies_organizer_with_unauthorized(self):
+        """Organizer accessing /admin/ gets redirected to /unauthorized/ (403), not 404."""
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(reverse('eventify_admin:index'), follow=True)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTemplateUsed(response, 'authentication/unauthorized.html')
+
+    def test_custom_admin_site_denies_attendee_with_unauthorized(self):
+        """Attendee accessing /admin/ gets redirected to /unauthorized/ (403), not 404."""
+        self.client.force_login(self.attendee)
+
+        response = self.client.get(reverse('eventify_admin:index'), follow=True)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTemplateUsed(response, 'authentication/unauthorized.html')
+
+>>>>>>> origin/main
 
 class RoleDashboardAccessTests(TestCase):
     def setUp(self):
@@ -210,6 +337,7 @@ class RoleDashboardAccessTests(TestCase):
     def test_organizer_and_attendee_remain_isolated(self):
         request = self.factory.get('/dashboard/attendee/')
         request.user = self.organizer
+<<<<<<< HEAD
         with patch('authentication.decorators.redirect') as redirect:
             views.attendee_dashboard(request)
             redirect.assert_called_once_with('unauthorized')
@@ -219,3 +347,12 @@ class RoleDashboardAccessTests(TestCase):
         with patch('authentication.decorators.redirect') as redirect:
             views.organizer_dashboard(request)
             redirect.assert_called_once_with('unauthorized')
+=======
+        with self.assertRaises(PermissionDenied):
+            views.attendee_dashboard(request)
+
+        request = self.factory.get('/dashboard/organizer/')
+        request.user = self.attendee
+        with self.assertRaises(PermissionDenied):
+            views.organizer_dashboard(request)
+>>>>>>> origin/main
