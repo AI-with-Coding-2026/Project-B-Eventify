@@ -1,16 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eventify</title>
-</head>
-<body>
-    <h1>Welcome to Eventify</h1>
+{% extends 'base.html' %}
+{% block title %}Eventify{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow mt-8 text-center">
+    <h1 class="text-2xl font-bold mb-4">Welcome to Eventify</h1>
     {% if user.is_authenticated %}
-        <p>Signed in as {{ user.username }} ({{ user.get_role_display }}).</p>
+        <p class="text-gray-600">Signed in as {{ user.username }} ({{ user.get_role_display }}).</p>
+        <a href="/events/" class="inline-block mt-4 bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">
+            Browse Events
+        </a>
     {% else %}
-        <p><a href="{% url 'register' %}">Create an account</a></p>
+        <p class="text-gray-600 mb-4">Discover and join upcoming events.</p>
+        <a href="{% url 'register' %}" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">
+            Create an account
+        </a>
     {% endif %}
-</body>
-</html>
+</div>
+{% endblock %}
