@@ -1,16 +1,86 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eventify</title>
-</head>
-<body>
-    <h1>Welcome to Eventify</h1>
+{% extends 'base.html' %}
+
+{% block title %}
+Eventify — Home
+{% endblock %}
+
+{% block content %}
+
+<div class="text-center py-5">
+
+    <h1 class="display-4 fw-bold">
+        Welcome to Eventify
+    </h1>
+
+    <p class="lead mt-3">
+        Discover, create, and manage amazing events.
+    </p>
+
+
     {% if user.is_authenticated %}
-        <p>Signed in as {{ user.username }} ({{ user.get_role_display }}).</p>
+
+        <div class="mt-4">
+
+            <p class="fs-5">
+                Signed in as
+                <strong>{{ user.username }}</strong>
+                ({{ user.get_role_display }}).
+            </p>
+
+
+            {% if user.is_admin %}
+
+                <a
+                    href="{% url 'admin_dashboard' %}"
+                    class="btn btn-primary btn-lg"
+                >
+                    Go to Dashboard
+                </a>
+
+            {% elif user.is_organizer %}
+
+                <a
+                    href="{% url 'organizer_dashboard' %}"
+                    class="btn btn-primary btn-lg"
+                >
+                    Go to Dashboard
+                </a>
+
+            {% elif user.is_attendee %}
+
+                <a
+                    href="{% url 'attendee_dashboard' %}"
+                    class="btn btn-primary btn-lg"
+                >
+                    Go to Dashboard
+                </a>
+
+            {% endif %}
+
+        </div>
+
     {% else %}
-        <p><a href="{% url 'register' %}">Create an account</a></p>
+
+        <div class="mt-4">
+
+            <a
+                href="{% url 'login' %}"
+                class="btn btn-primary btn-lg me-2"
+            >
+                Login
+            </a>
+
+            <a
+                href="{% url 'register' %}"
+                class="btn btn-outline-primary btn-lg"
+            >
+                Create an Account
+            </a>
+
+        </div>
+
     {% endif %}
-</body>
-</html>
+
+</div>
+
+{% endblock %}

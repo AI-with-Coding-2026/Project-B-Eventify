@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delete Event</title>
+</head>
+<body>
+
+    <h1>Delete Event</h1>
+
+    <p>
+        Are you sure you want to delete:
+        <strong>{{ event.title }}</strong>?
+    </p>
+
+    {% if event.poster %}
+        <img
+            src="{{ event.poster.url }}"
+            alt="{{ event.title }}"
+            width="250"
+        >
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <button type="submit">
+            Yes, Delete Event
+        </button>
+    </form>
+
+    <p>
+        <a href="{% url 'organizer_event_list' %}">
+            Cancel
+        </a>
+    </p>
+
+</body>
+</html>

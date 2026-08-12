@@ -1,12 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Organizer Dashboard</title>
-</head>
-<body>
-    <h1>Organizer Dashboard</h1>
-    <p>Welcome, {{ user.username }}. You are logged in as an Organizer.</p>
-    <p><a href="{% url 'logout' %}">Log out</a></p>
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block title %}
+Organizer Dashboard — Eventify
+{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+
+    <h1>
+        Organizer Dashboard
+    </h1>
+
+    <p class="text-muted">
+        Welcome, {{ user.username }}.
+        You are logged in as an Organizer.
+    </p>
+
+</div>
+
+
+<div class="row g-4">
+
+    <div class="col-md-6">
+
+        <div class="card h-100 shadow-sm">
+
+            <div class="card-body">
+
+                <h3 class="card-title">
+                    My Events
+                </h3>
+
+                <p class="card-text">
+                    View and manage the events you have created.
+                </p>
+
+                <a
+                    href="{% url 'organizer_event_list' %}"
+                    class="btn btn-primary"
+                >
+                    Manage My Events
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-6">
+
+        <div class="card h-100 shadow-sm">
+
+            <div class="card-body">
+
+                <h3 class="card-title">
+                    Create Event
+                </h3>
+
+                <p class="card-text">
+                    Create a new event and publish its details.
+                </p>
+
+                <a
+                    href="{% url 'create_event' %}"
+                    class="btn btn-success"
+                >
+                    Create New Event
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

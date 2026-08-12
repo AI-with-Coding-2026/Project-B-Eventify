@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://djangoproject.com
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-!derh9#qen0ojn!dqa#@lg=$%)r_zt**o0!kw1qo92)a)oi8yv'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -28,6 +28,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'authentication',  # Added custom authentication application here
+    'EventMan',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -116,3 +117,6 @@ AUTH_USER_MODEL = 'authentication.User'
 
 # Admin-only views redirect unauthenticated users to the custom admin login.
 LOGIN_URL = 'eventify_admin:login'
+# Media files (uploaded event posters)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

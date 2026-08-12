@@ -1,12 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Attendee Dashboard</title>
-</head>
-<body>
-    <h1>Attendee Dashboard</h1>
-    <p>Welcome, {{ user.username }}. You are logged in as an Attendee.</p>
-    <p><a href="{% url 'logout' %}">Log out</a></p>
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block title %}
+Attendee Dashboard — Eventify
+{% endblock %}
+
+{% block content %}
+
+<div class="text-center py-5">
+
+    <h1>
+        Attendee Dashboard
+    </h1>
+
+    <p class="lead">
+        Welcome, {{ user.username }}.
+    </p>
+
+    <p class="text-muted">
+        You are logged in as an Attendee.
+    </p>
+
+</div>
+
+{% endblock %}

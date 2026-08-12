@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ page_title }}</title>
+</head>
+<body>
+
+    <h1>{{ page_title }}</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">
+            Save Event
+        </button>
+
+    </form>
+
+    <p>
+        <a href="{% url 'organizer_event_list' %}">
+            Back to My Events
+        </a>
+    </p>
+
+</body>
+</html>
