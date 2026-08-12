@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 from . import views
 
 urlpatterns = [
@@ -8,4 +8,5 @@ urlpatterns = [
         views.category_create,
         name='category_create',
     ),
+    path('accounts/', include('authentication.urls')),
 ]
