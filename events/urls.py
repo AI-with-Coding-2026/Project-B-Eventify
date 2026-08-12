@@ -8,4 +8,11 @@ urlpatterns = [
         views.category_create,
         name='category_create',
     ),
+    # Edit/update an existing category
+    # URL example: /events/categories/1/edit/
+    path(
+        'categories/<int:pk>/edit/',
+        views.category_update,
+        name='category_update',
+    ),
 ]

@@ -28,7 +28,13 @@ class CategoryForm(forms.ModelForm):
                 'Category name cannot be empty.'
             )
 
-        if Category.objects.filter(name__iexact=name).exists():
+        # Exclude the current category on edit.
+        # Without this, saving the same name would fail uniqueness against itself.
+        duplicates = Category.objects.filter(name__iexact=name)
+        if self.instance.pk:
+            duplicates = duplicates.exclude(pk=self.instance.pk)
+
+        if duplicates.exists():
             raise forms.ValidationError(
                 'A category with this name already exists.'
             )
