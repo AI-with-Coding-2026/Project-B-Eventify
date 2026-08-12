@@ -1,19 +1,12 @@
 {% extends 'base.html' %}
-
-{% block title %}Registration Successful — Eventify{% endblock title %}
-
+{% block title %}Account Created — Eventify{% endblock %}
 {% block content %}
-
-<div class="row justify-content-center">
-    <div class="col-md-6 text-center">
-        <h1 class="mb-3">Account created</h1>
-
-        <p>Your account has been created with the selected role.</p>
-
-        <a href="{% url 'register' %}" class="btn btn-outline-primary">
-            Register another user
-        </a>
-    </div>
-
+<div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow mt-8 text-center">
+    <div class="text-green-500 text-4xl mb-4">✓</div>
+    <h1 class="text-2xl font-bold mb-2">Account created</h1>
+    <p class="text-gray-600 mb-6">Your account has been created with the selected role.</p>
+    <a href="{% url 'register' %}" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">
+        Register another user
+    </a>
 </div>
-{% endblock content %}
+{% endblock %}
