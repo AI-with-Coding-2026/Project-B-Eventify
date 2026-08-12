@@ -1,23 +1,37 @@
-{% extends "authentication/base.html" %}
-
+{% extends 'base.html' %}
 {% block title %}Admin Dashboard — Eventify{% endblock %}
-
 {% block content %}
-<h1>Admin Dashboard</h1>
-<p>Welcome, {{ user.username }}. You have full administrative access.</p>
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow mt-8">
+    <h1 class="text-2xl font-bold mb-2">Admin Dashboard</h1>
+    <p class="text-gray-600 mb-6">Welcome, {{ user.username }}. You have full administrative access.</p>
 
-<section>
-    <h2>Platform Overview</h2>
-    <ul>
-        <li><strong>Total users:</strong> {{ total_users }}</li>
-        <li><strong>Admins:</strong> {{ admin_count }}</li>
-        <li><strong>Organizers:</strong> {{ organizer_count }}</li>
-        <li><strong>Attendees:</strong> {{ attendee_count }}</li>
-    </ul>
-</section>
+    <section class="mb-6">
+        <h2 class="text-lg font-semibold mb-3">Platform Overview</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="bg-indigo-50 rounded-lg p-4 text-center">
+                <p class="text-2xl font-bold text-indigo-600">{{ total_users }}</p>
+                <p class="text-sm text-gray-500">Total Users</p>
+            </div>
+            <div class="bg-indigo-50 rounded-lg p-4 text-center">
+                <p class="text-2xl font-bold text-indigo-600">{{ admin_count }}</p>
+                <p class="text-sm text-gray-500">Admins</p>
+            </div>
+            <div class="bg-indigo-50 rounded-lg p-4 text-center">
+                <p class="text-2xl font-bold text-indigo-600">{{ organizer_count }}</p>
+                <p class="text-sm text-gray-500">Organizers</p>
+            </div>
+            <div class="bg-indigo-50 rounded-lg p-4 text-center">
+                <p class="text-2xl font-bold text-indigo-600">{{ attendee_count }}</p>
+                <p class="text-sm text-gray-500">Attendees</p>
+            </div>
+        </div>
+    </section>
 
-<section>
-    <h2>Administrative Actions</h2>
-    <p><a href="{% url 'eventify_admin:index' %}">Open Django Admin Panel</a></p>
-</section>
+    <section>
+        <h2 class="text-lg font-semibold mb-3">Administrative Actions</h2>
+        <a href="{% url 'eventify_admin:index' %}" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">
+            Open Django Admin Panel
+        </a>
+    </section>
+</div>
 {% endblock %}
