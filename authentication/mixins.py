@@ -17,6 +17,7 @@ class RoleRequiredMixin(LoginRequiredMixin):
             allowed_roles = (UserRole.ORGANIZER,)
             template_name = 'authentication/organizer_dashboard.html'
     """
+
     allowed_roles = ()
     login_url = 'login'
 
@@ -29,4 +30,6 @@ class RoleRequiredMixin(LoginRequiredMixin):
         if user_role != UserRole.ADMIN and user_role not in allowed:
             return redirect('unauthorized')
 
-        return super(LoginRequiredMixin, self).dispatch(request, *args, **kwargs)
+        return super(LoginRequiredMixin, self).dispatch(
+            request, *args, **kwargs
+        )
