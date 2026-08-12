@@ -1,11 +1,61 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container my-4">
-    <h1>Upcoming Events</h1>
-    {% for event in events %}
-        <p>{{ event.title }} — {{ event.date }} — ${{ event.price }} — {{ event.category }}</p>
-    {% empty %}
-        <p>No events found.</p>
-    {% endfor %}
+<div class="container">
+    <h1>Events</h1>
+    <!-- Filter form -->
+    <form method="get" class="filter-form mb-4">
+        <div class="row">
+            <div class="col">
+                <input 
+                    type="text" 
+                    name="search" 
+                    value="{{ search_query }}" 
+                    placeholder="Search an event" 
+                    class="form-control"
+                >
+            </div>
+            <div class="col">
+                <select name="category" class="form-control">
+                    <option value="">All categories</option>
+                    {% for value, label in categories %}
+                        <option value="{{ value }}" {% if value == selected_category %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col">
+                <input 
+                    type="number" 
+                    name="max_price" 
+                    value="{{ max_price }}" 
+                    placeholder="Max price" 
+                    class="form-control"
+                    step="0.01"
+                >
+            </div>
+            <div class="col">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="{% url 'event_list' %}" class="btn btn-secondary">Reset</a>
+            </div>
+        </div>
+    </form>
+    <!-- Event list -->
+    <div class="events-grid">
+        {% for event in events %}
+            <div class="event-card">
+                {% if event.image %}
+                    <img src="{{ event.image.url }}" alt="{{ event.title }}">
+                {% endif %}
+                <h3>{{ event.title }}</h3>
+                <p>{{ event.description|truncatewords:20 }}</p>
+                <p><strong>Date:</strong> {{ event.date }}</p>
+                <p><strong>Price:</strong> {{ event.price }} €</p>
+                <p><strong>Category:</strong> {{ event.get_category_display }}</p>
+            </div>
+        {% empty %}
+            <p>No events found.</p>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

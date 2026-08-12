@@ -9,7 +9,30 @@ from .models import Event
 
 def event_list(request):
     events = Event.objects.all().order_by('date')
-    return render(request, 'events/event_list.html', {'events': events})
+
+    # Filtre par catégorie
+    category = request.GET.get('category')
+    if category:
+        events = events.filter(category=category)
+
+    # Filtre par recherche (titre)
+    search = request.GET.get('search')
+    if search:
+        events = events.filter(title__icontains=search)
+
+    # Filtre par prix max
+    max_price = request.GET.get('max_price')
+    if max_price:
+        events = events.filter(price__lte=max_price)
+
+    context = {
+        'events': events,
+        'categories': Event.CATEGORY_CHOICES,
+        'selected_category': category,
+        'search_query': search or '',
+        'max_price': max_price or '',
+    }
+    return render(request, 'events/event_list.html', context)
 
 
 @admin_required
