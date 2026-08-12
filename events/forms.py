@@ -2,6 +2,11 @@ from django import forms
 
 from .models import Category
 
+INPUT_CLASSES = (
+    "w-full border border-gray-300 rounded-md px-3 py-2 text-sm "
+    "focus:outline-none focus:ring-2 focus:ring-indigo-500"
+)
+
 
 class CategoryForm(forms.ModelForm):
     class Meta:
@@ -10,11 +15,11 @@ class CategoryForm(forms.ModelForm):
 
         widgets = {
             'name': forms.TextInput(attrs={
-                'class': 'form-control',
+                'class': INPUT_CLASSES,
                 'placeholder': 'Enter category name',
             }),
             'description': forms.Textarea(attrs={
-                'class': 'form-control',
+                'class': INPUT_CLASSES,
                 'rows': 3,
                 'placeholder': 'Optional description',
             }),
