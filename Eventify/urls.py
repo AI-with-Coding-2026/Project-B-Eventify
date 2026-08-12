@@ -21,4 +21,5 @@ from authentication.admin_site import eventify_admin_site
 urlpatterns = [
     path('', include('authentication.urls')),
     path('admin/', eventify_admin_site.urls),
+    path('events/', include('events.urls')),
 ]

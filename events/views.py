@@ -4,6 +4,12 @@ from django.shortcuts import redirect, render
 from authentication.decorators import admin_required
 
 from .forms import CategoryForm
+from .models import Event
+
+
+def event_list(request):
+    events = Event.objects.all().order_by('date')
+    return render(request, 'events/event_list.html', {'events': events})
 
 
 @admin_required

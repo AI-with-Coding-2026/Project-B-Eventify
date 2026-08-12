@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Create Category | Eventify
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <h1>Create Category</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Save Category</button>
+    </form>
+
+    <p><a href="{% url 'event_list' %}">Back to events</a></p>
+</div>
+{% endblock %}

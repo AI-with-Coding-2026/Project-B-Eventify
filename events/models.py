@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
 
+
 class Category(models.Model):
     # Category name must be unique to avoid duplicates (e.g., Music, Sports)
     name = models.CharField(
@@ -44,3 +45,23 @@ class Category(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+
+
+class Event(models.Model):
+    CATEGORY_CHOICES = [
+        ('music', 'Music'),
+        ('sports', 'Sports'),
+        ('tech', 'Tech'),
+        ('arts', 'Arts'),
+        ('other', 'Other'),
+    ]
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    image = models.ImageField(upload_to='event_images/', blank=True, null=True)
+    date = models.DateTimeField()
+    price = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
+
+    def __str__(self):
+        return self.title
