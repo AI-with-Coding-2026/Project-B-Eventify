@@ -1,6 +1,41 @@
 from django import forms
 
-from .models import Category
+from .models import Category, Event
+
+
+class EventForm(forms.ModelForm):
+    """Organizer event create/edit form. Ownership is set in the view."""
+
+    class Meta:
+        model = Event
+        fields = ['title', 'description', 'image', 'date', 'price', 'category']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Event title',
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Describe your event',
+            }),
+            'image': forms.ClearableFileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*',
+            }),
+            'date': forms.DateTimeInput(attrs={
+                'class': 'form-control',
+                'type': 'datetime-local',
+            }),
+            'price': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+            }),
+            'category': forms.Select(attrs={
+                'class': 'form-control',
+            }),
+        }
 
 
 class CategoryForm(forms.ModelForm):

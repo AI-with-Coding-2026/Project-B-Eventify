@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}My Events | Eventify{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <h1>My Events</h1>
+    <p>Welcome, {{ user.username }}. Manage only the events you created.</p>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    <p>
+        <a href="{% url 'event_create' %}">Create Event</a> |
+        <a href="{% url 'organizer_dashboard' %}">Dashboard</a> |
+        <a href="{% url 'logout' %}">Log out</a>
+    </p>
+
+    {% for event in events %}
+        <div style="margin-bottom: 1rem;">
+            <h2>{{ event.title }}</h2>
+            <p>{{ event.date }} — ${{ event.price }} — {{ event.get_category_display }}</p>
+            <p>{{ event.description }}</p>
+            <p>
+                <a href="{% url 'event_edit' event.pk %}">Edit</a> |
+                <a href="{% url 'event_delete' event.pk %}">Delete</a>
+            </p>
+        </div>
+    {% empty %}
+        <p>You have not created any events yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

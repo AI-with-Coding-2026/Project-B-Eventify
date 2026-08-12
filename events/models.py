@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 
@@ -56,6 +57,12 @@ class Event(models.Model):
         ('other', 'Other'),
     ]
 
+    # Owner of the event — organizers can only manage their own events
+    organizer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='events',
+    )
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to='event_images/', blank=True, null=True)
