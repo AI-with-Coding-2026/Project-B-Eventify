@@ -1,4 +1,4 @@
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
@@ -142,9 +142,11 @@ class RoleBasedAccessControlTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_attendee_cannot_access_organizer_dashboard(self):
+        """Attendee → organizer dashboard uses the shared unauthorized page."""
         self.client.login(username='attendee_rbac', password='pass123')
-        response = self.client.get(reverse('organizer_dashboard'))
+        response = self.client.get(reverse('organizer_dashboard'), follow=True)
         self.assertEqual(response.status_code, 403)
+        self.assertTemplateUsed(response, 'authentication/unauthorized.html')
 
     def test_attendee_can_access_attendee_dashboard(self):
         self.client.login(username='attendee_rbac', password='pass123')
@@ -152,9 +154,11 @@ class RoleBasedAccessControlTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_organizer_cannot_access_attendee_dashboard(self):
+        """Organizer → attendee dashboard uses the shared unauthorized page."""
         self.client.login(username='organizer_rbac', password='pass123')
-        response = self.client.get(reverse('attendee_dashboard'))
+        response = self.client.get(reverse('attendee_dashboard'), follow=True)
         self.assertEqual(response.status_code, 403)
+        self.assertTemplateUsed(response, 'authentication/unauthorized.html')
 
     def test_admin_can_access_organizer_dashboard(self):
         self.client.login(username='admin_rbac', password='pass123')
@@ -311,10 +315,12 @@ class RoleDashboardAccessTests(TestCase):
     def test_organizer_and_attendee_remain_isolated(self):
         request = self.factory.get('/dashboard/attendee/')
         request.user = self.organizer
-        with self.assertRaises(PermissionDenied):
-            views.attendee_dashboard(request)
+        response = views.attendee_dashboard(request)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('unauthorized'))
 
         request = self.factory.get('/dashboard/organizer/')
         request.user = self.attendee
-        with self.assertRaises(PermissionDenied):
-            views.organizer_dashboard(request)
+        response = views.organizer_dashboard(request)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('unauthorized'))
