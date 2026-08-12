@@ -1,6 +1,7 @@
 from functools import wraps
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
 
@@ -45,8 +46,10 @@ def role_required(*allowed_roles, login_url='login'):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
             user_role = request.user.role
+
             if user_role == UserRole.ADMIN or user_role in roles:
                 return view_func(request, *args, **kwargs)
+
             raise PermissionDenied
 
         return _wrapped_view
@@ -56,10 +59,10 @@ def role_required(*allowed_roles, login_url='login'):
 
 def admin_required(view_func):
     """Restrict a view to Admin users."""
+
     @wraps(view_func)
     def wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            from django.contrib.auth.views import redirect_to_login
             return redirect_to_login(
                 request.get_full_path(),
                 login_url="eventify_admin:login",

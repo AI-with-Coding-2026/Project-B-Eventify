@@ -15,6 +15,7 @@ class RoleRequiredMixin(LoginRequiredMixin):
             allowed_roles = (UserRole.ORGANIZER,)
             template_name = 'authentication/organizer_dashboard.html'
     """
+
     allowed_roles = ()
     login_url = 'login'
 
@@ -23,6 +24,7 @@ class RoleRequiredMixin(LoginRequiredMixin):
             return self.handle_no_permission()
 
         user_role = request.user.role
+
         if user_role != UserRole.ADMIN and user_role not in self.allowed_roles:
             raise PermissionDenied
 
