@@ -3,7 +3,12 @@
 <div class="container my-4">
     <h1>Upcoming Events</h1>
     {% for event in events %}
-        <p>{{ event.title }} — {{ event.date }} — ${{ event.price }} — {{ event.category }}</p>
+        <p>
+            {{ event.title }} — {{ event.date }} — ${{ event.price }} — {{ event.category }}
+            {% if user.is_authenticated and user.is_attendee %}
+                <a href="{% url 'event_book' event.id %}">Book</a>
+            {% endif %}
+        </p>
     {% empty %}
         <p>No events found.</p>
     {% endfor %}

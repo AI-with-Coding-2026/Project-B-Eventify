@@ -8,4 +8,14 @@ urlpatterns = [
         views.category_create,
         name='category_create',
     ),
+    path(
+        '<int:event_id>/book/',
+        views.book_event,
+        name='event_book',
+    ),
+    path(
+        'my-bookings/',
+        views.my_bookings,
+        name='my_bookings',
+    ),
 ]

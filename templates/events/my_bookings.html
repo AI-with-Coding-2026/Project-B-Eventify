@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container my-4">
+    <h1>My Bookings</h1>
+    {% if bookings %}
+        <ul>
+            {% for b in bookings %}
+                <li>{{ b.event.title }} — {{ b.quantity }} ticket(s) — {{ b.booked_at }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>You have no bookings.</p>
+    {% endif %}
+</div>
+{% endblock %}

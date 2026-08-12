@@ -65,3 +65,17 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Booking(models.Model):
+    """Represents a booking made by an attendee for an Event."""
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='bookings')
+    user_id = models.IntegerField()  # store user id to avoid circular import in simple setup
+    quantity = models.PositiveIntegerField(default=1)
+    booked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-booked_at']
+
+    def __str__(self):
+        return f"Booking by user {self.user_id} for {self.event.title} (x{self.quantity})"

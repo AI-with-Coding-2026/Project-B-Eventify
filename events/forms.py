@@ -34,3 +34,7 @@ class CategoryForm(forms.ModelForm):
             )
 
         return name
+
+
+class BookingForm(forms.Form):
+    quantity = forms.IntegerField(min_value=1, initial=1, label='Number of tickets')
