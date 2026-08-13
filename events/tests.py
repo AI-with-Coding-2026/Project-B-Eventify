@@ -28,7 +28,9 @@ class EventListViewTest(TestCase):
         self.assertTemplateUsed(response, 'events/event_list.html')
         self.assertContains(response, "Tech Conference")
         self.assertContains(response, "Music Festival")
-        self.assertContains(response, '<span class="event-badge">Tech</span>')
+        self.assertContains(response, "All about technology")
+        self.assertContains(response, "Grid")
+        self.assertContains(response, "List")
 
     def test_event_list_filtering(self):
         start_date = (timezone.now() + timedelta(days=1)).strftime('%Y-%m-%d')
@@ -44,4 +46,4 @@ class EventListViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Tech Conference")
         self.assertNotContains(response, "Music Festival")
-
+

@@ -1,84 +1,130 @@
 {% extends "base.html" %}
-{% load static %}
 
-{% block title %}
-    My Events | Eventify
-{% endblock title %}
+{% block title %}My Events — Eventify{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-[#f3faff] px-4 py-10 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-6xl">
-        <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex items-center gap-4">
-                <img src="{% static 'images/eventify_no_background.png' %}" alt="Eventify Logo" class="h-12 w-auto object-contain">
-                <div>
-                    <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#2c7be5]">Dashboard</p>
-                    <h1 class="mt-1 text-3xl font-bold text-[#1f2937]">My Events</h1>
-                </div>
-            </div>
-
-            <a
-                href="{% url 'create_event' %}"
-                class="inline-flex items-center justify-center rounded-xl bg-[#2c7be5] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1d6fd6] focus:outline-none focus:ring-4 focus:ring-[#dbeeff]"
-            >
-                Create Event
+<div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-10 mb-8">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <a href="{% url 'organizer_dashboard' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:underline mb-3">
+                ← Back to Dashboard
             </a>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Organizer</p>
+            <h1 class="text-3xl font-bold text-gray-900 display">My Events</h1>
         </div>
-
-        {% if events %}
-            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {% for event in events %}
-                    <div class="overflow-hidden rounded-2xl border border-[#dbeeff] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(44,123,229,0.2)] hover:border-[#2c7be5]">
-                        {% if event.image %}
-                            <img
-                                src="{{ event.image.url }}"
-                                alt="{{ event.title }}"
-                                class="h-56 w-full object-cover"
-                            >
-                        {% else %}
-                            <div class="flex h-56 items-center justify-center bg-gradient-to-br from-[#edf8ff] to-[#f6fbff] text-sm font-medium text-[#1d6fd6]">
-                                No image
-                            </div>
-                        {% endif %}
-
-                        <div class="space-y-4 p-5">
-                            <div>
-                                <h5 class="text-xl font-semibold text-[#1f2937]">
-                                    {{ event.title }}
-                                </h5>
-                            </div>
-
-                            <div class="space-y-2 text-sm text-[#355d93]">
-                                <p><span class="font-medium text-[#1f2937]">Location:</span> {{ event.location }}</p>
-                                <p><span class="font-medium text-[#1f2937]">Date:</span> {{ event.date }}</p>
-                                <p><span class="font-medium text-[#1f2937]">Price:</span> ${{ event.price }}</p>
-                                <p><span class="font-medium text-[#1f2937]">Max Tickets:</span> {{ event.max_tickets }}</p>
-                            </div>
-
-                            <div class="flex gap-3 pt-2">
-                                <a
-                                    href="{% url 'edit_event' event.pk %}"
-                                    class="inline-flex flex-1 items-center justify-center rounded-xl bg-[#edf8ff] px-4 py-2 text-sm font-semibold text-[#1d6fd6] transition hover:bg-[#dfeeff]"
-                                >
-                                    Edit
-                                </a>
-
-                                <a
-                                    href="{% url 'delete_event' event.pk %}"
-                                    class="inline-flex flex-1 items-center justify-center rounded-xl bg-[#2c7be5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d6fd6]"
-                                >
-                                    Delete
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="rounded-2xl border border-[#dbeeff] bg-[#edf8ff] px-4 py-5 text-sm text-[#1d6fd6] shadow-sm">
-                You haven't created any events yet.
-            </div>
-        {% endif %}
+        <a href="{% url 'create_event' %}" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition shrink-0">
+            + Create Event
+        </a>
     </div>
 </div>
-{% endblock content %}
+
+{% if events %}
+    <div class="flex items-center justify-between mb-6">
+        <p class="text-sm text-gray-500">{{ events|length }} event{{ events|length|pluralize }}</p>
+        <div class="inline-flex rounded-lg border border-indigo-200 overflow-hidden">
+            <button type="button" id="view-grid-btn" class="view-toggle px-4 py-2 text-sm font-medium bg-indigo-600 text-white transition" aria-pressed="true">Grid</button>
+            <button type="button" id="view-list-btn" class="view-toggle px-4 py-2 text-sm font-medium bg-white text-indigo-700 hover:bg-indigo-50 transition" aria-pressed="false">List</button>
+        </div>
+    </div>
+
+    <div id="events-grid-view" class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {% for event in events %}
+        <div class="rounded-2xl border border-indigo-100 bg-white shadow-sm overflow-hidden hover:shadow-md transition group">
+            <a href="{% url 'event_detail' event.pk %}" class="block no-underline text-inherit">
+                {% if event.image %}
+                <img src="{{ event.image.url }}" alt="{{ event.title }}" class="h-48 w-full object-cover">
+                {% else %}
+                <div class="flex h-48 items-center justify-center bg-indigo-50 text-sm text-indigo-400">No image</div>
+                {% endif %}
+                <div class="p-5">
+                    <h3 class="text-xl font-semibold text-gray-900 display group-hover:text-indigo-700 transition mb-2">{{ event.title }}</h3>
+                    {% if event.description %}
+                    <p class="text-sm text-gray-600 mb-3">{{ event.description|truncatewords:20 }}</p>
+                    {% else %}
+                    <p class="text-sm text-gray-400 italic mb-3">No description provided.</p>
+                    {% endif %}
+                    <div class="space-y-1 text-sm text-gray-500">
+                        <p><strong class="text-gray-700">Date:</strong> {{ event.date|date:"M d, Y" }}</p>
+                        <p><strong class="text-gray-700">Price:</strong> ${{ event.price }}</p>
+                    </div>
+                </div>
+            </a>
+            <div class="flex gap-3 px-5 pb-5">
+                <a href="{% url 'edit_event' event.pk %}" class="inline-flex flex-1 items-center justify-center rounded-xl bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition">Edit</a>
+                <a href="{% url 'delete_event' event.pk %}" class="inline-flex flex-1 items-center justify-center rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition">Delete</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="events-list-view" class="hidden space-y-4">
+        {% for event in events %}
+        <div class="rounded-2xl border border-indigo-100 bg-white shadow-sm overflow-hidden hover:shadow-md transition">
+            <div class="flex flex-col sm:flex-row">
+                <a href="{% url 'event_detail' event.pk %}" class="flex flex-col sm:flex-row flex-1 no-underline text-inherit group">
+                    {% if event.image %}
+                    <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full sm:w-48 h-40 object-cover shrink-0">
+                    {% else %}
+                    <div class="w-full sm:w-48 h-40 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm shrink-0">No image</div>
+                    {% endif %}
+                    <div class="p-5 flex-1">
+                        <h3 class="text-xl font-semibold text-gray-900 display group-hover:text-indigo-700 transition mb-2">{{ event.title }}</h3>
+                        {% if event.description %}
+                        <p class="text-sm text-gray-600 mb-3">{{ event.description|truncatewords:35 }}</p>
+                        {% else %}
+                        <p class="text-sm text-gray-400 italic mb-3">No description provided.</p>
+                        {% endif %}
+                        <div class="flex flex-wrap gap-4 text-sm text-gray-500">
+                            <span><strong class="text-gray-700">Location:</strong> {{ event.location|default:"TBA" }}</span>
+                            <span><strong class="text-gray-700">Date:</strong> {{ event.date|date:"M d, Y" }}</span>
+                            <span><strong class="text-gray-700">Price:</strong> ${{ event.price }}</span>
+                            <span><strong class="text-gray-700">Max Tickets:</strong> {{ event.max_tickets }}</span>
+                        </div>
+                    </div>
+                </a>
+                <div class="flex sm:flex-col gap-3 p-5 sm:justify-center border-t sm:border-t-0 sm:border-l border-indigo-100">
+                    <a href="{% url 'edit_event' event.pk %}" class="inline-flex items-center justify-center rounded-xl bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition">Edit</a>
+                    <a href="{% url 'delete_event' event.pk %}" class="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition">Delete</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="rounded-2xl border border-indigo-100 bg-indigo-50 px-6 py-8 text-center text-indigo-700">
+        You haven't created any events yet.
+        <a href="{% url 'create_event' %}" class="block mt-3 font-semibold hover:underline">Create your first event →</a>
+    </div>
+{% endif %}
+
+<script>
+(function () {
+    var gridBtn = document.getElementById('view-grid-btn');
+    var listBtn = document.getElementById('view-list-btn');
+    var gridView = document.getElementById('events-grid-view');
+    var listView = document.getElementById('events-list-view');
+    if (!gridBtn || !listBtn) return;
+
+    var storageKey = 'eventify-my-events-view';
+
+    function setView(mode) {
+        var isGrid = mode === 'grid';
+        gridView.classList.toggle('hidden', !isGrid);
+        listView.classList.toggle('hidden', isGrid);
+        gridBtn.classList.toggle('bg-indigo-600', isGrid);
+        gridBtn.classList.toggle('text-white', isGrid);
+        gridBtn.classList.toggle('bg-white', !isGrid);
+        gridBtn.classList.toggle('text-indigo-700', !isGrid);
+        listBtn.classList.toggle('bg-indigo-600', !isGrid);
+        listBtn.classList.toggle('text-white', !isGrid);
+        listBtn.classList.toggle('bg-white', isGrid);
+        listBtn.classList.toggle('text-indigo-700', isGrid);
+        localStorage.setItem(storageKey, mode);
+    }
+
+    gridBtn.addEventListener('click', function () { setView('grid'); });
+    listBtn.addEventListener('click', function () { setView('list'); });
+    setView(localStorage.getItem(storageKey) || 'grid');
+})();
+</script>
+{% endblock %}

@@ -99,3 +99,36 @@ class Event(models.Model):
         choices=CATEGORY_CHOICES,
         default="other",
     )
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def tickets_remaining(self):
+        booked = self.bookings.count()
+        return max(self.max_tickets - booked, 0)
+
+    @property
+    def is_sold_out(self):
+        return self.tickets_remaining <= 0
+
+
+class EventBooking(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="event_bookings",
+    )
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name="bookings",
+    )
+    booked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "event")
+        ordering = ["-booked_at"]
+
+    def __str__(self):
+        return f"{self.user.username} → {self.event.title}"

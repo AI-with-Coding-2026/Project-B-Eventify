@@ -23,6 +23,18 @@ urlpatterns = [
     ),
 
     path(
+        "<int:pk>/",
+        views.event_detail,
+        name="event_detail",
+    ),
+
+    path(
+        "<int:pk>/book/",
+        views.book_event,
+        name="book_event",
+    ),
+
+    path(
         "<int:pk>/edit/",
         views.edit_event,
         name="edit_event",

@@ -1,97 +1,110 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}Upcoming Events — Eventify{% endblock %}
-{% block content %}
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
-  .display { font-family: 'Fraunces', serif; }
-  .mono { font-family: 'IBM Plex Mono', monospace; }
-  .event-hero { border-bottom: 1px solid #dbeeff; background: linear-gradient(135deg, #edf8ff 0%, #dfeeff 100%); padding: 40px 24px 32px; margin: -2rem -1rem 2rem; }
-  .event-eyebrow { font-size: 12px; letter-spacing: 0.12em; color: #2c7be5; text-transform: uppercase; margin-bottom: 8px; }
-  .event-card-styled { background: #FFFFFF; border: 1px solid #dbeeff; border-radius: 12px; overflow: hidden; transition: box-shadow 0.2s ease, transform 0.2s ease; }
-  .event-card-styled:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(44,123,229,0.12); }
-  .event-badge { display: inline-block; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 9px; border-radius: 5px; background: #eaf5ff; color: #1d6fd6; margin-bottom: 10px; }
-  .event-perforation { position: relative; height: 1px; margin: 0 20px; background: repeating-linear-gradient(90deg, #dbeeff 0 8px, transparent 8px 14px); }
-</style>
 
-<div class="event-hero">
-    <div class="event-eyebrow flex items-center gap-2">
-        <img src="{% static 'images/eventify_no_background.png' %}" alt="Eventify Logo" class="h-5 w-auto object-contain">
-        <span>EVENTIFY</span>
-    </div>
+{% block title %}Upcoming Events — Eventify{% endblock %}
+
+{% block content %}
+<div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-10 mb-8">
+    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Discover</p>
     <h1 class="text-3xl font-bold text-gray-900 display">Upcoming Events</h1>
 </div>
 
-<div class="container max-w-6xl mx-auto px-4">
-    <form method="get" class="filter-form bg-white rounded-lg shadow-sm border border-[#dbeeff] p-5 mb-8">
-        <div class="row grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
-            <div class="col">
-                <label for="search" class="block text-xs text-gray-600 mb-1 mono">Search</label>
+<div class="pb-12">
+    <form method="get" class="bg-white rounded-xl shadow-sm border border-indigo-100 p-5 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+            <div>
+                <label for="search" class="block text-xs text-gray-600 mb-1 font-medium">Search</label>
                 <input type="text" id="search" name="search" value="{{ search_query }}" placeholder="Search an event"
-                    class="form-control w-full border border-[#dbeeff] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9bd0ff]">
+                    class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
             </div>
-            <div class="col">
-                <label for="category" class="block text-xs text-gray-600 mb-1 mono">Category</label>
+            <div>
+                <label for="category" class="block text-xs text-gray-600 mb-1 font-medium">Category</label>
                 <select id="category" name="category"
-                    class="form-control w-full border border-[#dbeeff] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9bd0ff]">
+                    class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
                     <option value="">All categories</option>
                     {% for value, label in categories %}
-                    <option value="{{ value }}" {% if value == selected_category %}selected{% endif %}>
-                        {{ label }}
-                    </option>
+                    <option value="{{ value }}" {% if value == selected_category %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col">
-                <label for="max_price" class="block text-xs text-gray-600 mb-1 mono">Max Price</label>
+            <div>
+                <label for="max_price" class="block text-xs text-gray-600 mb-1 font-medium">Max Price</label>
                 <input type="number" id="max_price" name="max_price" value="{{ max_price }}" placeholder="Max price"
-                    class="form-control w-full border border-[#dbeeff] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9bd0ff]"
-                    step="0.01">
+                    class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" step="0.01">
             </div>
-            <div class="col">
-                <label for="start_date" class="block text-xs text-gray-600 mb-1 mono">Start Date</label>
+            <div>
+                <label for="start_date" class="block text-xs text-gray-600 mb-1 font-medium">Start Date</label>
                 <input type="date" id="start_date" name="start_date" value="{{ start_date }}"
-                    class="form-control w-full border border-[#dbeeff] rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9bd0ff]">
+                    class="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
             </div>
-            <div class="col">
-                <label for="end_date" class="block text-xs text-gray-600 mb-1 mono">End Date</label>
+            <div>
+                <label for="end_date" class="block text-xs text-gray-600 mb-1 font-medium">End Date</label>
                 <input type="date" id="end_date" name="end_date" value="{{ end_date }}"
-                    class="form-control w-full border border-[#dbeeff] rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9bd0ff]">
+                    class="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
             </div>
-            <div class="col flex gap-2">
-                <button type="submit"
-                    class="btn btn-primary flex-1 bg-[#2c7be5] text-white font-medium py-2 rounded-md hover:bg-[#1d6fd6] transition">Filter</button>
-                <a href="{% url 'event_list' %}"
-                    class="btn btn-secondary flex-1 text-center flex items-center justify-center bg-[#edf8ff] text-[#1d6fd6] font-medium py-2 rounded-md hover:bg-[#dfeeff] transition">Reset</a>
+            <div class="flex gap-2">
+                <button type="submit" class="flex-1 bg-indigo-600 text-white font-medium py-2 rounded-lg hover:bg-indigo-700 transition">Filter</button>
+                <a href="{% url 'event_list' %}" class="flex-1 text-center flex items-center justify-center bg-indigo-50 text-indigo-700 font-medium py-2 rounded-lg hover:bg-indigo-100 transition">Reset</a>
             </div>
         </div>
     </form>
 
-    <div class="events-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3 pb-12">
-        {% for event in events %}
-        <div class="event-card-styled flex flex-col">
-            {% if event.image %}
-            <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-44 object-cover">
-            {% else %}
-            <div class="w-full h-44 bg-[#edf8ff] flex items-center justify-center text-[#5b8fd6] text-sm">
-                No image
-            </div>
-            {% endif %}
-
-            <div class="p-5 flex flex-col flex-1">
-                <span class="event-badge">{{ event.get_category_display }}</span>
-                <h3 class="text-lg font-semibold text-gray-900 mb-1 display">{{ event.title }}</h3>
-                <p class="text-sm text-gray-600 mb-3">{{ event.description|truncatewords:20 }}</p>
-            </div>
-            <div class="event-perforation"></div>
-            <div class="px-5 py-3 flex items-center justify-between mono text-sm">
-                <span>{{ event.date }}</span>
-                <span class="font-semibold text-[#1d6fd6]">${{ event.price }}</span>
-            </div>
+    <div class="flex items-center justify-between mb-6">
+        <p class="text-sm text-gray-500">{{ events|length }} event{{ events|length|pluralize }}</p>
+        <div class="inline-flex rounded-lg border border-indigo-200 overflow-hidden">
+            <button type="button" id="view-grid-btn" class="view-toggle px-4 py-2 text-sm font-medium bg-indigo-600 text-white transition" aria-pressed="true">
+                Grid
+            </button>
+            <button type="button" id="view-list-btn" class="view-toggle px-4 py-2 text-sm font-medium bg-white text-indigo-700 hover:bg-indigo-50 transition" aria-pressed="false">
+                List
+            </button>
         </div>
+    </div>
+
+    <div id="events-grid-view" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {% for event in events %}
+            {% include "events/partials/event_card_grid.html" with event=event %}
         {% empty %}
-        <p class="text-gray-400 col-span-full text-center py-12 display">No events found matching your filters.</p>
+            <p class="text-gray-400 col-span-full text-center py-12 display">No events found matching your filters.</p>
+        {% endfor %}
+    </div>
+
+    <div id="events-list-view" class="hidden space-y-4">
+        {% for event in events %}
+            {% include "events/partials/event_card_list.html" with event=event %}
+        {% empty %}
+            <p class="text-gray-400 text-center py-12 display">No events found matching your filters.</p>
         {% endfor %}
     </div>
 </div>
+
+<script>
+(function () {
+    var gridBtn = document.getElementById('view-grid-btn');
+    var listBtn = document.getElementById('view-list-btn');
+    var gridView = document.getElementById('events-grid-view');
+    var listView = document.getElementById('events-list-view');
+    var storageKey = 'eventify-events-view';
+
+    function setView(mode) {
+        var isGrid = mode === 'grid';
+        gridView.classList.toggle('hidden', !isGrid);
+        listView.classList.toggle('hidden', isGrid);
+        gridBtn.classList.toggle('bg-indigo-600', isGrid);
+        gridBtn.classList.toggle('text-white', isGrid);
+        gridBtn.classList.toggle('bg-white', !isGrid);
+        gridBtn.classList.toggle('text-indigo-700', !isGrid);
+        listBtn.classList.toggle('bg-indigo-600', !isGrid);
+        listBtn.classList.toggle('text-white', !isGrid);
+        listBtn.classList.toggle('bg-white', isGrid);
+        listBtn.classList.toggle('text-indigo-700', isGrid);
+        gridBtn.setAttribute('aria-pressed', isGrid ? 'true' : 'false');
+        listBtn.setAttribute('aria-pressed', isGrid ? 'false' : 'true');
+        localStorage.setItem(storageKey, mode);
+    }
+
+    gridBtn.addEventListener('click', function () { setView('grid'); });
+    listBtn.addEventListener('click', function () { setView('list'); });
+    setView(localStorage.getItem(storageKey) || 'grid');
+})();
+</script>
 {% endblock %}
