@@ -111,9 +111,6 @@ USE_TZ = True
 # https://djangoproject.com
 
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
 
 # Activate the custom user model containing the 3 required roles
 AUTH_USER_MODEL = 'authentication.User'
