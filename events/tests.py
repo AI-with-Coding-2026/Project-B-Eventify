@@ -52,7 +52,7 @@ class CategoryUpdateTests(TestCase):
 
         self.assertRedirects(
             response,
-            reverse('category_update', kwargs={'pk': self.category.pk}),
+            reverse('category_list'),
         )
         self.category.refresh_from_db()
         self.assertEqual(self.category.name, 'Live Music')
@@ -72,7 +72,7 @@ class CategoryUpdateTests(TestCase):
 
         self.assertRedirects(
             response,
-            reverse('category_update', kwargs={'pk': self.category.pk}),
+            reverse('category_list'),
         )
         self.category.refresh_from_db()
         self.assertEqual(self.category.name, 'Music')
@@ -110,3 +110,104 @@ class CategoryUpdateTests(TestCase):
             reverse('unauthorized'),
             target_status_code=403,
         )
+
+
+class CategoryListTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            'listadmin',
+            'listadmin@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.organizer = User.objects.create_user(
+            'listorganizer',
+            'listorganizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.category = Category.objects.create(
+            name='Business',
+            description='Corporate and networking events',
+        )
+
+    def test_admin_can_view_category_list(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('category_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Event Categories')
+        self.assertContains(response, self.category.name)
+        self.assertContains(response, 'Edit')
+        self.assertContains(response, 'Delete')
+
+    def test_non_admin_cannot_view_category_list(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(reverse('category_list'))
+
+        self.assertRedirects(
+            response,
+            reverse('unauthorized'),
+            target_status_code=403,
+        )
+
+
+class CategoryDeleteTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            'deleteadmin',
+            'deleteadmin@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.organizer = User.objects.create_user(
+            'deleteorganizer',
+            'deleteorganizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.category = Category.objects.create(
+            name='Sports',
+            description='Athletic events',
+        )
+
+    def test_admin_can_load_delete_confirmation(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(
+            reverse('category_delete', kwargs={'pk': self.category.pk})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Delete Category')
+        self.assertContains(response, self.category.name)
+
+    def test_admin_can_delete_category(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.post(
+            reverse('category_delete', kwargs={'pk': self.category.pk})
+        )
+
+        self.assertRedirects(response, reverse('category_list'))
+        self.assertFalse(Category.objects.filter(pk=self.category.pk).exists())
+
+    def test_non_admin_cannot_delete_category(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.post(
+            reverse('category_delete', kwargs={'pk': self.category.pk})
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('unauthorized'),
+            target_status_code=403,
+        )
+        self.assertTrue(Category.objects.filter(pk=self.category.pk).exists())

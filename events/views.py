@@ -13,6 +13,17 @@ def event_list(request):
 
 
 @admin_required
+def category_list(request):
+    """Display all event categories with edit and delete options."""
+    categories = Category.objects.all()
+    return render(
+        request,
+        'events/category_list.html',
+        {'categories': categories},
+    )
+
+
+@admin_required
 def category_create(request):
     if request.method == 'POST':
         form = CategoryForm(request.POST)
@@ -25,7 +36,7 @@ def category_create(request):
                 'Category created successfully.'
             )
 
-            return redirect('category_create')
+            return redirect('category_list')
 
     else:
         form = CategoryForm()
@@ -61,8 +72,7 @@ def category_update(request, pk):
                 'Category updated successfully.'
             )
 
-            # Redirect back to the same edit page after saving
-            return redirect('category_update', pk=category.pk)
+            return redirect('category_list')
 
     else:
         # Prefill the form with the current category values
@@ -77,4 +87,27 @@ def category_update(request, pk):
             'page_title': 'Edit Category',
             'submit_label': 'Update Category',
         },
+    )
+
+
+@admin_required
+def category_delete(request, pk):
+    """Allow admins to delete a category after confirmation."""
+    category = get_object_or_404(Category, pk=pk)
+
+    if request.method == 'POST':
+        category_name = category.name
+        category.delete()
+
+        messages.success(
+            request,
+            f'Category "{category_name}" deleted successfully.',
+        )
+
+        return redirect('category_list')
+
+    return render(
+        request,
+        'events/category_confirm_delete.html',
+        {'category': category},
     )

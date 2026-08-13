@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Event Categories | Eventify
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="flex items-center justify-between mb-4">
+        <h1>Event Categories</h1>
+        <a href="{% url 'category_create' %}">Create Category</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    {% if categories %}
+        <table class="w-full border-collapse bg-white shadow">
+            <thead>
+                <tr class="border-b">
+                    <th class="p-3 text-left">Name</th>
+                    <th class="p-3 text-left">Description</th>
+                    <th class="p-3 text-left">Created</th>
+                    <th class="p-3 text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                    <tr class="border-b">
+                        <td class="p-3">{{ category.name }}</td>
+                        <td class="p-3">{{ category.description|default:"—" }}</td>
+                        <td class="p-3">{{ category.created_at|date:"M j, Y" }}</td>
+                        <td class="p-3">
+                            <a href="{% url 'category_update' category.pk %}">Edit</a>
+                            |
+                            <a href="{% url 'category_delete' category.pk %}">Delete</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No categories found. <a href="{% url 'category_create' %}">Create the first category</a>.</p>
+    {% endif %}
+
+    <p class="mt-4"><a href="{% url 'event_list' %}">Back to events</a></p>
+</div>
+{% endblock %}
