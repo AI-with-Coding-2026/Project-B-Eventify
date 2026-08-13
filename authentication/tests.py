@@ -281,35 +281,23 @@ class AdminAccessTests(TestCase):
             role=UserRole.ATTENDEE,
         )
 
-    def test_admin_dashboard_is_available_to_admin_role(self):
+    def test_admin_dashboard_redirects_to_eventify_admin(self):
         self.client.force_login(self.admin_user)
 
         response = self.client.get(reverse('admin_dashboard'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Admin Dashboard')
+        self.assertRedirects(response, reverse('eventify_admin:index'))
 
-    def test_admin_dashboard_displays_organizers_and_attendees(self):
-        self.client.force_login(self.admin_user)
+    def test_login_redirects_admin_to_eventify_admin(self):
+        response = self.client.post(
+            reverse('login'),
+            {
+                'username': 'adminuser',
+                'password': 'strong-pass-123',
+            },
+        )
 
-        response = self.client.get(reverse('admin_dashboard'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('organizers', response.context)
-        self.assertIn('attendees', response.context)
-
-        organizers = response.context['organizers']
-        attendees = response.context['attendees']
-
-        self.assertIn(self.organizer, organizers)
-        self.assertIn(self.attendee, attendees)
-        self.assertNotIn(self.admin_user, organizers)
-        self.assertNotIn(self.admin_user, attendees)
-
-        self.assertContains(response, 'Organizers')
-        self.assertContains(response, 'Attendees')
-        self.assertContains(response, self.organizer.username)
-        self.assertContains(response, self.attendee.username)
+        self.assertRedirects(response, reverse('eventify_admin:index'))
 
     def test_admin_dashboard_denies_organizer_with_unauthorized(self):
         """Organizer accessing admin dashboard gets redirected to /unauthorized/ (403)."""

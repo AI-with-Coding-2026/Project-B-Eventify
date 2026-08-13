@@ -5,14 +5,14 @@ from django.shortcuts import redirect, render
 
 from .decorators import admin_required, role_required
 from .forms import UserRegistrationForm
-from .models import User, UserRole
+from .models import UserRole
 
 
 @login_not_required
 def register(request):
     if request.user.is_authenticated:
         if request.user.is_admin:
-            return redirect('admin_dashboard')
+            return redirect('eventify_admin:index')
         return redirect('home')
 
     if request.method == 'POST':
@@ -43,18 +43,8 @@ def home(request):
 
 @admin_required
 def admin_dashboard(request):
-    users = User.objects.all()
-    organizers = users.filter(role=UserRole.ORGANIZER)
-    attendees = users.filter(role=UserRole.ATTENDEE)
-    context = {
-        'total_users': users.count(),
-        'admin_count': users.filter(role=UserRole.ADMIN).count(),
-        'organizer_count': organizers.count(),
-        'attendee_count': attendees.count(),
-        'organizers': organizers,
-        'attendees': attendees,
-    }
-    return render(request, 'authentication/admin_dashboard.html', context)
+    # Send admins straight to Eventify Administration (no intermediate page/link).
+    return redirect('eventify_admin:index')
 
 
 @login_not_required
@@ -70,7 +60,7 @@ def login_view(request):
         else:
             login(request, user)
             if user.is_admin:
-                return redirect('admin_dashboard')
+                return redirect('eventify_admin:index')
             if user.is_organizer:
                 return redirect('organizer_dashboard')
             return redirect('attendee_dashboard')
