@@ -1,0 +1,40 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}{{ event.title }} - Eventify{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    {% if event.poster %}
+        <img src="{{ event.poster.url }}" alt="{{ event.title }}" style="width: 100%; height: 300px; object-fit: cover;">
+    {% else %}
+        <div class="event-image-placeholder" style="height: 300px;">No Image</div>
+    {% endif %}
+    
+    <div class="card-body">
+        <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">{{ event.title }}</h1>
+        <p style="color: var(--text-light); margin-bottom: 1.5rem;">Organized by <strong>{{ event.organizer.name }}</strong></p>
+        
+        <div class="event-meta" style="margin-bottom: 1.5rem;">
+            <span>📍 {{ event.location }}</span>
+            <span>📅 {{ event.date|date:"F d, Y at H:i" }}</span>
+            <span>💰 {{ event.get_currency_symbol }}{{ event.ticket_price }}</span>
+            <span>🎫 {{ event.max_tickets }} tickets available</span>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem; line-height: 1.7;">
+            {{ event.description|linebreaks }}
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+            <a href="{% url 'event_list' %}" class="btn btn-secondary">← Back to Events</a>
+            
+            {% if user.is_authenticated and user.role == 'admin' %}
+                <form method="post" action="{% url 'delete_event' event.pk %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this event?')">Delete Event</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
