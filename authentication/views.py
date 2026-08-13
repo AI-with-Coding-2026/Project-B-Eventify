@@ -3,6 +3,10 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.shortcuts import redirect, render
 
+from django.utils import timezone
+
+from events.models import Event
+
 from .decorators import admin_required, role_required
 from .forms import UserRegistrationForm
 from .models import User, UserRole
@@ -45,11 +49,15 @@ def home(request):
 @admin_required
 def admin_dashboard(request):
     users = User.objects.all()
+    upcoming_events = Event.objects.filter(
+        date__gte=timezone.now()
+    ).order_by('date')[:3]
     context = {
         'total_users': users.count(),
         'admin_count': users.filter(role=UserRole.ADMIN).count(),
         'organizer_count': users.filter(role=UserRole.ORGANIZER).count(),
         'attendee_count': users.filter(role=UserRole.ATTENDEE).count(),
+        'upcoming_events': upcoming_events,
     }
     return render(request, 'authentication/admin_dashboard.html', context)
 
@@ -86,9 +94,19 @@ def unauthorized(request):
 
 @role_required(UserRole.ADMIN, UserRole.ORGANIZER)
 def organizer_dashboard(request):
-    return render(request, 'authentication/organizer_dashboard.html')
+    upcoming_events = Event.objects.filter(
+        date__gte=timezone.now()
+    ).order_by('date')[:3]
+    return render(request, 'authentication/organizer_dashboard.html', {
+        'upcoming_events': upcoming_events,
+    })
 
 
 @role_required(UserRole.ADMIN, UserRole.ATTENDEE)
 def attendee_dashboard(request):
-    return render(request, 'authentication/attendee_dashboard.html')
+    upcoming_events = Event.objects.filter(
+        date__gte=timezone.now()
+    ).order_by('date')[:3]
+    return render(request, 'authentication/attendee_dashboard.html', {
+        'upcoming_events': upcoming_events,
+    })

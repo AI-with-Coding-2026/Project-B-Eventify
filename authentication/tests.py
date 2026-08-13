@@ -2,7 +2,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from .forms import UserRegistrationForm
 from .models import User, UserRole
@@ -297,6 +297,7 @@ class RoleDashboardAccessTests(TestCase):
             render.assert_called_once_with(
                 request,
                 'authentication/organizer_dashboard.html',
+                {'upcoming_events': ANY},
             )
 
         request = self.factory.get('/dashboard/attendee/')
@@ -306,6 +307,7 @@ class RoleDashboardAccessTests(TestCase):
             render.assert_called_once_with(
                 request,
                 'authentication/attendee_dashboard.html',
+                {'upcoming_events': ANY},
             )
 
     def test_organizer_and_attendee_remain_isolated(self):
