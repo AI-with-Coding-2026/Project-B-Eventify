@@ -142,6 +142,12 @@ def event_delete(request, pk):
 
 
 @admin_required
+def category_list(request):
+    categories = Category.objects.all()
+    return render(request, 'events/category_list.html', {'categories': categories})
+
+
+@admin_required
 def category_create(request):
     if request.method == 'POST':
         form = CategoryForm(request.POST)
@@ -206,4 +212,24 @@ def category_update(request, pk):
             'page_title': 'Edit Category',
             'submit_label': 'Update Category',
         },
+    )
+
+
+@admin_required
+def category_delete(request, pk):
+    """Allow admins to delete an existing category after confirmation."""
+    category = get_object_or_404(Category, pk=pk)
+
+    if request.method == 'POST':
+        category.delete()
+        messages.success(
+            request,
+            'Category deleted successfully.'
+        )
+        return redirect('category_list')
+
+    return render(
+        request,
+        'events/category_confirm_delete.html',
+        {'category': category}
     )

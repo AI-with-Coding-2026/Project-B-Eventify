@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container my-4">
+    <h1>Event Categories</h1>
+    <a href="{% url 'category_create' %}">Create New Category</a>
+    <ul>
+    {% for category in categories %}
+        <li>
+            {{ category.name }} - {{ category.description|default:"No description" }}
+            (<a href="{% url 'category_update' pk=category.pk %}">Edit</a> | 
+            <a href="{% url 'category_delete' pk=category.pk %}">Delete</a>)
+        </li>
+    {% empty %}
+        <li>No categories found.</li>
+    {% endfor %}
+    </ul>
+    <br>
+    <a href="{% url 'admin_dashboard' %}">Back to Admin Dashboard</a>
+</div>
+{% endblock %}

@@ -252,7 +252,10 @@ class AttendeeTicketBookingTests(TestCase):
         )
 
         self.assertRedirects(response, reverse('my_tickets'))
-        ticket = Ticket.objects.get(event=self.event, attendee=self.attendee)
+        ticket = Ticket.objects.get(
+            event=self.event,
+            attendee=self.attendee,
+        )
         self.assertEqual(ticket.quantity, 2)
 
     def test_attendee_can_view_own_tickets(self):
@@ -280,3 +283,128 @@ class AttendeeTicketBookingTests(TestCase):
             reverse('unauthorized'),
             target_status_code=403,
         )
+
+
+class CategoryDeleteTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            'deleteadmin',
+            'deleteadmin@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.organizer = User.objects.create_user(
+            'deleteorganizer',
+            'deleteorganizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            'deleteattendee',
+            'deleteattendee@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+        self.category = Category.objects.create(
+            name='To Be Deleted',
+            description='This category will be deleted',
+        )
+        self.delete_url = reverse(
+            'category_delete',
+            kwargs={'pk': self.category.pk},
+        )
+
+    def test_admin_can_access_delete_confirmation(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(self.delete_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Delete Category')
+        self.assertContains(response, self.category.name)
+
+    def test_admin_can_delete_category(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.post(self.delete_url)
+
+        self.assertRedirects(response, reverse('category_list'))
+        self.assertFalse(
+            Category.objects.filter(pk=self.category.pk).exists()
+        )
+
+    def test_non_admin_organizer_cannot_delete_category(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.post(self.delete_url)
+
+        self.assertRedirects(
+            response,
+            reverse('unauthorized'),
+            target_status_code=403,
+        )
+        self.assertTrue(
+            Category.objects.filter(pk=self.category.pk).exists()
+        )
+
+    def test_non_admin_attendee_cannot_delete_category(self):
+        self.client.force_login(self.attendee)
+
+        response = self.client.post(self.delete_url)
+
+        self.assertRedirects(
+            response,
+            reverse('unauthorized'),
+            target_status_code=403,
+        )
+        self.assertTrue(
+            Category.objects.filter(pk=self.category.pk).exists()
+        )
+
+    def test_unauthenticated_user_cannot_delete_category(self):
+        response = self.client.post(self.delete_url)
+
+        self.assertRedirects(
+            response,
+            reverse('eventify_admin:login') + '?next=' + self.delete_url,
+        )
+        self.assertTrue(
+            Category.objects.filter(pk=self.category.pk).exists()
+        )
+
+    def test_deleting_nonexistent_category_returns_404(self):
+        self.client.force_login(self.admin)
+
+        invalid_url = reverse(
+            'category_delete',
+            kwargs={'pk': 9999},
+        )
+        response = self.client.post(invalid_url)
+
+        self.assertEqual(response.status_code, 404)
+
+
+class CategoryListTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            'listadmin',
+            'listadmin@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+
+        Category.objects.create(name='Cat 1')
+        Category.objects.create(name='Cat 2')
+
+    def test_admin_can_view_category_list(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('category_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cat 1')
+        self.assertContains(response, 'Cat 2')
