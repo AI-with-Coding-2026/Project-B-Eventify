@@ -15,14 +15,21 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import include, path
+from django.views.generic import RedirectView
 
 from authentication.admin_site import eventify_admin_site
+from authentication.views import admin_dashboard
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
     path('', include('authentication.urls')),
-    path('admin/', eventify_admin_site.urls),
+    path('admin/', admin_dashboard, name='admin_dashboard'),
+    path(
+        'admin/dashboard/',
+        RedirectView.as_view(pattern_name='admin_dashboard', permanent=True),
+    ),
+    path('django-admin/', eventify_admin_site.urls),
     path('events/', include('events.urls')),
 ]
 

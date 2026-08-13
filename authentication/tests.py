@@ -248,7 +248,7 @@ class AdminAccessTests(TestCase):
         self.assertContains(response, self.organizer.username)
 
     def test_custom_admin_site_denies_organizer_with_unauthorized(self):
-        """Organizer accessing /admin/ gets redirected to /unauthorized/ (403), not 404."""
+        """Organizer accessing /django-admin/ gets redirected to /unauthorized/ (403), not 404."""
         self.client.force_login(self.organizer)
 
         response = self.client.get(reverse('eventify_admin:index'), follow=True)
@@ -257,7 +257,7 @@ class AdminAccessTests(TestCase):
         self.assertTemplateUsed(response, 'authentication/unauthorized.html')
 
     def test_custom_admin_site_denies_attendee_with_unauthorized(self):
-        """Attendee accessing /admin/ gets redirected to /unauthorized/ (403), not 404."""
+        """Attendee accessing /django-admin/ gets redirected to /unauthorized/ (403), not 404."""
         self.client.force_login(self.attendee)
 
         response = self.client.get(reverse('eventify_admin:index'), follow=True)
