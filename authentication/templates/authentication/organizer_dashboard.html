@@ -8,6 +8,17 @@
 <body>
     <h1>Organizer Dashboard</h1>
     <p>Welcome, {{ user.username }}. You are logged in as an Organizer.</p>
-    <p><a href="{% url 'logout' %}">Log out</a></p>
+    <p>
+        <a href="{% url 'my_events' %}">
+            My Events
+        </a>
+        
+        <a href="{% url 'create_event' %}">
+            Create Event
+        </a>
+        <a href="{% url 'logout' %}">
+            Log out
+        </a>
+    </p>
 </body>
 </html>
