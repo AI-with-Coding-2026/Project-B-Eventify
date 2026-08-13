@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils.text import slugify
-
+from django.conf import settings
 
 class Category(models.Model):
     # Category name must be unique to avoid duplicates (e.g., Music, Sports)
@@ -47,21 +47,55 @@ class Category(models.Model):
         super().save(*args, **kwargs)
 
 
+from django.db import models
+from django.conf import settings
+
+
 class Event(models.Model):
     CATEGORY_CHOICES = [
-        ('music', 'Music'),
-        ('sports', 'Sports'),
-        ('tech', 'Tech'),
-        ('arts', 'Arts'),
-        ('other', 'Other'),
+        ("music", "Music"),
+        ("sports", "Sports"),
+        ("tech", "Tech"),
+        ("arts", "Arts"),
+        ("other", "Other"),
     ]
+
+    organizer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="events",
+        null=True,
+        blank=True,
+    )
 
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    image = models.ImageField(upload_to='event_images/', blank=True, null=True)
-    date = models.DateTimeField()
-    price = models.DecimalField(max_digits=8, decimal_places=2, default=0)
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
 
-    def __str__(self):
-        return self.title
+    location = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    image = models.ImageField(
+        upload_to="event_images/",
+        blank=True,
+        null=True,
+    )
+
+    date = models.DateTimeField()
+
+    price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0,
+    )
+
+    max_tickets = models.PositiveIntegerField(
+        default=1,
+    )
+
+    category = models.CharField(
+        max_length=20,
+        choices=CATEGORY_CHOICES,
+        default="other",
+    )

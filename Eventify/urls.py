@@ -17,9 +17,17 @@ Including another URLconf
 from django.urls import include, path
 
 from authentication.admin_site import eventify_admin_site
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('', include('authentication.urls')),
     path('admin/', eventify_admin_site.urls),
     path('events/', include('events.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT,
+    )

@@ -28,7 +28,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'authentication',  # Added custom authentication application here
-    'events', # Event listing app for Sprint 2
+    'events.apps.EventsConfig', # Event listing app for Sprint 2
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -120,3 +120,7 @@ LOGIN_URL = 'eventify_admin:login'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Media files configuration
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
