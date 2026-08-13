@@ -27,8 +27,10 @@
 
     <nav class="bg-indigo-600 text-white shadow">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="{% url user_dashboard_url %}" class="flex items-center hover:opacity-90 transition">
-                <img src="{% static 'images/eventify_no_background.png' %}" alt="Eventify" class="h-14 w-auto object-contain">
+            <a href="{% url 'home' %}" class="flex items-center justify-center hover:opacity-90 transition">
+                <div class="h-16 w-40 overflow-hidden flex items-center">
+                    <img src="{% static 'images/eventify_no_background.png' %}" alt="Eventify" class="h-20 w-auto object-contain">
+                </div>
             </a>
             <button class="md:hidden text-2xl focus:outline-none" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
                 ☰
