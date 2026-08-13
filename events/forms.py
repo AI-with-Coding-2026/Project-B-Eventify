@@ -3,9 +3,12 @@ from django import forms
 from .models import Category, Event
 
 INPUT_CLASSES = (
-    "w-full border border-gray-300 rounded-md px-3 py-2 text-sm "
-    "focus:outline-none focus:ring-2 focus:ring-indigo-500"
+    "mt-1 block w-full rounded-xl border border-[#dbeeff] bg-white px-3 py-2.5 "
+    "text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 "
+    "focus:border-[#2c7be5] focus:outline-none focus:ring-4 focus:ring-[#dbeeff]"
 )
+
+TEXTAREA_CLASSES = INPUT_CLASSES + " min-h-[120px]"
 
 
 class CategoryForm(forms.ModelForm):
@@ -47,7 +50,7 @@ class EventForm(forms.ModelForm):
         widget=forms.DateTimeInput(
             attrs={
                 "type": "datetime-local",
-                "class": "form-control",
+                "class": INPUT_CLASSES,
             },
             format="%Y-%m-%dT%H:%M",
         ),
@@ -64,38 +67,44 @@ class EventForm(forms.ModelForm):
             "date",
             "price",
             "max_tickets",
+            "category",
             "image",
         ]
 
         widgets = {
             "title": forms.TextInput(
-                attrs={"class": "form-control"}
+                attrs={"class": INPUT_CLASSES}
             ),
             "description": forms.Textarea(
                 attrs={
-                    "class": "form-control",
+                    "class": TEXTAREA_CLASSES,
                     "rows": 5,
                 }
             ),
             "location": forms.TextInput(
-                attrs={"class": "form-control"}
+                attrs={"class": INPUT_CLASSES}
             ),
             "price": forms.NumberInput(
                 attrs={
-                    "class": "form-control",
+                    "class": INPUT_CLASSES,
                     "step": "0.01",
                     "min": "0",
                 }
             ),
             "max_tickets": forms.NumberInput(
                 attrs={
-                    "class": "form-control",
+                    "class": INPUT_CLASSES,
                     "min": "1",
+                }
+            ),
+            "category": forms.Select(
+                attrs={
+                    "class": INPUT_CLASSES,
                 }
             ),
             "image": forms.ClearableFileInput(
                 attrs={
-                    "class": "form-control",
+                    "class": INPUT_CLASSES,
                     "accept": "image/jpeg,image/png,image/webp",
                 }
             ),

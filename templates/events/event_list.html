@@ -5,12 +5,12 @@
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
   .display { font-family: 'Fraunces', serif; }
   .mono { font-family: 'IBM Plex Mono', monospace; }
-  .event-hero { border-bottom: 1px solid #E4DFD2; background: #FAF8F3; padding: 40px 24px 32px; margin: -2rem -1rem 2rem; }
-  .event-eyebrow { font-size: 12px; letter-spacing: 0.12em; color: #C4562B; text-transform: uppercase; margin-bottom: 8px; }
-  .event-card-styled { background: #FFFFFF; border: 1px solid #E4DFD2; border-radius: 12px; overflow: hidden; transition: box-shadow 0.2s ease, transform 0.2s ease; }
-  .event-card-styled:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(27,36,48,0.10); }
-  .event-badge { display: inline-block; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 9px; border-radius: 5px; background: #F2ECDD; color: #8A4A1E; margin-bottom: 10px; }
-  .event-perforation { position: relative; height: 1px; margin: 0 20px; background: repeating-linear-gradient(90deg, #E4DFD2 0 8px, transparent 8px 14px); }
+  .event-hero { border-bottom: 1px solid #dbeeff; background: linear-gradient(135deg, #edf8ff 0%, #dfeeff 100%); padding: 40px 24px 32px; margin: -2rem -1rem 2rem; }
+  .event-eyebrow { font-size: 12px; letter-spacing: 0.12em; color: #2c7be5; text-transform: uppercase; margin-bottom: 8px; }
+  .event-card-styled { background: #FFFFFF; border: 1px solid #dbeeff; border-radius: 12px; overflow: hidden; transition: box-shadow 0.2s ease, transform 0.2s ease; }
+  .event-card-styled:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(44,123,229,0.12); }
+  .event-badge { display: inline-block; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 9px; border-radius: 5px; background: #eaf5ff; color: #1d6fd6; margin-bottom: 10px; }
+  .event-perforation { position: relative; height: 1px; margin: 0 20px; background: repeating-linear-gradient(90deg, #dbeeff 0 8px, transparent 8px 14px); }
 </style>
 
 <div class="event-hero">
@@ -19,18 +19,17 @@
 </div>
 
 <div class="container max-w-6xl mx-auto px-4">
-    <!-- Filter form (unchanged logic, restyled) -->
-    <form method="get" class="filter-form bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-8">
+    <form method="get" class="filter-form bg-white rounded-lg shadow-sm border border-[#dbeeff] p-5 mb-8">
         <div class="row grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
             <div class="col">
                 <label for="search" class="block text-xs text-gray-600 mb-1 mono">Search</label>
                 <input type="text" id="search" name="search" value="{{ search_query }}" placeholder="Search an event"
-                    class="form-control w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    class="form-control w-full border border-[#dbeeff] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9bd0ff]">
             </div>
             <div class="col">
                 <label for="category" class="block text-xs text-gray-600 mb-1 mono">Category</label>
                 <select id="category" name="category"
-                    class="form-control w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    class="form-control w-full border border-[#dbeeff] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9bd0ff]">
                     <option value="">All categories</option>
                     {% for value, label in categories %}
                     <option value="{{ value }}" {% if value == selected_category %}selected{% endif %}>
@@ -42,36 +41,35 @@
             <div class="col">
                 <label for="max_price" class="block text-xs text-gray-600 mb-1 mono">Max Price</label>
                 <input type="number" id="max_price" name="max_price" value="{{ max_price }}" placeholder="Max price"
-                    class="form-control w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="form-control w-full border border-[#dbeeff] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9bd0ff]"
                     step="0.01">
             </div>
             <div class="col">
                 <label for="start_date" class="block text-xs text-gray-600 mb-1 mono">Start Date</label>
                 <input type="date" id="start_date" name="start_date" value="{{ start_date }}"
-                    class="form-control w-full border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    class="form-control w-full border border-[#dbeeff] rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9bd0ff]">
             </div>
             <div class="col">
                 <label for="end_date" class="block text-xs text-gray-600 mb-1 mono">End Date</label>
                 <input type="date" id="end_date" name="end_date" value="{{ end_date }}"
-                    class="form-control w-full border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    class="form-control w-full border border-[#dbeeff] rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#9bd0ff]">
             </div>
             <div class="col flex gap-2">
                 <button type="submit"
-                    class="btn btn-primary flex-1 bg-indigo-600 text-white font-medium py-2 rounded-md hover:bg-indigo-700 transition">Filter</button>
+                    class="btn btn-primary flex-1 bg-[#2c7be5] text-white font-medium py-2 rounded-md hover:bg-[#1d6fd6] transition">Filter</button>
                 <a href="{% url 'event_list' %}"
-                    class="btn btn-secondary flex-1 text-center flex items-center justify-center bg-gray-100 text-gray-700 font-medium py-2 rounded-md hover:bg-gray-200 transition">Reset</a>
+                    class="btn btn-secondary flex-1 text-center flex items-center justify-center bg-[#edf8ff] text-[#1d6fd6] font-medium py-2 rounded-md hover:bg-[#dfeeff] transition">Reset</a>
             </div>
         </div>
     </form>
 
-    <!-- Event list (unchanged logic, restyled cards) -->
     <div class="events-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3 pb-12">
         {% for event in events %}
         <div class="event-card-styled flex flex-col">
             {% if event.image %}
             <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-44 object-cover">
             {% else %}
-            <div class="w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+            <div class="w-full h-44 bg-[#edf8ff] flex items-center justify-center text-[#5b8fd6] text-sm">
                 No image
             </div>
             {% endif %}
@@ -84,7 +82,7 @@
             <div class="event-perforation"></div>
             <div class="px-5 py-3 flex items-center justify-between mono text-sm">
                 <span>{{ event.date }}</span>
-                <span class="font-semibold">${{ event.price }}</span>
+                <span class="font-semibold text-[#1d6fd6]">${{ event.price }}</span>
             </div>
         </div>
         {% empty %}

@@ -1,108 +1,80 @@
 {% extends "base.html" %}
 
-
 {% block title %}
-My Events | Eventify
+    My Events | Eventify
 {% endblock title %}
 
-
 {% block content %}
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-
-    <h1>My Events</h1>
-
-    <a
-        href="{% url 'create_event' %}"
-        class="btn btn-primary"
-    >
-        Create Event
-    </a>
-
-</div>
-
-
-{% if events %}
-
-    <div class="row">
-
-        {% for event in events %}
-
-            <div class="col-md-4 mb-4">
-
-                <div class="card h-100">
-
-                    {% if event.image %}
-
-                        <img
-                            src="{{ event.image.url }}"
-                            class="card-img-top"
-                            alt="{{ event.title }}"
-                            style="height: 250px; object-fit: cover;"
-                        >
-
-                    {% endif %}
-
-
-                    <div class="card-body">
-
-                        <h5 class="card-title">
-                            {{ event.title }}
-                        </h5>
-
-                        <p>
-                            <strong>Location:</strong>
-                            {{ event.location }}
-                        </p>
-
-                        <p>
-                            <strong>Date:</strong>
-                            {{ event.date }}
-                        </p>
-
-                        <p>
-                            <strong>Price:</strong>
-                            ${{ event.price }}
-                        </p>
-
-                        <p>
-                            <strong>Max Tickets:</strong>
-                            {{ event.max_tickets }}
-                        </p>
-
-
-                        <a
-                            href="{% url 'edit_event' event.pk %}"
-                            class="btn btn-warning"
-                        >
-                            Edit
-                        </a>
-
-                        <a
-                            href="{% url 'delete_event' event.pk %}"
-                            class="btn btn-danger"
-                        >
-                            Delete
-                        </a>
-
-                    </div>
-
-                </div>
-
+<div class="min-h-screen bg-[#f3faff] px-4 py-10 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-6xl">
+        <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#2c7be5]">Dashboard</p>
+                <h1 class="mt-2 text-3xl font-bold text-[#1f2937]">My Events</h1>
             </div>
 
-        {% endfor %}
+            <a
+                href="{% url 'create_event' %}"
+                class="inline-flex items-center justify-center rounded-xl bg-[#2c7be5] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1d6fd6] focus:outline-none focus:ring-4 focus:ring-[#dbeeff]"
+            >
+                Create Event
+            </a>
+        </div>
 
+        {% if events %}
+            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {% for event in events %}
+                    <div class="overflow-hidden rounded-2xl border border-[#dbeeff] bg-white shadow-sm transition hover:shadow-md">
+                        {% if event.image %}
+                            <img
+                                src="{{ event.image.url }}"
+                                alt="{{ event.title }}"
+                                class="h-56 w-full object-cover"
+                            >
+                        {% else %}
+                            <div class="flex h-56 items-center justify-center bg-gradient-to-br from-[#edf8ff] to-[#f6fbff] text-sm font-medium text-[#1d6fd6]">
+                                No image
+                            </div>
+                        {% endif %}
+
+                        <div class="space-y-4 p-5">
+                            <div>
+                                <h5 class="text-xl font-semibold text-[#1f2937]">
+                                    {{ event.title }}
+                                </h5>
+                            </div>
+
+                            <div class="space-y-2 text-sm text-[#355d93]">
+                                <p><span class="font-medium text-[#1f2937]">Location:</span> {{ event.location }}</p>
+                                <p><span class="font-medium text-[#1f2937]">Date:</span> {{ event.date }}</p>
+                                <p><span class="font-medium text-[#1f2937]">Price:</span> ${{ event.price }}</p>
+                                <p><span class="font-medium text-[#1f2937]">Max Tickets:</span> {{ event.max_tickets }}</p>
+                            </div>
+
+                            <div class="flex gap-3 pt-2">
+                                <a
+                                    href="{% url 'edit_event' event.pk %}"
+                                    class="inline-flex flex-1 items-center justify-center rounded-xl bg-[#edf8ff] px-4 py-2 text-sm font-semibold text-[#1d6fd6] transition hover:bg-[#dfeeff]"
+                                >
+                                    Edit
+                                </a>
+
+                                <a
+                                    href="{% url 'delete_event' event.pk %}"
+                                    class="inline-flex flex-1 items-center justify-center rounded-xl bg-[#2c7be5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d6fd6]"
+                                >
+                                    Delete
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="rounded-2xl border border-[#dbeeff] bg-[#edf8ff] px-4 py-5 text-sm text-[#1d6fd6] shadow-sm">
+                You haven't created any events yet.
+            </div>
+        {% endif %}
     </div>
-
-{% else %}
-
-    <div class="alert alert-info">
-
-        You haven't created any events yet.
-
-    </div>
-
-{% endif %}
-
+</div>
 {% endblock content %}
