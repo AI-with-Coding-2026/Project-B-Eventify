@@ -104,6 +104,10 @@ class Event(models.Model):
         return self.title
 
     @property
+    def serial_number(self):
+        return f"#{self.pk}"
+
+    @property
     def tickets_remaining(self):
         booked = self.bookings.count()
         return max(self.max_tickets - booked, 0)
