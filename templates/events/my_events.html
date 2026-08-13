@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}
     My Events | Eventify
@@ -8,9 +9,12 @@
 <div class="min-h-screen bg-[#f3faff] px-4 py-10 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-6xl">
         <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#2c7be5]">Dashboard</p>
-                <h1 class="mt-2 text-3xl font-bold text-[#1f2937]">My Events</h1>
+            <div class="flex items-center gap-4">
+                <img src="{% static 'images/eventify_no_background.png' %}" alt="Eventify Logo" class="h-12 w-auto object-contain">
+                <div>
+                    <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#2c7be5]">Dashboard</p>
+                    <h1 class="mt-1 text-3xl font-bold text-[#1f2937]">My Events</h1>
+                </div>
             </div>
 
             <a
@@ -24,7 +28,7 @@
         {% if events %}
             <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 {% for event in events %}
-                    <div class="overflow-hidden rounded-2xl border border-[#dbeeff] bg-white shadow-sm transition hover:shadow-md">
+                    <div class="overflow-hidden rounded-2xl border border-[#dbeeff] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(44,123,229,0.2)] hover:border-[#2c7be5]">
                         {% if event.image %}
                             <img
                                 src="{{ event.image.url }}"

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Upcoming Events — Eventify{% endblock %}
 {% block content %}
 <style>
@@ -14,7 +15,10 @@
 </style>
 
 <div class="event-hero">
-    <div class="event-eyebrow">EVENTIFY</div>
+    <div class="event-eyebrow flex items-center gap-2">
+        <img src="{% static 'images/eventify_no_background.png' %}" alt="Eventify Logo" class="h-5 w-auto object-contain">
+        <span>EVENTIFY</span>
+    </div>
     <h1 class="text-3xl font-bold text-gray-900 display">Upcoming Events</h1>
 </div>
 
