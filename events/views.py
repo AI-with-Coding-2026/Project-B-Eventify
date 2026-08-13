@@ -12,6 +12,8 @@ def event_list(request):
 
     search_query = request.GET.get('search', '')
     selected_category = request.GET.get('category', '')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
     max_price = request.GET.get('max_price', '')
 
     if search_query:
@@ -23,12 +25,23 @@ def event_list(request):
     if max_price:
         events = events.filter(price__lte=max_price)
 
+    if start_date and end_date:
+        events = events.filter(date__date__range=(start_date, end_date))
+        
+    else:
+        if start_date:
+            events = events.filter(date__date__gte=start_date)
+            
+        if end_date:
+            events = events.filter(date__date__lte=end_date)
     context = {
         'events': events,
         'categories': Event.CATEGORY_CHOICES,
         'search_query': search_query,
         'selected_category': selected_category,
         'max_price': max_price,
+        'start_date': start_date, 
+        'end_date': end_date,
     }
     return render(request, 'events/event_list.html', context)
 
