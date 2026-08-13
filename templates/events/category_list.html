@@ -2,6 +2,13 @@
 {% block content %}
 <div class="container my-4">
     <h1>Event Categories</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
     <a href="{% url 'category_create' %}">Create New Category</a>
     <ul>
     {% for category in categories %}
