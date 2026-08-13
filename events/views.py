@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.shortcuts import redirect, render, get_object_or_404
 
 from authentication.decorators import admin_required, role_required
@@ -43,14 +44,25 @@ def event_list(request):
         if end_date:
             events = events.filter(date__date__lte=end_date)
 
+    paginator = Paginator(events, 4)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    filter_params = request.GET.copy()
+    filter_params.pop('page', None)
+    filter_query_string = filter_params.urlencode()
+
     context = {
-        'events': events,
+        'events': page_obj,
+        'page_obj': page_obj,
+        'paginator': paginator,
         'categories': Event.CATEGORY_CHOICES,
         'search_query': search_query,
         'selected_category': selected_category,
         'max_price': max_price,
         'start_date': start_date,
         'end_date': end_date,
+        'filter_query_string': filter_query_string,
     }
     return render(request, 'events/event_list.html', context)
 

@@ -49,7 +49,7 @@
     </form>
 
     <div class="flex items-center justify-between mb-6">
-        <p class="text-sm text-gray-500">{{ events|length }} event{{ events|length|pluralize }}</p>
+        <p class="text-sm text-gray-500">{{ events.paginator.count }} event{{ events.paginator.count|pluralize }}</p>
         <div class="inline-flex rounded-lg border border-indigo-200 overflow-hidden">
             <button type="button" id="view-grid-btn" class="view-toggle px-4 py-2 text-sm font-medium bg-indigo-600 text-white transition" aria-pressed="true">
                 Grid
@@ -75,6 +75,35 @@
             <p class="text-gray-400 text-center py-12 display">No events found matching your filters.</p>
         {% endfor %}
     </div>
+
+    {% if page_obj.has_other_pages %}
+        <nav class="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if filter_query_string %}&{{ filter_query_string }}{% endif %}"
+                   class="rounded-full border border-[#cfe8ff] bg-white px-4 py-2 text-sm font-semibold text-[#2c7be5] shadow-sm transition hover:border-[#9cc9ff] hover:bg-[#f3f9ff]">
+                    Previous
+                </a>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <span class="rounded-full bg-[#2c7be5] px-4 py-2 text-sm font-bold text-white shadow-sm ring-2 ring-[#dbeeff]">{{ num }}</span>
+                {% else %}
+                    <a href="?page={{ num }}{% if filter_query_string %}&{{ filter_query_string }}{% endif %}"
+                       class="rounded-full border border-[#dbeeff] bg-[#f8fbff] px-3.5 py-2 text-sm font-medium text-[#355d93] transition hover:border-[#9cc9ff] hover:bg-[#edf8ff]">
+                        {{ num }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if filter_query_string %}&{{ filter_query_string }}{% endif %}"
+                   class="rounded-full border border-[#cfe8ff] bg-white px-4 py-2 text-sm font-semibold text-[#2c7be5] shadow-sm transition hover:border-[#9cc9ff] hover:bg-[#f3f9ff]">
+                    Next
+                </a>
+            {% endif %}
+        </nav>
+    {% endif %}
 </div>
 
 <script>
