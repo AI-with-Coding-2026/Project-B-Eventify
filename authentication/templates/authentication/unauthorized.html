@@ -1,12 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Access Denied</title>
-</head>
-<body>
-    <h1>Access Denied</h1>
-    <p>You do not have permission to view this page.</p>
-    <p><a href="{% url 'login' %}">Return to login</a></p>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Unauthorized — Eventify{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow mt-8 text-center">
+    <div class="text-red-500 text-4xl mb-4">⛔</div>
+    <h1 class="text-2xl font-bold mb-2">Access Denied</h1>
+    <p class="text-gray-600 mb-6">You don't have permission to view this page.</p>
+    <a href="{% url 'home' %}" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">
+        Back to Home
+    </a>
+</div>
+{% endblock %}
