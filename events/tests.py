@@ -5,7 +5,7 @@ from authentication.models import User, UserRole
 
 from django.utils import timezone
 
-from .models import Category, Event
+from .models import Category, Event, Ticket
 
 
 # Tests for admin category update/edit
@@ -202,6 +202,78 @@ class OrganizerEventPermissionTests(TestCase):
         self.client.force_login(self.attendee)
 
         response = self.client.get(reverse('organizer_event_list'))
+
+        self.assertRedirects(
+            response,
+            reverse('unauthorized'),
+            target_status_code=403,
+        )
+
+
+class AttendeeTicketBookingTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.organizer = User.objects.create_user(
+            'ticket_organizer',
+            'ticket_organizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            'ticket_attendee',
+            'ticket_attendee@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+        self.event = Event.objects.create(
+            organizer=self.organizer,
+            title='Bookable Show',
+            description='Open for booking',
+            date=timezone.now(),
+            price='25.00',
+            category='arts',
+        )
+
+    def test_attendee_can_browse_events(self):
+        self.client.force_login(self.attendee)
+
+        response = self.client.get(reverse('event_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Bookable Show')
+        self.assertContains(response, 'Book ticket')
+
+    def test_attendee_can_book_ticket(self):
+        self.client.force_login(self.attendee)
+
+        response = self.client.post(
+            reverse('book_ticket', kwargs={'pk': self.event.pk}),
+            {'quantity': 2},
+        )
+
+        self.assertRedirects(response, reverse('my_tickets'))
+        ticket = Ticket.objects.get(event=self.event, attendee=self.attendee)
+        self.assertEqual(ticket.quantity, 2)
+
+    def test_attendee_can_view_own_tickets(self):
+        Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=1,
+        )
+        self.client.force_login(self.attendee)
+
+        response = self.client.get(reverse('my_tickets'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Bookable Show')
+
+    def test_organizer_cannot_book_ticket(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(
+            reverse('book_ticket', kwargs={'pk': self.event.pk})
+        )
 
         self.assertRedirects(
             response,

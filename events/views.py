@@ -1,15 +1,65 @@
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 
-from authentication.decorators import admin_required, organizer_required
+from authentication.decorators import (
+    admin_required,
+    attendee_required,
+    organizer_required,
+)
 
 from .forms import CategoryForm, EventForm
-from .models import Category, Event
+from .models import Category, Event, Ticket
 
 
 def event_list(request):
     events = Event.objects.all().order_by('date')
     return render(request, 'events/event_list.html', {'events': events})
+
+
+@attendee_required
+def book_ticket(request, pk):
+    """Allow attendees to book a ticket for an event."""
+    event = get_object_or_404(Event, pk=pk)
+
+    if request.method == 'POST':
+        try:
+            quantity = int(request.POST.get('quantity', 1))
+        except (TypeError, ValueError):
+            quantity = 1
+        if quantity < 1:
+            quantity = 1
+
+        Ticket.objects.create(
+            event=event,
+            attendee=request.user,
+            quantity=quantity,
+        )
+        messages.success(
+            request,
+            f'Ticket booked for "{event.title}".',
+        )
+        return redirect('my_tickets')
+
+    return render(
+        request,
+        'events/book_ticket.html',
+        {'event': event},
+    )
+
+
+@attendee_required
+def my_tickets(request):
+    """Show tickets booked by the logged-in attendee."""
+    tickets = (
+        Ticket.objects.filter(attendee=request.user)
+        .select_related('event')
+        .order_by('-booked_at')
+    )
+    return render(
+        request,
+        'events/my_tickets.html',
+        {'tickets': tickets},
+    )
 
 
 @organizer_required

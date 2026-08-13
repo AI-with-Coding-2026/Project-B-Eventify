@@ -4,6 +4,16 @@ from . import views
 urlpatterns = [
     path('', views.event_list, name='event_list'),
     path(
+        '<int:pk>/book/',
+        views.book_ticket,
+        name='book_ticket',
+    ),
+    path(
+        'my-tickets/',
+        views.my_tickets,
+        name='my_tickets',
+    ),
+    path(
         'organizer/',
         views.organizer_event_list,
         name='organizer_event_list',
