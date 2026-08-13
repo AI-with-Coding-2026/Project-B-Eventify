@@ -4,8 +4,15 @@
 <div class="max-w-4xl mx-auto mt-8 space-y-8">
 
     <div class="bg-white p-8 rounded-xl shadow">
-        <h1 class="text-2xl font-bold mb-2">Admin Dashboard</h1>
-        <p class="text-gray-600 mb-6">Welcome, {{ user.username }}. You have full administrative access.</p>
+        <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+            <div>
+                <h1 class="text-2xl font-bold mb-2">Admin Dashboard</h1>
+                <p class="text-gray-600">Welcome, {{ user.username }}. You have full administrative access.</p>
+            </div>
+            <a href="{% url 'logout' %}" class="text-indigo-600 font-semibold hover:underline px-3 py-2 shrink-0">
+                Log out
+            </a>
+        </div>
 
         <section class="mb-6">
             <h2 class="text-lg font-semibold mb-3">Platform Overview</h2>
