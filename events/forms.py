@@ -21,7 +21,7 @@ class EventForm(forms.ModelForm):
             }),
             'image': forms.ClearableFileInput(attrs={
                 'class': 'form-control',
-                'accept': 'image/*',
+                'accept': 'image/jpeg,image/png,image/webp',
             }),
             'date': forms.DateTimeInput(attrs={
                 'class': 'form-control',
@@ -36,6 +36,25 @@ class EventForm(forms.ModelForm):
                 'class': 'form-control',
             }),
         }
+
+    def clean_image(self):
+        image = self.cleaned_data.get('image')
+
+        if (
+            image
+            and hasattr(image, 'content_type')
+            and image.content_type
+            not in [
+                'image/jpeg',
+                'image/png',
+                'image/webp',
+            ]
+        ):
+            raise forms.ValidationError(
+                'Only JPG, PNG, and WebP images are allowed.'
+            )
+
+        return image
 
 
 class CategoryForm(forms.ModelForm):
