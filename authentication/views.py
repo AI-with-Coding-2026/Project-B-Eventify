@@ -2,6 +2,9 @@ from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.shortcuts import redirect, render
+from django.utils import timezone
+
+from events.models import Category, Event, EventBooking, Ticket
 
 from .decorators import admin_required, role_required
 from .forms import UserRegistrationForm
@@ -19,7 +22,8 @@ def register(request):
         form = UserRegistrationForm(request.POST)
 
         if form.is_valid():
-            form.save()
+            user = form.save()
+            login(request, user)
             return redirect('register_success')
     else:
         form = UserRegistrationForm()
@@ -44,11 +48,23 @@ def home(request):
 @admin_required
 def admin_dashboard(request):
     users = User.objects.all()
+    organizers = users.filter(role=UserRole.ORGANIZER)
+    attendees = users.filter(role=UserRole.ATTENDEE)
+    upcoming_events = Event.objects.filter(
+        date__gte=timezone.now()
+    ).order_by('date')[:3]
     context = {
         'total_users': users.count(),
         'admin_count': users.filter(role=UserRole.ADMIN).count(),
-        'organizer_count': users.filter(role=UserRole.ORGANIZER).count(),
-        'attendee_count': users.filter(role=UserRole.ATTENDEE).count(),
+        'organizer_count': organizers.count(),
+        'attendee_count': attendees.count(),
+        'organizers': organizers.order_by('username'),
+        'attendees': attendees.order_by('username'),
+        'events': Event.objects.select_related('organizer').order_by('date'),
+        'tickets': Ticket.objects.select_related('attendee', 'event').order_by('-booked_at'),
+        'bookings': EventBooking.objects.select_related('user', 'event').order_by('-booked_at'),
+        'categories': Category.objects.order_by('name'),
+        'upcoming_events': upcoming_events,
     }
     return render(request, 'authentication/admin_dashboard.html', context)
 
@@ -85,9 +101,19 @@ def unauthorized(request):
 
 @role_required(UserRole.ADMIN, UserRole.ORGANIZER)
 def organizer_dashboard(request):
-    return render(request, 'authentication/organizer_dashboard.html')
+    upcoming_events = Event.objects.filter(
+        date__gte=timezone.now()
+    ).order_by('date')[:3]
+    return render(request, 'authentication/organizer_dashboard.html', {
+        'upcoming_events': upcoming_events,
+    })
 
 
 @role_required(UserRole.ADMIN, UserRole.ATTENDEE)
 def attendee_dashboard(request):
-    return render(request, 'authentication/attendee_dashboard.html')
+    upcoming_events = Event.objects.filter(
+        date__gte=timezone.now()
+    ).order_by('date')[:3]
+    return render(request, 'authentication/attendee_dashboard.html', {
+        'upcoming_events': upcoming_events,
+    })

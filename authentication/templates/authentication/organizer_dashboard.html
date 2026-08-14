@@ -1,13 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organizer Dashboard</title>
-</head>
-<body>
-    <h1>Organizer Dashboard</h1>
-    <p>Welcome, {{ user.username }}. You are logged in as an Organizer.</p>
-    <p><a href="{% url 'logout' %}">Log out</a></p>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Organizer Dashboard — Eventify{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+
+    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+        <h1 class="text-2xl font-bold text-gray-900 display mb-2">Organizer Dashboard</h1>
+        <p class="text-gray-600 mb-6">Welcome, {{ user.username }}. You are logged in as an Organizer.</p>
+
+        <div class="flex flex-wrap justify-center items-center gap-4">
+            <a href="{% url 'create_event' %}" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 shadow-sm transition">
+                + Create Event
+            </a>
+            <a href="{% url 'my_events' %}" class="bg-indigo-50 text-indigo-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition">
+                My Events
+            </a>
+            <a href="{% url 'organizer_event_list' %}" class="bg-indigo-50 text-indigo-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition">
+                Manage my events
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 display">Upcoming Events</h2>
+            <a href="{% url 'event_list' %}" class="text-sm text-indigo-600 font-medium hover:underline">View all events →</a>
+        </div>
+
+        {% if upcoming_events %}
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {% for event in upcoming_events %}
+            <a href="{% url 'event_detail' event.pk %}" class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit">
+                {% if event.image %}
+                    <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-32 object-cover">
+                {% else %}
+                    <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">No image</div>
+                {% endif %}
+                <div class="p-4 flex flex-col flex-1">
+                    <h3 class="font-semibold text-gray-900 mb-1">{{ event.title }}</h3>
+                    {% if event.description %}
+                    <p class="text-xs text-gray-500 mb-2">{{ event.description|truncatewords:12 }}</p>
+                    {% endif %}
+                    <p class="text-xs text-gray-500"><strong>Date:</strong> {{ event.date|date:"M d, Y" }}</p>
+                    <p class="text-xs text-gray-500"><strong>Price:</strong> ${{ event.price }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-400 text-center py-8">No upcoming events at the moment.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

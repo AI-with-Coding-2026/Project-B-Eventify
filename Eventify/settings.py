@@ -24,8 +24,8 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'authentication',  # Custom authentication application
-    'events.apps.EventsConfig', # Event listing app
+    'authentication',  # Added custom authentication application here
+    'events.apps.EventsConfig', # Event listing app for Sprint 2
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -58,7 +58,11 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+<<<<<<< HEAD
                 # 'authentication.context_processors.dashboard_link',  # تم تعليقها المؤقت
+=======
+                'authentication.context_processors.dashboard_link',
+>>>>>>> 3fda29d643cd2167cf45bfc5cf570bfeb11922e6
             ],
         },
     },
@@ -120,12 +124,15 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+<<<<<<< HEAD
 # المسار الذي ستجمع فيه مكتبة WhiteNoise الملفات المجهزة للزبون
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Storage engine for WhiteNoise (Optimized serving)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+=======
+>>>>>>> 3fda29d643cd2167cf45bfc5cf570bfeb11922e6
 
 # Uploaded event images
 MEDIA_URL = '/media/'
@@ -138,4 +145,12 @@ AUTH_USER_MODEL = 'authentication.User'
 LOGIN_URL = 'login'
 
 # Default primary key field type
+<<<<<<< HEAD
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+=======
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Media files configuration
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+>>>>>>> 3fda29d643cd2167cf45bfc5cf570bfeb11922e6

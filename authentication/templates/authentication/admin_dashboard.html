@@ -1,23 +1,289 @@
-{% extends "authentication/base.html" %}
-
+{% extends 'base.html' %}
 {% block title %}Admin Dashboard — Eventify{% endblock %}
-
 {% block content %}
-<h1>Admin Dashboard</h1>
-<p>Welcome, {{ user.username }}. You have full administrative access.</p>
+<div class="max-w-4xl mx-auto space-y-8">
 
-<section>
-    <h2>Platform Overview</h2>
-    <ul>
-        <li><strong>Total users:</strong> {{ total_users }}</li>
-        <li><strong>Admins:</strong> {{ admin_count }}</li>
-        <li><strong>Organizers:</strong> {{ organizer_count }}</li>
-        <li><strong>Attendees:</strong> {{ attendee_count }}</li>
-    </ul>
-</section>
+    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+        <h1 class="text-2xl font-bold mb-2 display">Admin Dashboard</h1>
+        <p class="text-gray-600 mb-6">Welcome, {{ user.username }}. You have full administrative access.</p>
 
-<section>
-    <h2>Administrative Actions</h2>
-    <p><a href="{% url 'eventify_admin:index' %}">Open Django Admin Panel</a></p>
-</section>
+        <section class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 display">Platform Overview</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="bg-indigo-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-indigo-600">{{ total_users }}</p>
+                    <p class="text-sm text-gray-500">Total Users</p>
+                </div>
+                <div class="bg-indigo-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-indigo-600">{{ admin_count }}</p>
+                    <p class="text-sm text-gray-500">Admins</p>
+                </div>
+                <div class="bg-indigo-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-indigo-600">{{ organizer_count }}</p>
+                    <p class="text-sm text-gray-500">Organizers</p>
+                </div>
+                <div class="bg-indigo-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-indigo-600">{{ attendee_count }}</p>
+                    <p class="text-sm text-gray-500">Attendees</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="users" class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 display">Organizers</h2>
+            {% if organizers %}
+            <ul class="divide-y divide-gray-100">
+                {% for organizer in organizers %}
+                <li class="py-2 text-sm text-gray-700">
+                    <strong>{{ organizer.username }}</strong>
+                    <span class="text-gray-500">({{ organizer.email|default:"No email provided" }})</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No organizers found.</p>
+            {% endif %}
+        </section>
+
+        <section class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 display">Attendees</h2>
+            {% if attendees %}
+            <ul class="divide-y divide-gray-100">
+                {% for attendee in attendees %}
+                <li class="py-2 text-sm text-gray-700">
+                    <strong>{{ attendee.username }}</strong>
+                    <span class="text-gray-500">({{ attendee.email|default:"No email provided" }})</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No attendees found.</p>
+            {% endif %}
+        </section>
+
+        <section class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 display">Administrative Actions</h2>
+            <div class="overflow-hidden rounded-lg border border-gray-100">
+                <div class="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50">
+                    <p class="font-semibold text-gray-900">Users</p>
+                    <a href="#users" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3 border-t border-gray-100">
+                    <p class="font-semibold text-gray-900">Events</p>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{% url 'event_create' %}" class="text-sm font-semibold text-indigo-700 hover:underline">Add</a>
+                        <a href="#events" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50 border-t border-gray-100">
+                    <p class="font-semibold text-gray-900">Tickets</p>
+                    <a href="#tickets" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3 border-t border-gray-100">
+                    <p class="font-semibold text-gray-900">Bookings</p>
+                    <a href="#bookings" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50 border-t border-gray-100">
+                    <p class="font-semibold text-gray-900">Manage Categories</p>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{% url 'category_create' %}" class="text-sm font-semibold text-indigo-700 hover:underline">Add</a>
+                        <a href="#categories" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="events" class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold display">Events</h2>
+                <a href="{% url 'event_create' %}" class="text-sm font-semibold text-indigo-600 hover:underline">Add event</a>
+            </div>
+            {% if events %}
+            <ul class="divide-y divide-gray-100">
+                {% for event in events %}
+                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                    <span>
+                        <strong>{{ event.title }}</strong>
+                        <span class="text-gray-500">— {{ event.date|date:"M d, Y" }}</span>
+                    </span>
+                    <div class="relative inline-block text-left">
+                        <button type="button" onclick="
+                            var b = this.getBoundingClientRect();
+                            var m = this.nextElementSibling;
+                            document.querySelectorAll('.dash-dropdown').forEach(function(d){ if(d !== m) d.style.display = 'none'; });
+                            if(m.style.display === 'block') { m.style.display = 'none'; return; }
+                            m.style.top = b.bottom + 'px';
+                            m.style.left = (b.right - 120) + 'px';
+                            m.style.display = 'block';
+                            event.stopPropagation();
+                        " class="text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition text-lg font-bold leading-none cursor-pointer focus:outline-none">
+                            &#8942;
+                        </button>
+                        <div class="dash-dropdown hidden fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-28 z-50 text-left">
+                            <a href="{% url 'edit_event' event.pk %}" class="block px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium no-underline">Edit</a>
+                            <a href="{% url 'delete_event' event.pk %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium no-underline">Delete</a>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No events found.</p>
+            {% endif %}
+        </section>
+
+        <section id="tickets" class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 display">Tickets</h2>
+            {% if tickets %}
+            <ul class="divide-y divide-gray-100">
+                {% for ticket in tickets %}
+                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                    <span>
+                        <strong>{{ ticket.attendee.username }}</strong>
+                        <span class="text-gray-500">→ {{ ticket.event.title }} ({{ ticket.quantity }})</span>
+                    </span>
+                    <div class="relative inline-block text-left">
+                        <button type="button" onclick="
+                            var b = this.getBoundingClientRect();
+                            var m = this.nextElementSibling;
+                            document.querySelectorAll('.dash-dropdown').forEach(function(d){ if(d !== m) d.style.display = 'none'; });
+                            if(m.style.display === 'block') { m.style.display = 'none'; return; }
+                            m.style.top = b.bottom + 'px';
+                            m.style.left = (b.right - 120) + 'px';
+                            m.style.display = 'block';
+                            event.stopPropagation();
+                        " class="text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition text-lg font-bold leading-none cursor-pointer focus:outline-none">
+                            &#8942;
+                        </button>
+                        <div class="dash-dropdown hidden fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-28 z-50 text-left">
+                            <a href="{% url 'ticket_edit' ticket.pk %}" class="block px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium no-underline">Edit</a>
+                            <a href="{% url 'ticket_delete' ticket.pk %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium no-underline">Delete</a>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No tickets found.</p>
+            {% endif %}
+        </section>
+
+        <section id="bookings" class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 display">Bookings</h2>
+            {% if bookings %}
+            <ul class="divide-y divide-gray-100">
+                {% for booking in bookings %}
+                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                    <span>
+                        <strong>{{ booking.user.username }}</strong>
+                        <span class="text-gray-500">→ {{ booking.event.title }}</span>
+                    </span>
+                    <div class="relative inline-block text-left">
+                        <button type="button" onclick="
+                            var b = this.getBoundingClientRect();
+                            var m = this.nextElementSibling;
+                            document.querySelectorAll('.dash-dropdown').forEach(function(d){ if(d !== m) d.style.display = 'none'; });
+                            if(m.style.display === 'block') { m.style.display = 'none'; return; }
+                            m.style.top = b.bottom + 'px';
+                            m.style.left = (b.right - 120) + 'px';
+                            m.style.display = 'block';
+                            event.stopPropagation();
+                        " class="text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition text-lg font-bold leading-none cursor-pointer focus:outline-none">
+                            &#8942;
+                        </button>
+                        <div class="dash-dropdown hidden fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-28 z-50 text-left">
+                            <a href="{% url 'booking_edit' booking.pk %}" class="block px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium no-underline">Edit</a>
+                            <a href="{% url 'booking_delete' booking.pk %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium no-underline">Delete</a>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No bookings found.</p>
+            {% endif %}
+        </section>
+
+        <section id="categories">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold display">Manage Categories</h2>
+                <a href="{% url 'category_create' %}" class="inline-block bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg font-semibold hover:bg-indigo-100">
+                    Add category
+                </a>
+            </div>
+            {% if categories %}
+            <ul class="divide-y divide-gray-100">
+                {% for category in categories %}
+                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                    <span>
+                        <strong>{{ category.name }}</strong>
+                        <span class="text-gray-500">— {{ category.description|default:"No description" }}</span>
+                    </span>
+                    <div class="relative inline-block text-left">
+                        <button type="button" onclick="
+                            var b = this.getBoundingClientRect();
+                            var m = this.nextElementSibling;
+                            document.querySelectorAll('.dash-dropdown').forEach(function(d){ if(d !== m) d.style.display = 'none'; });
+                            if(m.style.display === 'block') { m.style.display = 'none'; return; }
+                            m.style.top = b.bottom + 'px';
+                            m.style.left = (b.right - 120) + 'px';
+                            m.style.display = 'block';
+                            event.stopPropagation();
+                        " class="text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition text-lg font-bold leading-none cursor-pointer focus:outline-none">
+                            &#8942;
+                        </button>
+                        <div class="dash-dropdown hidden fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-28 z-50 text-left">
+                            <a href="{% url 'category_update' category.pk %}" class="block px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium no-underline">Edit</a>
+                            <a href="{% url 'category_delete' category.pk %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium no-underline">Delete</a>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No categories found.</p>
+            {% endif %}
+        </section>
+
+        <script>
+            document.addEventListener('click', function() {
+                document.querySelectorAll('.dash-dropdown').forEach(function(d) {
+                    d.style.display = 'none';
+                });
+            });
+        </script>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 display">Upcoming Events</h2>
+            <a href="{% url 'event_list' %}" class="text-sm text-indigo-600 font-medium hover:underline">View all events →</a>
+        </div>
+
+        {% if upcoming_events %}
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {% for event in upcoming_events %}
+            <a href="{% url 'event_detail' event.pk %}" class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit">
+                {% if event.image %}
+                    <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-32 object-cover">
+                {% else %}
+                    <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">No image</div>
+                {% endif %}
+                <div class="p-4 flex flex-col flex-1">
+                    <h3 class="font-semibold text-gray-900 mb-1">{{ event.title }}</h3>
+                    {% if event.description %}
+                    <p class="text-xs text-gray-500 mb-2">{{ event.description|truncatewords:12 }}</p>
+                    {% endif %}
+                    <p class="text-xs text-gray-500"><strong>Date:</strong> {{ event.date|date:"M d, Y" }}</p>
+                    <p class="text-xs text-gray-500"><strong>Price:</strong> ${{ event.price }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-400 text-center py-8">No upcoming events at the moment.</p>
+        {% endif %}
+    </div>
+
+</div>
 {% endblock %}
