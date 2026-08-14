@@ -2,24 +2,28 @@ from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.shortcuts import redirect, render
+from django.utils import timezone
+
+from events.models import Event
 
 from .decorators import admin_required, role_required
 from .forms import UserRegistrationForm
-from .models import UserRole
+from .models import User, UserRole
 
 
 @login_not_required
 def register(request):
     if request.user.is_authenticated:
         if request.user.is_admin:
-            return redirect('eventify_admin:index')
+            return redirect('admin_dashboard')
         return redirect('home')
 
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
 
         if form.is_valid():
-            form.save()
+            user = form.save()
+            login(request, user)
             return redirect('register_success')
     else:
         form = UserRegistrationForm()
@@ -43,8 +47,22 @@ def home(request):
 
 @admin_required
 def admin_dashboard(request):
-    # Send admins straight to Eventify Administration (no intermediate page/link).
-    return redirect('eventify_admin:index')
+    users = User.objects.all()
+    upcoming_events = Event.objects.filter(
+        date__gte=timezone.now()
+    ).order_by('date')[:3]
+    organizers = users.filter(role=UserRole.ORGANIZER)
+    attendees = users.filter(role=UserRole.ATTENDEE)
+    context = {
+        'total_users': users.count(),
+        'admin_count': users.filter(role=UserRole.ADMIN).count(),
+        'organizer_count': organizers.count(),
+        'attendee_count': attendees.count(),
+        'organizers': organizers,
+        'attendees': attendees,
+        'upcoming_events': upcoming_events,
+    }
+    return render(request, 'authentication/admin_dashboard.html', context)
 
 
 @login_not_required
@@ -60,7 +78,7 @@ def login_view(request):
         else:
             login(request, user)
             if user.is_admin:
-                return redirect('eventify_admin:index')
+                return redirect('admin_dashboard')
             if user.is_organizer:
                 return redirect('organizer_dashboard')
             return redirect('attendee_dashboard')
@@ -79,9 +97,19 @@ def unauthorized(request):
 
 @role_required(UserRole.ADMIN, UserRole.ORGANIZER)
 def organizer_dashboard(request):
-    return render(request, 'authentication/organizer_dashboard.html')
+    upcoming_events = Event.objects.filter(
+        date__gte=timezone.now()
+    ).order_by('date')[:3]
+    return render(request, 'authentication/organizer_dashboard.html', {
+        'upcoming_events': upcoming_events,
+    })
 
 
 @role_required(UserRole.ADMIN, UserRole.ATTENDEE)
 def attendee_dashboard(request):
-    return render(request, 'authentication/attendee_dashboard.html')
+    upcoming_events = Event.objects.filter(
+        date__gte=timezone.now()
+    ).order_by('date')[:3]
+    return render(request, 'authentication/attendee_dashboard.html', {
+        'upcoming_events': upcoming_events,
+    })

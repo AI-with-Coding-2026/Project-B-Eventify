@@ -66,7 +66,7 @@ def admin_required(view_func):
 
             return redirect_to_login(
                 request.get_full_path(),
-                login_url="eventify_admin:login",
+                login_url="login",
             )
 
         if request.user.role == UserRole.ADMIN:
