@@ -29,7 +29,7 @@
             </div>
         </section>
 
-        <section class="mb-6">
+        <section id="users" class="mb-6">
             <h2 class="text-lg font-semibold mb-3 display">Organizers</h2>
             {% if organizers %}
             <ul class="divide-y divide-gray-100">
@@ -61,16 +61,117 @@
             {% endif %}
         </section>
 
-        <section>
+        <section class="mb-6">
             <h2 class="text-lg font-semibold mb-3 display">Administrative Actions</h2>
-            <div class="flex flex-wrap gap-3">
-                <a href="{% url 'eventify_admin:index' %}" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">
-                    Open Django Admin Panel
-                </a>
-                <a href="{% url 'category_list' %}" class="inline-block bg-indigo-50 text-indigo-700 px-6 py-2 rounded-lg font-semibold hover:bg-indigo-100">
-                    Manage Categories
+            <div class="overflow-hidden rounded-lg border border-gray-100">
+                <div class="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50">
+                    <p class="font-semibold text-gray-900">Users</p>
+                    <a href="#users" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3 border-t border-gray-100">
+                    <p class="font-semibold text-gray-900">Events</p>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{% url 'event_create' %}" class="text-sm font-semibold text-indigo-700 hover:underline">Add</a>
+                        <a href="#events" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50 border-t border-gray-100">
+                    <p class="font-semibold text-gray-900">Tickets</p>
+                    <a href="#tickets" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3 border-t border-gray-100">
+                    <p class="font-semibold text-gray-900">Bookings</p>
+                    <a href="#bookings" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50 border-t border-gray-100">
+                    <p class="font-semibold text-gray-900">Manage Categories</p>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{% url 'category_create' %}" class="text-sm font-semibold text-indigo-700 hover:underline">Add</a>
+                        <a href="#categories" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="events" class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold display">Events</h2>
+                <a href="{% url 'event_create' %}" class="text-sm font-semibold text-indigo-600 hover:underline">Add event</a>
+            </div>
+            {% if events %}
+            <ul class="divide-y divide-gray-100">
+                {% for event in events %}
+                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                    <span>
+                        <strong>{{ event.title }}</strong>
+                        <span class="text-gray-500">— {{ event.date|date:"M d, Y" }}</span>
+                    </span>
+                    <a href="{% url 'edit_event' event.pk %}" class="text-indigo-600 font-medium hover:underline">Change</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No events found.</p>
+            {% endif %}
+        </section>
+
+        <section id="tickets" class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 display">Tickets</h2>
+            {% if tickets %}
+            <ul class="divide-y divide-gray-100">
+                {% for ticket in tickets %}
+                <li class="py-2 text-sm text-gray-700">
+                    <strong>{{ ticket.attendee.username }}</strong>
+                    <span class="text-gray-500">→ {{ ticket.event.title }} ({{ ticket.quantity }})</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No tickets found.</p>
+            {% endif %}
+        </section>
+
+        <section id="bookings" class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 display">Bookings</h2>
+            {% if bookings %}
+            <ul class="divide-y divide-gray-100">
+                {% for booking in bookings %}
+                <li class="py-2 text-sm text-gray-700">
+                    <strong>{{ booking.user.username }}</strong>
+                    <span class="text-gray-500">→ {{ booking.event.title }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No bookings found.</p>
+            {% endif %}
+        </section>
+
+        <section id="categories">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold display">Manage Categories</h2>
+                <a href="{% url 'category_create' %}" class="inline-block bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg font-semibold hover:bg-indigo-100">
+                    Add category
                 </a>
             </div>
+            {% if categories %}
+            <ul class="divide-y divide-gray-100">
+                {% for category in categories %}
+                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                    <span>
+                        <strong>{{ category.name }}</strong>
+                        <span class="text-gray-500">— {{ category.description|default:"No description" }}</span>
+                    </span>
+                    <span class="flex gap-3">
+                        <a href="{% url 'category_update' category.pk %}" class="text-indigo-600 font-medium hover:underline">Change</a>
+                        <a href="{% url 'category_delete' category.pk %}" class="text-red-600 font-medium hover:underline">Delete</a>
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No categories found.</p>
+            {% endif %}
         </section>
     </div>
 
