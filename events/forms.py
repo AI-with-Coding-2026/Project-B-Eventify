@@ -27,7 +27,6 @@ class CategoryForm(forms.ModelForm):
                 'placeholder': 'Optional description',
             }),
         }
-        
 
     def clean_name(self):
         name = self.cleaned_data['name'].strip()
@@ -37,12 +36,17 @@ class CategoryForm(forms.ModelForm):
                 'Category name cannot be empty.'
             )
 
-        if Category.objects.filter(name__iexact=name).exists():
+        duplicates = Category.objects.filter(name__iexact=name)
+        if self.instance.pk:
+            duplicates = duplicates.exclude(pk=self.instance.pk)
+
+        if duplicates.exists():
             raise forms.ValidationError(
                 'A category with this name already exists.'
             )
 
         return name
+
 
 class EventForm(forms.ModelForm):
 

@@ -6,7 +6,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from authentication.decorators import admin_required, role_required
 from authentication.models import UserRole
 from .forms import CategoryForm, EventForm
-from .models import Event, EventBooking
+from .models import Category, Event, EventBooking
 
 
 def _user_can_manage_event(user, event):
@@ -133,7 +133,45 @@ def category_create(request):
     return render(
         request,
         'events/category_form.html',
-        {'form': form}
+        {
+            'form': form,
+            'page_title': 'Create Category',
+            'submit_label': 'Save Category',
+        },
+    )
+
+
+# Admin can update/edit an existing category name & description
+@admin_required
+def category_update(request, pk):
+    """Allow admins to edit an existing category name/description."""
+    category = get_object_or_404(Category, pk=pk)
+
+    if request.method == 'POST':
+        form = CategoryForm(request.POST, instance=category)
+
+        if form.is_valid():
+            form.save()
+
+            messages.success(
+                request,
+                'Category updated successfully.'
+            )
+
+            return redirect('category_update', pk=category.pk)
+
+    else:
+        form = CategoryForm(instance=category)
+
+    return render(
+        request,
+        'events/category_form.html',
+        {
+            'form': form,
+            'category': category,
+            'page_title': 'Edit Category',
+            'submit_label': 'Update Category',
+        },
     )
 
 

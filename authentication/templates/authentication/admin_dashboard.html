@@ -29,6 +29,38 @@
             </div>
         </section>
 
+        <section class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 display">Organizers</h2>
+            {% if organizers %}
+            <ul class="divide-y divide-gray-100">
+                {% for organizer in organizers %}
+                <li class="py-2 text-sm text-gray-700">
+                    <strong>{{ organizer.username }}</strong>
+                    <span class="text-gray-500">({{ organizer.email|default:"No email provided" }})</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No organizers found.</p>
+            {% endif %}
+        </section>
+
+        <section class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 display">Attendees</h2>
+            {% if attendees %}
+            <ul class="divide-y divide-gray-100">
+                {% for attendee in attendees %}
+                <li class="py-2 text-sm text-gray-700">
+                    <strong>{{ attendee.username }}</strong>
+                    <span class="text-gray-500">({{ attendee.email|default:"No email provided" }})</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No attendees found.</p>
+            {% endif %}
+        </section>
+
         <section>
             <h2 class="text-lg font-semibold mb-3 display">Administrative Actions</h2>
             <a href="{% url 'eventify_admin:index' %}" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">

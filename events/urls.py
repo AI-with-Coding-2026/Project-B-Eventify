@@ -45,4 +45,11 @@ urlpatterns = [
         views.delete_event,
         name="delete_event",
     ),
+    # Edit/update an existing category
+    # URL example: /events/categories/1/edit/
+    path(
+        'categories/<int:pk>/edit/',
+        views.category_update,
+        name='category_update',
+    ),
 ]

@@ -49,14 +49,18 @@ def home(request):
 @admin_required
 def admin_dashboard(request):
     users = User.objects.all()
+    organizers = users.filter(role=UserRole.ORGANIZER)
+    attendees = users.filter(role=UserRole.ATTENDEE)
     upcoming_events = Event.objects.filter(
         date__gte=timezone.now()
     ).order_by('date')[:3]
     context = {
         'total_users': users.count(),
         'admin_count': users.filter(role=UserRole.ADMIN).count(),
-        'organizer_count': users.filter(role=UserRole.ORGANIZER).count(),
-        'attendee_count': users.filter(role=UserRole.ATTENDEE).count(),
+        'organizer_count': organizers.count(),
+        'attendee_count': attendees.count(),
+        'organizers': organizers,
+        'attendees': attendees,
         'upcoming_events': upcoming_events,
     }
     return render(request, 'authentication/admin_dashboard.html', context)
