@@ -63,9 +63,14 @@
 
         <section>
             <h2 class="text-lg font-semibold mb-3 display">Administrative Actions</h2>
-            <a href="{% url 'eventify_admin:index' %}" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">
-                Open Django Admin Panel
-            </a>
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'eventify_admin:index' %}" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">
+                    Open Django Admin Panel
+                </a>
+                <a href="{% url 'category_list' %}" class="inline-block bg-indigo-50 text-indigo-700 px-6 py-2 rounded-lg font-semibold hover:bg-indigo-100">
+                    Manage Categories
+                </a>
+            </div>
         </section>
     </div>
 

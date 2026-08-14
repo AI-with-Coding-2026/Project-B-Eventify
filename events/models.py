@@ -1,54 +1,46 @@
+from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
-from django.conf import settings
+
 
 class Category(models.Model):
     # Category name must be unique to avoid duplicates (e.g., Music, Sports)
     name = models.CharField(
-        max_length=100, 
-        unique=True, 
+        max_length=100,
+        unique=True,
         verbose_name="Category Name"
     )
-    
+
     # Slug is a URL-friendly version of the name (e.g., "business-corporate")
-    # It must be unique and can be left blank in forms as it generates automatically
     slug = models.SlugField(
-        max_length=120, 
-        unique=True, 
+        max_length=120,
+        unique=True,
         blank=True
     )
-    
-    # Optional description to provide more context about the category
+
     description = models.TextField(
-        blank=True, 
-        null=True, 
+        blank=True,
+        null=True,
         verbose_name="Description"
     )
-    
-    # Automatically records the date and time when the category is created
+
     created_at = models.DateTimeField(
-        auto_now_add=True, 
+        auto_now_add=True,
         verbose_name="Created At"
     )
 
     class Meta:
         verbose_name = "Category"
         verbose_name_plural = "Categories"
-        ordering = ['name']  # Automatically sorts categories alphabetically
+        ordering = ['name']
 
     def __str__(self):
-        # Displays the category name clearly in the admin panel and selections
         return self.name
 
     def save(self, *args, **kwargs):
-        # If no slug is provided, automatically generate it from the category name
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
-
-
-from django.db import models
-from django.conf import settings
 
 
 class Event(models.Model):
@@ -117,6 +109,31 @@ class Event(models.Model):
         return self.tickets_remaining <= 0
 
 
+class Ticket(models.Model):
+    """A ticket booked by an attendee for a specific event."""
+
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name='tickets',
+    )
+    attendee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='tickets',
+    )
+    quantity = models.PositiveIntegerField(default=1)
+    booked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Ticket"
+        verbose_name_plural = "Tickets"
+        ordering = ['-booked_at']
+
+    def __str__(self):
+        return f'{self.attendee} → {self.event} ({self.quantity})'
+
+
 class EventBooking(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -131,8 +148,8 @@ class EventBooking(models.Model):
     booked_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Ticket"
-        verbose_name_plural = "Tickets"
+        verbose_name = "Booking"
+        verbose_name_plural = "Bookings"
         unique_together = ("user", "event")
         ordering = ["-booked_at"]
 

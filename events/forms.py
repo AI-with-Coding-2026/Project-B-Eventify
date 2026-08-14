@@ -2,6 +2,7 @@ from django import forms
 
 from .models import Category, Event
 
+
 INPUT_CLASSES = (
     "mt-1 block w-full rounded-xl border border-[#dbeeff] bg-white px-3 py-2.5 "
     "text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 "
@@ -50,6 +51,18 @@ class CategoryForm(forms.ModelForm):
 
 class EventForm(forms.ModelForm):
 
+    max_tickets = forms.IntegerField(
+        required=False,
+        min_value=1,
+        initial=1,
+        widget=forms.NumberInput(
+            attrs={
+                "class": INPUT_CLASSES,
+                "min": "1",
+            }
+        ),
+    )
+
     date = forms.DateTimeField(
         widget=forms.DateTimeInput(
             attrs={
@@ -95,12 +108,6 @@ class EventForm(forms.ModelForm):
                     "min": "0",
                 }
             ),
-            "max_tickets": forms.NumberInput(
-                attrs={
-                    "class": INPUT_CLASSES,
-                    "min": "1",
-                }
-            ),
             "category": forms.Select(
                 attrs={
                     "class": INPUT_CLASSES,
@@ -113,6 +120,10 @@ class EventForm(forms.ModelForm):
                 }
             ),
         }
+
+    def clean_max_tickets(self):
+        value = self.cleaned_data.get("max_tickets")
+        return value or 1
 
     def clean_image(self):
         image = self.cleaned_data.get("image")

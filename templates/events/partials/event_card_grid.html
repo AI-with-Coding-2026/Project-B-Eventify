@@ -25,4 +25,9 @@
             <span class="font-semibold text-indigo-600">${{ event.price }}</span>
         </div>
     </a>
+    {% if user.is_authenticated and user.is_attendee %}
+        <div class="px-5 pb-4">
+            <a href="{% url 'book_ticket' event.pk %}" class="text-sm font-semibold text-indigo-600 hover:underline">Book ticket</a>
+        </div>
+    {% endif %}
 </div>

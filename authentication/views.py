@@ -2,7 +2,6 @@ from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.shortcuts import redirect, render
-
 from django.utils import timezone
 
 from events.models import Event

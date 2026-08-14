@@ -1,7 +1,6 @@
 from functools import wraps
 
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
 
 from .models import UserRole
@@ -36,7 +35,8 @@ def role_required(*allowed_roles, login_url='login'):
     Require an authenticated user with one of the given roles.
 
     Admin users always have full access, regardless of the required role.
-    Unauthorized authenticated users receive HTTP 403 Forbidden.
+    Unauthorized authenticated users are redirected to the shared
+    /unauthorized/ page (HTTP 403), matching admin_required behavior.
     """
     roles = _normalize_roles(allowed_roles)
 
@@ -49,7 +49,7 @@ def role_required(*allowed_roles, login_url='login'):
             if user_role == UserRole.ADMIN or user_role in roles:
                 return view_func(request, *args, **kwargs)
 
-            raise PermissionDenied
+            return redirect('unauthorized')
 
         return _wrapped_view
 
