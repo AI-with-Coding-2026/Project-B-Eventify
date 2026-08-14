@@ -155,3 +155,57 @@ class CategoryUpdateTests(TestCase):
             reverse('unauthorized'),
             target_status_code=403,
         )
+
+
+class EventDetailBackButtonTests(TestCase):
+    """Verify the back button on the event detail page uses the correct
+    label and URL based on where the user navigated from."""
+
+    def setUp(self):
+        self.event = Event.objects.create(
+            title='Back Button Event',
+            description='Testing back navigation',
+            date=timezone.now() + timedelta(days=5),
+            price=25.00,
+            category='tech',
+        )
+        self.detail_url = reverse('event_detail', kwargs={'pk': self.event.pk})
+
+    def test_defaults_to_event_list_without_referer(self):
+        response = self.client.get(self.detail_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Back to Events')
+        self.assertContains(response, reverse('event_list'))
+
+    def test_back_to_admin_dashboard(self):
+        referer = 'http://testserver/admin/'
+        response = self.client.get(self.detail_url, HTTP_REFERER=referer)
+        self.assertContains(response, 'Back to Admin Dashboard')
+
+    def test_back_to_organizer_dashboard(self):
+        referer = 'http://testserver/dashboard/organizer/'
+        response = self.client.get(self.detail_url, HTTP_REFERER=referer)
+        self.assertContains(response, 'Back to Organizer Dashboard')
+
+    def test_back_to_attendee_dashboard(self):
+        referer = 'http://testserver/dashboard/attendee/'
+        response = self.client.get(self.detail_url, HTTP_REFERER=referer)
+        self.assertContains(response, 'Back to Attendee Dashboard')
+
+    def test_back_to_my_events(self):
+        referer = 'http://testserver/events/mine/'
+        response = self.client.get(self.detail_url, HTTP_REFERER=referer)
+        self.assertContains(response, 'Back to My Events')
+
+    def test_back_to_filtered_event_list(self):
+        referer = 'http://testserver/events/?category=tech&page=2'
+        response = self.client.get(self.detail_url, HTTP_REFERER=referer)
+        self.assertContains(response, 'Back to Events')
+        # HTML escapes & to &amp; in attribute values.
+        self.assertContains(response, 'category=tech&amp;page=2')
+
+    def test_ignores_external_referer(self):
+        referer = 'https://evil.example.com/phishing/'
+        response = self.client.get(self.detail_url, HTTP_REFERER=referer)
+        self.assertContains(response, 'Back to Events')
+        self.assertContains(response, reverse('event_list'))

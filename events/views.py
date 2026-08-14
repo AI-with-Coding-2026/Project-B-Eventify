@@ -2,6 +2,8 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.shortcuts import redirect, render, get_object_or_404
+from django.utils.http import url_has_allowed_host_and_scheme
+from urllib.parse import urlparse
 
 from authentication.decorators import admin_required, role_required
 from authentication.models import UserRole
@@ -16,6 +18,54 @@ def _user_can_manage_event(user, event):
         user.role == UserRole.ORGANIZER
         and event.organizer_id == user.id
     )
+
+
+# Map URL path prefixes to human-readable back-button labels.
+_BACK_LABEL_MAP = [
+    ('/admin/', 'Back to Admin Dashboard'),
+    ('/dashboard/organizer/', 'Back to Organizer Dashboard'),
+    ('/dashboard/attendee/', 'Back to Attendee Dashboard'),
+    ('/events/mine/', 'Back to My Events'),
+    ('/events/', 'Back to Events'),
+]
+
+
+def _resolve_back_navigation(request):
+    """Return (back_url, back_label) from the HTTP Referer header.
+
+    Falls back to the event list if the referer is missing, external,
+    or points at the current page itself.
+    """
+    from django.urls import reverse
+
+    default_url = reverse('event_list')
+    default_label = 'Back to Events'
+
+    referer = request.META.get('HTTP_REFERER', '')
+    if not referer:
+        return default_url, default_label
+
+    # Reject external / unsafe URLs.
+    if not url_has_allowed_host_and_scheme(
+        referer,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return default_url, default_label
+
+    parsed_path = urlparse(referer).path
+
+    # Don't link back to the same detail page.
+    if parsed_path == request.path:
+        return default_url, default_label
+
+    # Pick the most specific matching label.
+    for prefix, label in _BACK_LABEL_MAP:
+        if parsed_path.startswith(prefix):
+            return referer, label
+
+    # Home page or any other internal page – still honour the referer.
+    return referer, 'Back'
 
 
 def event_list(request):
@@ -78,6 +128,8 @@ def event_detail(request, pk):
             event=event,
         ).exists()
 
+    back_url, back_label = _resolve_back_navigation(request)
+
     context = {
         'event': event,
         'can_manage': user.is_authenticated and _user_can_manage_event(user, event),
@@ -88,6 +140,8 @@ def event_detail(request, pk):
             and not event.is_sold_out
         ),
         'user_has_booked': user_has_booked,
+        'back_url': back_url,
+        'back_label': back_label,
     }
     return render(request, 'events/event_detail.html', context)
 
