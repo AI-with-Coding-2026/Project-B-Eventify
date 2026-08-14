@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Category, Event
+from .models import Category, Event, EventBooking, Ticket
 
 
 INPUT_CLASSES = (
@@ -143,3 +143,25 @@ class EventForm(forms.ModelForm):
             )
 
         return image
+
+
+class TicketForm(forms.ModelForm):
+    class Meta:
+        model = Ticket
+        fields = ['event', 'attendee', 'quantity']
+        widgets = {
+            'event': forms.Select(attrs={'class': INPUT_CLASSES}),
+            'attendee': forms.Select(attrs={'class': INPUT_CLASSES}),
+            'quantity': forms.NumberInput(attrs={'class': INPUT_CLASSES, 'min': 1}),
+        }
+
+
+class BookingForm(forms.ModelForm):
+    class Meta:
+        model = EventBooking
+        fields = ['user', 'event']
+        widgets = {
+            'user': forms.Select(attrs={'class': INPUT_CLASSES}),
+            'event': forms.Select(attrs={'class': INPUT_CLASSES}),
+        }
+
