@@ -181,6 +181,46 @@ class OrganizerEventPermissionTests(TestCase):
         event = Event.objects.get(title='New Concert')
         self.assertEqual(event.organizer, self.organizer_a)
 
+    def test_organizer_can_enter_custom_category_when_other_is_selected(self):
+        self.client.force_login(self.organizer_a)
+
+        response = self.client.post(
+            reverse('event_create'),
+            {
+                'title': 'Comedy Night',
+                'description': 'Stand up',
+                'date': timezone.now().strftime('%Y-%m-%dT%H:%M'),
+                'price': '20.00',
+                'category': 'other',
+                'custom_category': 'Comedy',
+            },
+        )
+
+        self.assertRedirects(response, reverse('organizer_event_list'))
+        event = Event.objects.get(title='Comedy Night')
+        self.assertEqual(event.category, 'other')
+        self.assertEqual(event.custom_category, 'Comedy')
+        self.assertEqual(event.category_label, 'Comedy')
+
+    def test_other_category_requires_custom_name(self):
+        self.client.force_login(self.organizer_a)
+
+        response = self.client.post(
+            reverse('event_create'),
+            {
+                'title': 'Needs Category',
+                'description': 'Missing custom name',
+                'date': timezone.now().strftime('%Y-%m-%dT%H:%M'),
+                'price': '10.00',
+                'category': 'other',
+                'custom_category': '',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Please enter a category name.')
+        self.assertFalse(Event.objects.filter(title='Needs Category').exists())
+
     def test_organizer_cannot_edit_another_organizer_event(self):
         self.client.force_login(self.organizer_b)
 
