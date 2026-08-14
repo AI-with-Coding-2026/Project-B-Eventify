@@ -288,6 +288,11 @@ class AdminAccessTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Admin Dashboard')
+        self.assertContains(response, 'Events')
+        self.assertContains(response, 'Tickets')
+        self.assertContains(response, 'Bookings')
+        self.assertContains(response, 'Manage Categories')
+        self.assertNotContains(response, 'Open Django Admin Panel')
 
     def test_login_redirects_admin_to_dashboard(self):
         response = self.client.post(
@@ -330,18 +335,12 @@ class AdminAccessTests(TestCase):
             'authentication/unauthorized.html',
         )
 
-    def test_custom_admin_site_is_mounted_and_restricted_to_admin_role(self):
+    def test_custom_admin_site_index_redirects_to_admin_dashboard(self):
         self.client.force_login(self.admin_user)
 
-        response = self.client.get(
-            reverse('eventify_admin:index')
-        )
+        response = self.client.get(reverse('eventify_admin:index'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(
-            response,
-            'Eventify Administration',
-        )
+        self.assertRedirects(response, reverse('admin_dashboard'))
 
     def test_admin_role_can_view_users_in_custom_admin_site(self):
         self.client.force_login(self.admin_user)

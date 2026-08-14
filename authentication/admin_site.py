@@ -26,5 +26,8 @@ class EventifyAdminSite(AdminSite):
 
         return wrapper
 
+    def index(self, request, extra_context=None):
+        return redirect('admin_dashboard')
+
 
 eventify_admin_site = EventifyAdminSite(name='eventify_admin')
