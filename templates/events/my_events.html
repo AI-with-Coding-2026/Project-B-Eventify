@@ -3,12 +3,14 @@
 {% block title %}My Events — Eventify{% endblock %}
 
 {% block content %}
-<div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-10 mb-8">
+<div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-8 sm:py-10 mb-8">
+    <div class="mb-3 -mt-5">
+        <a href="{% url 'organizer_dashboard' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
+            ← Back to Dashboard
+        </a>
+    </div>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <a href="{% url 'organizer_dashboard' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:underline mb-3">
-                ← Back to Dashboard
-            </a>
+        <div class="ml-4 sm:ml-6">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Organizer</p>
             <h1 class="text-3xl font-bold text-gray-900 display">My Events</h1>
         </div>
