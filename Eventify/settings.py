@@ -24,15 +24,17 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'authentication',  # Added custom authentication application here
-    'events.apps.EventsConfig', # Event listing app for Sprint 2
+    'authentication', 
+    'events.apps.EventsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'cloudinary_storage',       
     'django.contrib.staticfiles',
-    'rest_framework', # Django REST Framework
+    'cloudinary',              
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -143,3 +145,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Media files configuration
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
+    'API_KEY': config('CLOUDINARY_API_KEY', default=''),
+    'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
+}
