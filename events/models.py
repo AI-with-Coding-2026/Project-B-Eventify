@@ -92,8 +92,21 @@ class Event(models.Model):
         default="other",
     )
 
+    custom_category = models.CharField(
+        max_length=80,
+        blank=True,
+        verbose_name="Custom category",
+    )
+
     def __str__(self):
         return self.title
+
+    @property
+    def category_label(self):
+        custom = (self.custom_category or "").strip()
+        if self.category == "other" and custom:
+            return custom
+        return self.get_category_display()
 
     @property
     def serial_number(self):

@@ -4,8 +4,10 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
-    <a href="{% url 'event_list' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:underline mb-6">
-        ← Back to Events
+    <a href="{{ back_url }}"
+       onclick="if (document.referrer && document.referrer.indexOf(window.location.host) !== -1 && document.referrer !== window.location.href) { event.preventDefault(); history.back(); }"
+       class="inline-flex items-center text-sm font-medium text-indigo-600 hover:underline mb-6">
+        ← {{ back_label }}
     </a>
 
     <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
@@ -21,7 +23,7 @@
             <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
                 <div>
                     <span class="inline-block text-xs font-semibold uppercase tracking-wide px-2 py-1 rounded bg-indigo-50 text-indigo-700 mb-3">
-                        {{ event.get_category_display }}
+                        {{ event.category_label }}
                     </span>
                     <div class="mb-2">
                         <span class="inline-flex items-center rounded-full bg-[#edf8ff] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#1d6fd6]">
