@@ -28,7 +28,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'authentication',  # Added custom authentication application here
-    'events', # Event listing app for Sprint 2
+    'events.apps.EventsConfig', # Event listing app for Sprint 2
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -59,6 +59,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'authentication.context_processors.dashboard_link',
             ],
         },
     },
@@ -111,6 +112,9 @@ USE_TZ = True
 # https://djangoproject.com
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
 
 # Uploaded event images
 MEDIA_URL = '/media/'
@@ -119,8 +123,12 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Activate the custom user model containing the 3 required roles
 AUTH_USER_MODEL = 'authentication.User'
 
-# Admin-only views redirect unauthenticated users to the custom admin login.
-LOGIN_URL = 'eventify_admin:login'
+# Admin-only views redirect unauthenticated users to the app login page.
+LOGIN_URL = 'login'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Media files configuration
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

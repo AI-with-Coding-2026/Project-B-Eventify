@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.title }} — Eventify{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <a href="{% url 'event_list' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:underline mb-6">
+        ← Back to Events
+    </a>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+        {% if event.image %}
+        <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full max-h-96 object-cover">
+        {% else %}
+        <div class="w-full h-64 bg-indigo-50 flex items-center justify-center text-indigo-400">
+            No image available
+        </div>
+        {% endif %}
+
+        <div class="p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+                <div>
+                    <span class="inline-block text-xs font-semibold uppercase tracking-wide px-2 py-1 rounded bg-indigo-50 text-indigo-700 mb-3">
+                        {{ event.get_category_display }}
+                    </span>
+                    <div class="mb-2">
+                        <span class="inline-flex items-center rounded-full bg-[#edf8ff] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#1d6fd6]">
+                            {{ event.serial_number }}
+                        </span>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-900 display">{{ event.title }}</h1>
+                </div>
+                <p class="text-2xl font-bold text-indigo-600">${{ event.price }}</p>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4 mb-6 text-sm text-gray-600">
+                <p><strong class="text-gray-900">Date:</strong> {{ event.date|date:"F d, Y \a\t g:i A" }}</p>
+                <p><strong class="text-gray-900">Location:</strong> {{ event.location|default:"TBA" }}</p>
+                <p><strong class="text-gray-900">Tickets remaining:</strong> {{ event.tickets_remaining }} / {{ event.max_tickets }}</p>
+                {% if event.organizer %}
+                <p><strong class="text-gray-900">Organizer:</strong> {{ event.organizer.username }}</p>
+                {% endif %}
+            </div>
+
+            <section class="mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 display mb-2">Description</h2>
+                {% if event.description %}
+                <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ event.description }}</p>
+                {% else %}
+                <p class="text-gray-400 italic">No description provided for this event.</p>
+                {% endif %}
+            </section>
+
+            <div class="flex flex-wrap gap-3 pt-4 border-t border-gray-100">
+                {% if can_book %}
+                <form method="post" action="{% url 'book_event' event.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition">
+                        Book Event
+                    </button>
+                </form>
+                {% elif user_has_booked %}
+                <span class="inline-flex items-center rounded-xl bg-green-50 px-6 py-2.5 text-sm font-semibold text-green-700 border border-green-200">
+                    ✓ Already booked
+                </span>
+                {% elif event.is_sold_out and user.is_authenticated and user.is_attendee %}
+                <span class="inline-flex items-center rounded-xl bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-500">
+                    Sold out
+                </span>
+                {% endif %}
+
+                {% if can_manage %}
+                <a href="{% url 'edit_event' event.pk %}" class="inline-flex items-center justify-center rounded-xl bg-indigo-50 px-6 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition">
+                    Edit
+                </a>
+                <a href="{% url 'delete_event' event.pk %}" class="inline-flex items-center justify-center rounded-xl bg-red-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition">
+                    Delete
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

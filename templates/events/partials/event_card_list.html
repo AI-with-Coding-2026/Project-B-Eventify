@@ -1,0 +1,30 @@
+<a href="{% url 'event_detail' event.pk %}" class="event-card-styled flex flex-col sm:flex-row overflow-hidden hover:shadow-md transition group no-underline text-inherit">
+    {% if event.image %}
+    <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full sm:w-48 h-40 sm:h-auto object-cover shrink-0">
+    {% else %}
+    <div class="w-full sm:w-48 h-40 sm:h-auto bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm shrink-0">
+        No image
+    </div>
+    {% endif %}
+
+    <div class="p-5 flex flex-col flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-2 mb-2">
+            <span class="inline-block text-xs font-medium uppercase tracking-wide px-2 py-1 rounded bg-indigo-50 text-indigo-700">
+                {{ event.get_category_display }}
+            </span>
+            <span class="text-sm font-semibold text-indigo-600">${{ event.price }}</span>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2 display group-hover:text-indigo-700 transition">{{ event.title }}</h3>
+        {% if event.description %}
+        <p class="text-sm text-gray-600 mb-3">{{ event.description|truncatewords:40 }}</p>
+        {% else %}
+        <p class="text-sm text-gray-400 italic mb-3">No description provided.</p>
+        {% endif %}
+        <div class="mt-auto flex flex-wrap gap-4 text-sm text-gray-500">
+            <span><strong class="text-gray-700">Date:</strong> {{ event.date|date:"M d, Y" }}</span>
+            {% if event.location %}
+            <span><strong class="text-gray-700">Location:</strong> {{ event.location }}</span>
+            {% endif %}
+        </div>
+    </div>
+</a>

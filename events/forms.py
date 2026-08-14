@@ -3,39 +3,13 @@ from django import forms
 from .models import Category, Event
 
 
-class EventForm(forms.ModelForm):
-    """Organizer event create/edit form. Ownership is set in the view."""
+INPUT_CLASSES = (
+    "mt-1 block w-full rounded-xl border border-[#dbeeff] bg-white px-3 py-2.5 "
+    "text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 "
+    "focus:border-[#2c7be5] focus:outline-none focus:ring-4 focus:ring-[#dbeeff]"
+)
 
-    class Meta:
-        model = Event
-        fields = ['title', 'description', 'image', 'date', 'price', 'category']
-        widgets = {
-            'title': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Event title',
-            }),
-            'description': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Describe your event',
-            }),
-            'image': forms.ClearableFileInput(attrs={
-                'class': 'form-control',
-                'accept': 'image/*',
-            }),
-            'date': forms.DateTimeInput(attrs={
-                'class': 'form-control',
-                'type': 'datetime-local',
-            }),
-            'price': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': '0.01',
-                'min': '0',
-            }),
-            'category': forms.Select(attrs={
-                'class': 'form-control',
-            }),
-        }
+TEXTAREA_CLASSES = INPUT_CLASSES + " min-h-[120px]"
 
 
 class CategoryForm(forms.ModelForm):
@@ -45,11 +19,11 @@ class CategoryForm(forms.ModelForm):
 
         widgets = {
             'name': forms.TextInput(attrs={
-                'class': 'form-control',
+                'class': INPUT_CLASSES,
                 'placeholder': 'Enter category name',
             }),
             'description': forms.Textarea(attrs={
-                'class': 'form-control',
+                'class': INPUT_CLASSES,
                 'rows': 3,
                 'placeholder': 'Optional description',
             }),
@@ -63,8 +37,6 @@ class CategoryForm(forms.ModelForm):
                 'Category name cannot be empty.'
             )
 
-        # Exclude the current category on edit.
-        # Without this, saving the same name would fail uniqueness against itself.
         duplicates = Category.objects.filter(name__iexact=name)
         if self.instance.pk:
             duplicates = duplicates.exclude(pk=self.instance.pk)
@@ -75,3 +47,99 @@ class CategoryForm(forms.ModelForm):
             )
 
         return name
+
+
+class EventForm(forms.ModelForm):
+
+    max_tickets = forms.IntegerField(
+        required=False,
+        min_value=1,
+        initial=1,
+        widget=forms.NumberInput(
+            attrs={
+                "class": INPUT_CLASSES,
+                "min": "1",
+            }
+        ),
+    )
+
+    date = forms.DateTimeField(
+        widget=forms.DateTimeInput(
+            attrs={
+                "type": "datetime-local",
+                "class": INPUT_CLASSES,
+            },
+            format="%Y-%m-%dT%H:%M",
+        ),
+        input_formats=["%Y-%m-%dT%H:%M"],
+    )
+
+    class Meta:
+        model = Event
+
+        fields = [
+            "title",
+            "description",
+            "location",
+            "date",
+            "price",
+            "max_tickets",
+            "category",
+            "image",
+        ]
+
+        widgets = {
+            "title": forms.TextInput(
+                attrs={"class": INPUT_CLASSES}
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "class": TEXTAREA_CLASSES,
+                    "rows": 5,
+                }
+            ),
+            "location": forms.TextInput(
+                attrs={"class": INPUT_CLASSES}
+            ),
+            "price": forms.NumberInput(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "step": "0.01",
+                    "min": "0",
+                }
+            ),
+            "category": forms.Select(
+                attrs={
+                    "class": INPUT_CLASSES,
+                }
+            ),
+            "image": forms.ClearableFileInput(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "accept": "image/jpeg,image/png,image/webp",
+                }
+            ),
+        }
+
+    def clean_max_tickets(self):
+        value = self.cleaned_data.get("max_tickets")
+        return value or 1
+
+    def clean_image(self):
+        image = self.cleaned_data.get("image")
+
+        if (
+            image
+            and hasattr(image, "content_type")
+            and image.content_type
+            not in [
+                "image/jpeg",
+                "image/png",
+                "image/webp",
+            ]
+        ):
+            raise forms.ValidationError(
+                "Only JPG, PNG, and WebP images are allowed."
+            )
+
+        return image

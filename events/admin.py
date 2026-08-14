@@ -4,6 +4,48 @@ from authentication.admin_site import eventify_admin_site
 from .models import Event, Category, Ticket
 from django.utils.html import format_html
 
+
+def render_actions_menu(obj):
+    edit_url = f'{obj.pk}/change/'
+    delete_url = f'{obj.pk}/delete/'
+    return format_html(
+        '<div style="text-align: right; width: 100%;">'
+        '  <div style="display:inline-block;position:relative;">'
+        '    <button type="button" onclick="'
+        "      var b=this.getBoundingClientRect();"
+        "      var m=this.nextElementSibling;"
+        "      document.querySelectorAll('.evt-dropdown').forEach(function(d){{if(d!==m)d.style.display='none'}});"
+        "      if(m.style.display==='block'){{m.style.display='none';return}}"
+        "      m.style.top=b.bottom+'px';"
+        "      m.style.left=(b.right-120)+'px';"
+        "      m.style.display='block';"
+        "      event.stopPropagation();"
+        '"'
+        '    style="background:none;border:none;cursor:pointer;font-size:20px;'
+        '    line-height:1;padding:4px 8px;color:inherit;">&#8942;</button>'
+        '    <div class="evt-dropdown" style="display:none;position:fixed;'
+        '    background:#1a1a2e;border:1px solid #444;border-radius:4px;min-width:120px;'
+        '    z-index:10000;box-shadow:0 2px 8px rgba(0,0,0,.3);text-align:left;">'
+        '      <a href="{edit_url}" style="display:block;padding:8px 16px;color:#79aec8;'
+        '      text-decoration:none;white-space:nowrap;font-size:13px;"'
+        '      onmouseover="this.style.background=\'#264b5d\'"'
+        '      onmouseout="this.style.background=\'none\'">Edit</a>'
+        '      <a href="{delete_url}" style="display:block;padding:8px 16px;color:#e74c3c;'
+        '      text-decoration:none;white-space:nowrap;font-size:13px;"'
+        '      onmouseover="this.style.background=\'#4a1a1a\'"'
+        '      onmouseout="this.style.background=\'none\'">Delete</a>'
+        '    </div>'
+        '  </div>'
+        '</div>'
+        '<script>'
+        "document.addEventListener('click',function(){{document.querySelectorAll('.evt-dropdown')"
+        ".forEach(function(d){{d.style.display='none'}})}});"
+        '</script>',
+        edit_url=edit_url,
+        delete_url=delete_url,
+    )
+
+
 @admin.register(Event, site=eventify_admin_site)
 class EventAdmin(admin.ModelAdmin):
     list_display = ('title', 'organizer', 'date', 'price', 'category', 'actions_menu')
@@ -11,42 +53,7 @@ class EventAdmin(admin.ModelAdmin):
 
     @admin.display(description='')
     def actions_menu(self, obj):
-        edit_url = f'{obj.pk}/change/'
-        delete_url = f'{obj.pk}/delete/'
-        return format_html(
-            '<div style="display:inline-block;text-align:center;">'
-            '  <button type="button" onclick="'
-            "    var b=this.getBoundingClientRect();"
-            "    var m=this.nextElementSibling;"
-            "    document.querySelectorAll('.evt-dropdown').forEach(function(d){{if(d!==m)d.style.display='none'}});"
-            "    if(m.style.display==='block'){{m.style.display='none';return}}"
-            "    m.style.top=b.bottom+'px';"
-            "    m.style.left=(b.right-120)+'px';"
-            "    m.style.display='block';"
-            "    event.stopPropagation();"
-            '"'
-            '  style="background:none;border:none;cursor:pointer;font-size:20px;'
-            '  line-height:1;padding:4px 8px;color:inherit;">&#8942;</button>'
-            '  <div class="evt-dropdown" style="display:none;position:fixed;'
-            '  background:#1a1a2e;border:1px solid #444;border-radius:4px;min-width:120px;'
-            '  z-index:10000;box-shadow:0 2px 8px rgba(0,0,0,.3);">'
-            '    <a href="{edit_url}" style="display:block;padding:8px 16px;color:#79aec8;'
-            '    text-decoration:none;white-space:nowrap;font-size:13px;"'
-            '    onmouseover="this.style.background=\'#264b5d\'"'
-            '    onmouseout="this.style.background=\'none\'">Edit</a>'
-            '    <a href="{delete_url}" style="display:block;padding:8px 16px;color:#e74c3c;'
-            '    text-decoration:none;white-space:nowrap;font-size:13px;"'
-            '    onmouseover="this.style.background=\'#4a1a1a\'"'
-            '    onmouseout="this.style.background=\'none\'">Delete</a>'
-            '  </div>'
-            '</div>'
-            '<script>'
-            "document.addEventListener('click',function(){{document.querySelectorAll('.evt-dropdown')"
-            ".forEach(function(d){{d.style.display='none'}})}});"
-            '</script>',
-            edit_url=edit_url,
-            delete_url=delete_url,
-        )
+        return render_actions_menu(obj)
     
     def get_actions(self, request):
         actions = super().get_actions(request)
@@ -83,7 +90,14 @@ class EventAdmin(admin.ModelAdmin):
         return TemplateResponse(request, "admin/events/event/delete_selected_confirmation.html", context)
 
 
-eventify_admin_site.register(Ticket)
+@admin.register(Ticket, site=eventify_admin_site)
+class TicketAdmin(admin.ModelAdmin):
+    list_display = ('event', 'attendee', 'quantity', 'booked_at', 'actions_menu')
+
+    @admin.display(description='')
+    def actions_menu(self, obj):
+        return render_actions_menu(obj)
+
 
 # Register Category model using standard admin decorator
 @admin.register(Category)

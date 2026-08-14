@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from .forms import UserRegistrationForm
 from .models import User, UserRole
@@ -281,14 +281,15 @@ class AdminAccessTests(TestCase):
             role=UserRole.ATTENDEE,
         )
 
-    def test_admin_dashboard_redirects_to_eventify_admin(self):
+    def test_admin_dashboard_renders_for_admin(self):
         self.client.force_login(self.admin_user)
 
         response = self.client.get(reverse('admin_dashboard'))
 
-        self.assertRedirects(response, reverse('eventify_admin:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Admin Dashboard')
 
-    def test_login_redirects_admin_to_eventify_admin(self):
+    def test_login_redirects_admin_to_dashboard(self):
         response = self.client.post(
             reverse('login'),
             {
@@ -297,7 +298,7 @@ class AdminAccessTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse('eventify_admin:index'))
+        self.assertRedirects(response, reverse('admin_dashboard'))
 
     def test_admin_dashboard_denies_organizer_with_unauthorized(self):
         """Organizer accessing admin dashboard gets redirected to /unauthorized/ (403)."""
@@ -356,7 +357,7 @@ class AdminAccessTests(TestCase):
         )
 
     def test_custom_admin_site_denies_organizer_with_unauthorized(self):
-        """Organizer accessing /admin/ gets redirected to /unauthorized/ (403), not 404."""
+        """Organizer accessing /django-admin/ gets redirected to /unauthorized/ (403), not 404."""
         self.client.force_login(self.organizer)
 
         response = self.client.get(
@@ -371,7 +372,7 @@ class AdminAccessTests(TestCase):
         )
 
     def test_custom_admin_site_denies_attendee_with_unauthorized(self):
-        """Attendee accessing /admin/ gets redirected to /unauthorized/ (403), not 404."""
+        """Attendee accessing /django-admin/ gets redirected to /unauthorized/ (403), not 404."""
         self.client.force_login(self.attendee)
 
         response = self.client.get(
@@ -428,6 +429,7 @@ class RoleDashboardAccessTests(TestCase):
             render.assert_called_once_with(
                 request,
                 'authentication/organizer_dashboard.html',
+                {'upcoming_events': ANY},
             )
 
         request = self.factory.get('/dashboard/attendee/')
@@ -445,6 +447,7 @@ class RoleDashboardAccessTests(TestCase):
             render.assert_called_once_with(
                 request,
                 'authentication/attendee_dashboard.html',
+                {'upcoming_events': ANY},
             )
 
     def test_organizer_and_attendee_remain_isolated(self):
