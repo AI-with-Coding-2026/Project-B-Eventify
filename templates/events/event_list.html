@@ -50,7 +50,9 @@
 
     <div class="flex items-center justify-between mb-6">
         <p class="text-sm text-gray-500">{{ events.paginator.count }} event{{ events.paginator.count|pluralize }}</p>
-        <div class="inline-flex rounded-lg border border-indigo-200 overflow-hidden">
+        
+        <!-- التعديل هنا: أضفنا hidden md:inline-flex لتختفي الأزرار تماماً على الشاشات الصغيرة وتظهر فقط في الـ md وما فوق -->
+        <div class="hidden md:inline-flex rounded-lg border border-indigo-200 overflow-hidden">
             <button type="button" id="view-grid-btn" class="view-toggle px-4 py-2 text-sm font-medium bg-indigo-600 text-white transition" aria-pressed="true">
                 Grid
             </button>
@@ -118,22 +120,28 @@
         var isGrid = mode === 'grid';
         gridView.classList.toggle('hidden', !isGrid);
         listView.classList.toggle('hidden', isGrid);
-        gridBtn.classList.toggle('bg-indigo-600', isGrid);
-        gridBtn.classList.toggle('text-white', isGrid);
-        gridBtn.classList.toggle('bg-white', !isGrid);
-        gridBtn.classList.toggle('text-indigo-700', !isGrid);
-        listBtn.classList.toggle('bg-indigo-600', !isGrid);
-        listBtn.classList.toggle('text-white', !isGrid);
-        listBtn.classList.toggle('bg-white', isGrid);
-        listBtn.classList.toggle('text-indigo-700', isGrid);
-        gridBtn.setAttribute('aria-pressed', isGrid ? 'true' : 'false');
-        listBtn.setAttribute('aria-pressed', isGrid ? 'false' : 'true');
+        if (gridBtn && listBtn) {
+            gridBtn.classList.toggle('bg-indigo-600', isGrid);
+            gridBtn.classList.toggle('text-white', isGrid);
+            gridBtn.classList.toggle('bg-white', !isGrid);
+            gridBtn.classList.toggle('text-indigo-700', !isGrid);
+            listBtn.classList.toggle('bg-indigo-600', !isGrid);
+            listBtn.classList.toggle('text-white', !isGrid);
+            listBtn.classList.toggle('bg-white', isGrid);
+            listBtn.classList.toggle('text-indigo-700', isGrid);
+            gridBtn.setAttribute('aria-pressed', isGrid ? 'true' : 'false');
+            listBtn.setAttribute('aria-pressed', isGrid ? 'false' : 'true');
+        }
         localStorage.setItem(storageKey, mode);
     }
 
-    gridBtn.addEventListener('click', function () { setView('grid'); });
-    listBtn.addEventListener('click', function () { setView('list'); });
-    setView(localStorage.getItem(storageKey) || 'grid');
+    if (gridBtn) gridBtn.addEventListener('click', function () { setView('grid'); });
+    if (listBtn) listBtn.addEventListener('click', function () { setView('list'); });
+
+    // تحديد العرض الافتراضي: إذا كانت الشاشة صغيرة (< 768px أي أقل من md) نلزمها بـ list، وإلا نقرأ من الـ localStorage أو grid
+    var isMobile = window.innerWidth < 768;
+    var initialMode = isMobile ? 'list' : (localStorage.getItem(storageKey) || 'grid');
+    setView(initialMode);
 })();
 </script>
 {% endblock %}
