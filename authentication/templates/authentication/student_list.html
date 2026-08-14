@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Students — Eventify{% endblock %}
+
+{% block content %}
+<div class="events-header">
+    <div>
+        <p class="eyebrow">Admin Panel</p>
+        <h1 style="margin: 0;">Manage Students</h1>
+    </div>
+
+    <a href="{% url 'admin_dashboard' %}" class="btn-secondary" style="padding: 10px 18px; font-size: 15px;">
+        ← Back to Dashboard
+    </a>
+</div>
+
+<div class="filter-bar">
+    <form method="get" action="{% url 'student_list' %}" class="filter-form">
+        <input
+            type="text"
+            name="q"
+            value="{{ search_query }}"
+            placeholder="Search by name, username, or email…"
+            class="filter-input"
+        >
+
+        <select name="role" class="filter-select">
+            <option value="">All Roles</option>
+            {% for value, label in role_choices %}
+                <option
+                    value="{{ value }}"
+                    {% if role_filter == value %}selected{% endif %}
+                >
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn-create" style="padding: 10px 20px;">
+            Filter
+        </button>
+
+        {% if search_query or role_filter %}
+            <a href="{% url 'student_list' %}" class="btn-secondary" style="padding: 10px 16px;">
+                Clear
+            </a>
+        {% endif %}
+    </form>
+</div>
+
+{% if users %}
+    <div class="table-wrapper">
+        <table class="students-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Date Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in users %}
+                    <tr>
+                        <td data-label="Name">{{ student.full_name }}</td>
+                        <td data-label="Username">{{ student.username }}</td>
+                        <td data-label="Email">{{ student.email|default:"—" }}</td>
+                        <td data-label="Role">
+                            <span class="role-badge role-badge--{{ student.role }}">
+                                {{ student.get_role_display }}
+                            </span>
+                        </td>
+                        <td data-label="Joined">{{ student.date_joined|date:"M j, Y" }}</td>
+                        <td data-label="Actions">
+                            <div class="action-buttons">
+                                <a href="{% url 'student_detail' student.pk %}" class="btn-secondary">
+                                    View
+                                </a>
+                                <a href="{% url 'student_edit' student.pk %}" class="btn-secondary">
+                                    Edit
+                                </a>
+                                <a href="{% url 'student_delete' student.pk %}" class="btn-danger">
+                                    Delete
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <h3>No Students Found</h3>
+        <p>
+            {% if search_query or role_filter %}
+                No users match your search criteria. Try adjusting your filters.
+            {% else %}
+                There are no registered users yet.
+            {% endif %}
+        </p>
+
+        {% if search_query or role_filter %}
+            <a href="{% url 'student_list' %}" class="btn-create">
+                Clear Filters
+            </a>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

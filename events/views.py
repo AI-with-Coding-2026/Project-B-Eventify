@@ -1,10 +1,22 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from authentication.decorators import role_required
 from authentication.models import UserRole
 from .forms import EventForm
 from .models import Event
+
+
+@login_required
+def event_detail(request, pk):
+    """View details for a single event."""
+    event = get_object_or_404(Event, pk=pk)
+    return render(
+        request,
+        'events/event_detail.html',
+        {'event': event},
+    )
 
 
 @role_required(UserRole.ORGANIZER, UserRole.ADMIN)

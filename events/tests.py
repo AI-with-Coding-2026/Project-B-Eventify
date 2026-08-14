@@ -304,3 +304,18 @@ class EventViewsAuthorizationTests(TestCase):
         # Delete
         res_delete = self.client.get(reverse('event_delete', kwargs={'pk': self.event_a.pk}))
         self.assertRedirects(res_delete, reverse('unauthorized'))
+
+    def test_attendee_can_view_event_detail(self):
+        self.client.force_login(self.attendee)
+        detail_url = reverse('event_detail', kwargs={'pk': self.event_a.pk})
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Organizer A&#x27;s Concert")
+
+    def test_attendee_sees_created_events_on_dashboard(self):
+        self.client.force_login(self.attendee)
+        dashboard_url = reverse('attendee_dashboard')
+        response = self.client.get(dashboard_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Organizer A&#x27;s Concert")
+

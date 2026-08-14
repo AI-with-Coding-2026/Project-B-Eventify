@@ -34,10 +34,18 @@
         </div>
     </div>
 
-    <div class="role-message">
-        <a href="{% url 'eventify_admin:index' %}">
-            Open Django Admin Panel
-        </a>
+    <div class="role-message" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div>
+            <strong>Administration:</strong> Manage users and platform settings.
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <a href="{% url 'student_list' %}" class="btn-create">
+                Manage Students
+            </a>
+            <a href="{% url 'eventify_admin:index' %}" class="btn-secondary">
+                Django Admin Panel
+            </a>
+        </div>
     </div>
 </section>
 {% endblock %}

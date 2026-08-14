@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit {{ student.full_name }} — Eventify{% endblock %}
+
+{% block content %}
+<section class="auth-card" style="width: min(100%, 650px);">
+    <h1>Edit Student</h1>
+
+    <p class="subtitle">
+        Editing profile for <strong>@{{ student.username }}</strong>
+    </p>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                </label>
+
+                {{ field }}
+
+                {% if field.help_text %}
+                    <div class="help-text">
+                        {{ field.help_text|safe }}
+                    </div>
+                {% endif %}
+
+                {% for error in field.errors %}
+                    <div class="field-error">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button type="submit" class="primary-button" style="flex: 1;">
+                Save Changes
+            </button>
+            <a href="{% url 'student_list' %}" class="btn-secondary" style="padding: 13px 18px; font-size: 16px;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ event.title }} — Eventify{% endblock %}
+
+{% block content %}
+<section class="dashboard-card" style="width: min(100%, 750px);">
+    <p class="eyebrow">Event Details</p>
+
+    <h1 style="margin-bottom: 4px;">{{ event.title }}</h1>
+
+    <p class="subtitle">
+        Organized by <strong>{{ event.organizer.full_name }}</strong>
+    </p>
+
+    {% if event.poster %}
+        <div style="margin-bottom: 24px; text-align: center;">
+            <img src="{{ event.poster.url }}" alt="{{ event.title }} Poster" style="max-width: 100%; max-height: 400px; border-radius: 12px; border: 1px solid var(--border); object-fit: cover;">
+        </div>
+    {% endif %}
+
+    <div class="account-details">
+        <div class="detail-row">
+            <span>Date & Time</span>
+            <strong>{{ event.date|date:"F j, Y @ g:i A" }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Location</span>
+            <strong>{{ event.location }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Ticket Price</span>
+            <strong>${{ event.ticket_price }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Max Tickets</span>
+            <strong>{{ event.max_tickets }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Organizer Email</span>
+            <strong>{{ event.organizer.email|default:event.organizer.username }}</strong>
+        </div>
+
+        <div class="detail-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+            <span style="font-weight: 600;">Description</span>
+            <div style="color: var(--text); line-height: 1.6; white-space: pre-wrap;">{{ event.description }}</div>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
+        {% if user == event.organizer or user.is_admin %}
+            <a href="{% url 'event_edit' event.pk %}" class="btn-secondary" style="padding: 12px 20px;">
+                Edit Event
+            </a>
+            <a href="{% url 'event_delete' event.pk %}" class="btn-danger" style="padding: 12px 20px;">
+                Delete Event
+            </a>
+        {% endif %}
+
+        {% if user.role == 'attendee' or user.is_admin %}
+            <a href="{% url 'attendee_dashboard' %}" class="btn-secondary" style="padding: 12px 20px;">
+                ← Back to Browse Events
+            </a>
+        {% else %}
+            <a href="{% url 'organizer_event_list' %}" class="btn-secondary" style="padding: 12px 20px;">
+                ← Back to My Events
+            </a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

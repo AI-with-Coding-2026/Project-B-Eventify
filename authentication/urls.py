@@ -5,6 +5,10 @@ from . import views
 
 urlpatterns = [
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('admin/students/', views.student_list, name='student_list'),
+    path('admin/students/<int:pk>/', views.student_detail, name='student_detail'),
+    path('admin/students/<int:pk>/edit/', views.student_edit, name='student_edit'),
+    path('admin/students/<int:pk>/delete/', views.student_delete, name='student_delete'),
     path('register/', views.register, name='register'),
     path('', views.home, name='home'),
     path('login/', views.login_view, name='login'),
@@ -21,3 +25,4 @@ urlpatterns = [
         name='attendee_dashboard',
     ),
 ]
+

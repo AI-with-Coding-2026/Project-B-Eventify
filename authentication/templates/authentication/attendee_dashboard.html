@@ -3,39 +3,59 @@
 {% block title %}Attendee Dashboard — Eventify{% endblock %}
 
 {% block content %}
-<section class="dashboard-card">
-    <p class="eyebrow">Attendee Dashboard</p>
-
-    <h1>Welcome, {{ user.full_name }}</h1>
-
-    <p class="subtitle">
-        You are logged in as an Attendee.
-    </p>
-
-    <div class="account-details">
-        <div class="detail-row">
-            <span>Name</span>
-            <strong>{{ user.get_full_name }}</strong>
-        </div>
-
-        <div class="detail-row">
-            <span>Email</span>
-            <strong>{{ user.email }}</strong>
-        </div>
-
-        <div class="detail-row">
-            <span>Role</span>
-            <strong>{{ user.get_role_display }}</strong>
-        </div>
-
-        <div class="detail-row">
-            <span>Account created</span>
-            <strong>{{ user.date_joined|date:"F j, Y" }}</strong>
-        </div>
+<div class="events-header">
+    <div>
+        <p class="eyebrow">Attendee Dashboard</p>
+        <h1 style="margin: 0;">Explore Events</h1>
+        <p class="subtitle" style="margin-top: 4px; margin-bottom: 0;">Welcome, {{ user.full_name }}. Browse upcoming events below.</p>
     </div>
+</div>
 
-    <div class="role-message">
-        You will be able to browse events and book tickets here.
+{% if events %}
+    <div class="events-grid">
+        {% for event in events %}
+            <article class="event-card">
+                {% if event.poster %}
+                    <img src="{{ event.poster.url }}" alt="{{ event.title }} Poster" class="event-poster">
+                {% else %}
+                    <div class="event-poster-placeholder">
+                        {{ event.title|slice:":2"|upper }}
+                    </div>
+                {% endif %}
+
+                <div class="event-card-body">
+                    <h2 class="event-title">{{ event.title }}</h2>
+
+                    <div class="event-meta">
+                        <span>📅 {{ event.date|date:"F j, Y @ g:i A" }}</span>
+                        <span>📍 {{ event.location }}</span>
+                        <span>🎟️ ${{ event.ticket_price }} / ticket (Max {{ event.max_tickets }})</span>
+                        <span>👤 Organizer: {{ event.organizer.full_name }}</span>
+                    </div>
+
+                    <p class="event-description">
+                        {{ event.description }}
+                    </p>
+
+                    <div class="event-footer">
+                        <span class="event-badge">
+                            Created {{ event.created_at|date:"M j, Y" }}
+                        </span>
+
+                        <div class="action-buttons">
+                            <a href="{% url 'event_detail' event.pk %}" class="btn-create" style="padding: 6px 14px; font-size: 13px;">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
     </div>
-</section>
+{% else %}
+    <div class="empty-state">
+        <h3>No Events Available Yet</h3>
+        <p>Organizers haven't posted any events yet. Check back soon!</p>
+    </div>
+{% endif %}
 {% endblock %}

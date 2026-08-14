@@ -45,6 +45,9 @@
                         </span>
 
                         <div class="action-buttons">
+                            <a href="{% url 'event_detail' event.pk %}" class="btn-secondary">
+                                View
+                            </a>
                             <a href="{% url 'event_edit' event.pk %}" class="btn-secondary">
                                 Edit
                             </a>

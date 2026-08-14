@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ student.full_name }} — Eventify{% endblock %}
+
+{% block content %}
+<section class="dashboard-card" style="width: min(100%, 600px);">
+    <p class="eyebrow">Student Details</p>
+
+    <h1>{{ student.full_name }}</h1>
+
+    <p class="subtitle">
+        Viewing profile for <strong>@{{ student.username }}</strong>
+    </p>
+
+    <div class="account-details">
+        <div class="detail-row">
+            <span>First Name</span>
+            <strong>{{ student.first_name|default:"—" }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Last Name</span>
+            <strong>{{ student.last_name|default:"—" }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Username</span>
+            <strong>{{ student.username }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Email</span>
+            <strong>{{ student.email|default:"—" }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Role</span>
+            <strong>
+                <span class="role-badge role-badge--{{ student.role }}">
+                    {{ student.get_role_display }}
+                </span>
+            </strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Date Joined</span>
+            <strong>{{ student.date_joined|date:"F j, Y @ g:i A" }}</strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Last Login</span>
+            <strong>
+                {% if student.last_login %}
+                    {{ student.last_login|date:"F j, Y @ g:i A" }}
+                {% else %}
+                    Never
+                {% endif %}
+            </strong>
+        </div>
+
+        <div class="detail-row">
+            <span>Active</span>
+            <strong>
+                {% if student.is_active %}
+                    <span style="color: var(--success);">Yes</span>
+                {% else %}
+                    <span style="color: var(--error);">No</span>
+                {% endif %}
+            </strong>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-top: 24px;">
+        <a href="{% url 'student_edit' student.pk %}" class="primary-button" style="text-align: center; text-decoration: none;">
+            Edit Student
+        </a>
+        <a href="{% url 'student_list' %}" class="btn-secondary" style="padding: 13px 18px; font-size: 16px; text-align: center;">
+            Back to List
+        </a>
+    </div>
+</section>
+{% endblock %}

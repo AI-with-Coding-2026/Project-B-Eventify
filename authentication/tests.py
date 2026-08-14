@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from .forms import UserRegistrationForm
 from .models import User, UserRole
@@ -333,6 +333,7 @@ class RoleDashboardAccessTests(TestCase):
             render.assert_called_once_with(
                 request,
                 'authentication/attendee_dashboard.html',
+                ANY,
             )
 
     def test_organizer_and_attendee_remain_isolated(self):
@@ -377,3 +378,165 @@ class SessionPersistenceTests(TestCase):
         response = self.client.get(reverse('attendee_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.wsgi_request.user.is_authenticated)
+
+
+class StudentManagementTests(TestCase):
+    """Tests for admin-only student list, detail, edit, and delete views."""
+
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            'studentadmin',
+            'studentadmin@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.organizer = User.objects.create_user(
+            'studentorg',
+            'studentorg@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            'studentatt',
+            'studentatt@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+
+    # --- Student List ---
+
+    def test_admin_can_view_student_list(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('student_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'studentadmin')
+        self.assertContains(response, 'studentorg')
+        self.assertContains(response, 'studentatt')
+
+    def test_student_list_search_by_username(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('student_list'), {'q': 'studentorg'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'studentorg')
+        self.assertNotContains(response, 'studentatt')
+
+    def test_student_list_filter_by_role(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('student_list'), {'role': 'attendee'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'studentatt')
+        self.assertNotContains(response, 'studentorg')
+
+    # --- Student Detail ---
+
+    def test_admin_can_view_student_detail(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse('student_detail', kwargs={'pk': self.attendee.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'studentatt')
+
+    def test_student_detail_returns_404_for_nonexistent_user(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse('student_detail', kwargs={'pk': 99999})
+        )
+        self.assertEqual(response.status_code, 404)
+
+    # --- Student Edit ---
+
+    def test_admin_can_edit_student(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('student_edit', kwargs={'pk': self.attendee.pk}),
+            {
+                'first_name': 'Updated',
+                'last_name': 'Name',
+                'email': 'updated@example.com',
+                'role': UserRole.ATTENDEE,
+            },
+        )
+        self.assertRedirects(response, reverse('student_list'))
+        self.attendee.refresh_from_db()
+        self.assertEqual(self.attendee.first_name, 'Updated')
+        self.assertEqual(self.attendee.last_name, 'Name')
+        self.assertEqual(self.attendee.email, 'updated@example.com')
+
+    def test_student_edit_rejects_duplicate_email(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('student_edit', kwargs={'pk': self.attendee.pk}),
+            {
+                'first_name': 'Att',
+                'last_name': 'User',
+                'email': 'studentorg@example.com',  # Duplicate
+                'role': UserRole.ATTENDEE,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'already exists')
+
+    # --- Student Delete ---
+
+    def test_admin_can_delete_student(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('student_delete', kwargs={'pk': self.attendee.pk})
+        )
+        self.assertRedirects(response, reverse('student_list'))
+        self.assertFalse(User.objects.filter(pk=self.attendee.pk).exists())
+
+    def test_admin_cannot_delete_self(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('student_delete', kwargs={'pk': self.admin.pk})
+        )
+        self.assertRedirects(response, reverse('student_list'))
+        self.assertTrue(User.objects.filter(pk=self.admin.pk).exists())
+
+    def test_admin_cannot_delete_superuser(self):
+        superuser = User.objects.create_superuser(
+            'superadmin', 'superadmin@example.com', 'strong-pass-123'
+        )
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('student_delete', kwargs={'pk': superuser.pk})
+        )
+        self.assertRedirects(response, reverse('student_list'))
+        self.assertTrue(User.objects.filter(pk=superuser.pk).exists())
+
+    def test_delete_confirmation_page_renders(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse('student_delete', kwargs={'pk': self.organizer.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Confirm Delete')
+        self.assertContains(response, self.organizer.username)
+
+    # --- Non-admin Access Denied ---
+
+    def test_organizer_cannot_access_student_list(self):
+        self.client.force_login(self.organizer)
+        response = self.client.get(reverse('student_list'))
+        # admin_required redirects to admin login
+        self.assertNotEqual(response.status_code, 200)
+
+    def test_attendee_cannot_access_student_edit(self):
+        self.client.force_login(self.attendee)
+        response = self.client.get(
+            reverse('student_edit', kwargs={'pk': self.organizer.pk})
+        )
+        self.assertNotEqual(response.status_code, 200)
+
+    def test_attendee_cannot_access_student_delete(self):
+        self.client.force_login(self.attendee)
+        response = self.client.post(
+            reverse('student_delete', kwargs={'pk': self.organizer.pk})
+        )
+        self.assertNotEqual(response.status_code, 200)
+        self.assertTrue(User.objects.filter(pk=self.organizer.pk).exists())
+

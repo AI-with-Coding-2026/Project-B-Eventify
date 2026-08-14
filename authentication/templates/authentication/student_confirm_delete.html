@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Student — Eventify{% endblock %}
+
+{% block content %}
+<section class="auth-card" style="width: min(100%, 550px);">
+    <h1 style="color: var(--error);">Confirm Delete</h1>
+
+    <p class="subtitle">
+        Are you sure you want to delete the user <strong>"{{ student.full_name }}"</strong>?
+        This action cannot be undone.
+    </p>
+
+    <div class="account-details" style="margin-bottom: 24px;">
+        <div class="detail-row">
+            <span>Username</span>
+            <strong>{{ student.username }}</strong>
+        </div>
+        <div class="detail-row">
+            <span>Email</span>
+            <strong>{{ student.email|default:"—" }}</strong>
+        </div>
+        <div class="detail-row">
+            <span>Role</span>
+            <strong>
+                <span class="role-badge role-badge--{{ student.role }}">
+                    {{ student.get_role_display }}
+                </span>
+            </strong>
+        </div>
+        <div class="detail-row">
+            <span>Date Joined</span>
+            <strong>{{ student.date_joined|date:"F j, Y" }}</strong>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div style="display: flex; gap: 12px;">
+            <button type="submit" class="btn-danger" style="flex: 1; padding: 13px 18px; font-size: 16px; text-align: center;">
+                Yes, Delete Student
+            </button>
+            <a href="{% url 'student_list' %}" class="btn-secondary" style="padding: 13px 18px; font-size: 16px; text-align: center;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</section>
+{% endblock %}
