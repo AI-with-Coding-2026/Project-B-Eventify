@@ -78,8 +78,8 @@ def event_detail(request, pk):
     user_has_booked = False
 
     if user.is_authenticated:
-        user_has_booked = EventBooking.objects.filter(
-            user=user,
+        user_has_booked = Ticket.objects.filter(
+            attendee=user,
             event=event,
         ).exists()
 
@@ -121,6 +121,11 @@ def book_event(request, pk):
 def book_ticket(request, pk):
     """Allow attendees to book a ticket for an event."""
     event = get_object_or_404(Event, pk=pk)
+
+    # Check if user already has a ticket for this event
+    if Ticket.objects.filter(attendee=request.user, event=event).exists():
+        messages.info(request, f'You have already booked a ticket for "{event.title}".')
+        return redirect('event_detail', pk=pk)
 
     if request.method == 'POST':
         try:

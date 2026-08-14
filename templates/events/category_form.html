@@ -4,41 +4,93 @@
     {{ page_title }} | Eventify
 {% endblock %}
 {% block content %}
-<div class="min-h-screen bg-[#f3faff] px-4 py-10 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-2xl">
-        <div class="rounded-2xl border border-[#dbeeff] bg-white p-6 shadow-sm sm:p-8">
-            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#2c7be5]">Category</p>
-            <h1 class="mt-2 text-3xl font-bold text-[#1f2937]">{{ page_title }}</h1>
+<div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-10 mb-8">
+    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Manage</p>
+    <h1 class="text-3xl font-bold text-gray-900 display">{{ page_title }}</h1>
+</div>
+
+<div class="pb-12">
+    <div class="mx-auto max-w-2xl px-4">
+        <div class="rounded-2xl border border-indigo-100 bg-white p-6 shadow-sm sm:p-8">
             {% if messages %}
-                <div class="mt-5 space-y-2">
+                <div class="mb-6 space-y-2">
                     {% for message in messages %}
-                        <p class="rounded-lg border border-[#dbeeff] bg-[#edf8ff] px-3 py-2 text-sm text-[#1d6fd6]">
+                        <div class="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
                             {{ message }}
-                        </p>
+                        </div>
                     {% endfor %}
                 </div>
             {% endif %}
-            <form method="post" class="mt-6 space-y-5">
+
+            <form method="post" class="space-y-6">
                 {% csrf_token %}
-                <div class="space-y-3">
-                    {{ form.as_p }}
+                <div class="space-y-4">
+                    {% for field in form %}
+                        <div class="form-group">
+                            {% if field.label %}
+                                <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-gray-900 mb-2">
+                                    {{ field.label }}
+                                </label>
+                            {% endif %}
+                            {{ field }}
+                            {% if field.help_text %}
+                                <p class="mt-1 text-xs text-gray-500">{{ field.help_text|safe }}</p>
+                            {% endif %}
+                            {% if field.errors %}
+                                <div class="mt-2 space-y-1">
+                                    {% for error in field.errors %}
+                                        <p class="text-sm text-red-600">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
                 </div>
-                <div class="flex flex-col gap-3 pt-2 sm:flex-row">
+
+                <div class="flex flex-col gap-3 pt-4 sm:flex-row">
                     <button
                         type="submit"
-                        class="inline-flex items-center justify-center rounded-xl bg-[#2c7be5] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1d6fd6] focus:outline-none focus:ring-4 focus:ring-[#dbeeff]"
+                        class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200"
                     >
                         {{ submit_label }}
                     </button>
                     <a
                         href="{% url 'event_list' %}"
-                        class="inline-flex items-center justify-center rounded-xl border border-[#dbeeff] bg-[#edf8ff] px-5 py-2.5 text-sm font-semibold text-[#1d6fd6] shadow-sm transition hover:bg-[#dfeeff]"
+                        class="inline-flex items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 px-6 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100"
                     >
-                        Back to events
+                        Cancel
                     </a>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<style>
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="number"],
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        padding: 0.625rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+</style>
 {% endblock %}
