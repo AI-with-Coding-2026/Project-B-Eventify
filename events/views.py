@@ -10,7 +10,7 @@ from authentication.decorators import (
     role_required,
 )
 from authentication.models import UserRole
-from .forms import CategoryForm, EventForm
+from .forms import BookingForm, CategoryForm, EventForm, TicketForm
 from .models import Category, Event, EventBooking, Ticket
 
 
@@ -444,7 +444,7 @@ def delete_event(request, pk):
         )
 
         if request.user.is_admin:
-            return redirect("event_list")
+            return redirect(request.POST.get("next") or "admin_dashboard")
 
         return redirect("my_events")
 
@@ -455,3 +455,89 @@ def delete_event(request, pk):
             "event": event,
         },
     )
+
+
+@admin_required
+def ticket_edit(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+
+    if request.method == "POST":
+        form = TicketForm(request.POST, instance=ticket)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Ticket updated successfully.")
+            return redirect("admin_dashboard")
+    else:
+        form = TicketForm(instance=ticket)
+
+    return render(
+        request,
+        "events/ticket_form.html",
+        {
+            "form": form,
+            "ticket": ticket,
+            "page_title": "Edit Ticket",
+            "submit_label": "Update Ticket",
+        },
+    )
+
+
+@admin_required
+def ticket_delete(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+
+    if request.method == "POST":
+        ticket.delete()
+        messages.success(request, "Ticket deleted successfully.")
+        return redirect("admin_dashboard")
+
+    return render(
+        request,
+        "events/ticket_confirm_delete.html",
+        {
+            "ticket": ticket,
+        },
+    )
+
+
+@admin_required
+def booking_edit(request, pk):
+    booking = get_object_or_404(EventBooking, pk=pk)
+
+    if request.method == "POST":
+        form = BookingForm(request.POST, instance=booking)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Booking updated successfully.")
+            return redirect("admin_dashboard")
+    else:
+        form = BookingForm(instance=booking)
+
+    return render(
+        request,
+        "events/booking_form.html",
+        {
+            "form": form,
+            "booking": booking,
+            "page_title": "Edit Booking",
+            "submit_label": "Update Booking",
+        },
+    )
+
+
+@admin_required
+def booking_delete(request, pk):
+    booking = get_object_or_404(EventBooking, pk=pk)
+
+    if request.method == "POST":
+        booking.delete()
+        messages.success(request, "Booking deleted successfully.")
+        return redirect("admin_dashboard")
+
+    return render(
+        request,
+        "events/booking_confirm_delete.html",
+        {
+            "booking": booking,
+        },
+    )
