@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 
@@ -56,6 +57,12 @@ class Event(models.Model):
         ('other', 'Other'),
     ]
 
+    # Owner of the event — organizers can only manage their own events
+    organizer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='events',
+    )
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to='event_images/', blank=True, null=True)
@@ -65,3 +72,26 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Ticket(models.Model):
+    """A ticket booked by an attendee for a specific event."""
+
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name='tickets',
+    )
+    attendee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='tickets',
+    )
+    quantity = models.PositiveIntegerField(default=1)
+    booked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-booked_at']
+
+    def __str__(self):
+        return f'{self.attendee} → {self.event} ({self.quantity})'

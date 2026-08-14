@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Event | Eventify{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <h1>Delete Event</h1>
+    <p>Are you sure you want to delete <strong>{{ event.title }}</strong>?</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Yes, delete</button>
+    </form>
+
+    <p><a href="{% url 'organizer_event_list' %}">Cancel</a></p>
+</div>
+{% endblock %}
