@@ -29,7 +29,7 @@
             </div>
         </section>
 
-        <section class="mb-6">
+        <section id="users" class="mb-6">
             <h2 class="text-lg font-semibold mb-3 display">Organizers</h2>
             {% if organizers %}
             <ul class="divide-y divide-gray-100">
@@ -61,12 +61,197 @@
             {% endif %}
         </section>
 
-        <section>
+        <section class="mb-6">
             <h2 class="text-lg font-semibold mb-3 display">Administrative Actions</h2>
-            <a href="{% url 'eventify_admin:index' %}" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">
-                Open Django Admin Panel
-            </a>
+            <div class="overflow-hidden rounded-lg border border-gray-100">
+                <div class="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50">
+                    <p class="font-semibold text-gray-900">Users</p>
+                    <a href="#users" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3 border-t border-gray-100">
+                    <p class="font-semibold text-gray-900">Events</p>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{% url 'event_create' %}" class="text-sm font-semibold text-indigo-700 hover:underline">Add</a>
+                        <a href="#events" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50 border-t border-gray-100">
+                    <p class="font-semibold text-gray-900">Tickets</p>
+                    <a href="#tickets" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3 border-t border-gray-100">
+                    <p class="font-semibold text-gray-900">Bookings</p>
+                    <a href="#bookings" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                </div>
+                <div class="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50 border-t border-gray-100">
+                    <p class="font-semibold text-gray-900">Manage Categories</p>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{% url 'category_create' %}" class="text-sm font-semibold text-indigo-700 hover:underline">Add</a>
+                        <a href="#categories" class="text-sm font-semibold text-indigo-700 hover:underline">Change</a>
+                    </div>
+                </div>
+            </div>
         </section>
+
+        <section id="events" class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold display">Events</h2>
+                <a href="{% url 'event_create' %}" class="text-sm font-semibold text-indigo-600 hover:underline">Add event</a>
+            </div>
+            {% if events %}
+            <ul class="divide-y divide-gray-100">
+                {% for event in events %}
+                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                    <span>
+                        <strong>{{ event.title }}</strong>
+                        <span class="text-gray-500">— {{ event.date|date:"M d, Y" }}</span>
+                    </span>
+                    <div class="relative inline-block text-left">
+                        <button type="button" onclick="
+                            var b = this.getBoundingClientRect();
+                            var m = this.nextElementSibling;
+                            document.querySelectorAll('.dash-dropdown').forEach(function(d){ if(d !== m) d.style.display = 'none'; });
+                            if(m.style.display === 'block') { m.style.display = 'none'; return; }
+                            m.style.top = b.bottom + 'px';
+                            m.style.left = (b.right - 120) + 'px';
+                            m.style.display = 'block';
+                            event.stopPropagation();
+                        " class="text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition text-lg font-bold leading-none cursor-pointer focus:outline-none">
+                            &#8942;
+                        </button>
+                        <div class="dash-dropdown hidden fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-28 z-50 text-left">
+                            <a href="{% url 'edit_event' event.pk %}" class="block px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium no-underline">Edit</a>
+                            <a href="{% url 'delete_event' event.pk %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium no-underline">Delete</a>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No events found.</p>
+            {% endif %}
+        </section>
+
+        <section id="tickets" class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 display">Tickets</h2>
+            {% if tickets %}
+            <ul class="divide-y divide-gray-100">
+                {% for ticket in tickets %}
+                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                    <span>
+                        <strong>{{ ticket.attendee.username }}</strong>
+                        <span class="text-gray-500">→ {{ ticket.event.title }} ({{ ticket.quantity }})</span>
+                    </span>
+                    <div class="relative inline-block text-left">
+                        <button type="button" onclick="
+                            var b = this.getBoundingClientRect();
+                            var m = this.nextElementSibling;
+                            document.querySelectorAll('.dash-dropdown').forEach(function(d){ if(d !== m) d.style.display = 'none'; });
+                            if(m.style.display === 'block') { m.style.display = 'none'; return; }
+                            m.style.top = b.bottom + 'px';
+                            m.style.left = (b.right - 120) + 'px';
+                            m.style.display = 'block';
+                            event.stopPropagation();
+                        " class="text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition text-lg font-bold leading-none cursor-pointer focus:outline-none">
+                            &#8942;
+                        </button>
+                        <div class="dash-dropdown hidden fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-28 z-50 text-left">
+                            <a href="{% url 'ticket_edit' ticket.pk %}" class="block px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium no-underline">Edit</a>
+                            <a href="{% url 'ticket_delete' ticket.pk %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium no-underline">Delete</a>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No tickets found.</p>
+            {% endif %}
+        </section>
+
+        <section id="bookings" class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 display">Bookings</h2>
+            {% if bookings %}
+            <ul class="divide-y divide-gray-100">
+                {% for booking in bookings %}
+                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                    <span>
+                        <strong>{{ booking.user.username }}</strong>
+                        <span class="text-gray-500">→ {{ booking.event.title }}</span>
+                    </span>
+                    <div class="relative inline-block text-left">
+                        <button type="button" onclick="
+                            var b = this.getBoundingClientRect();
+                            var m = this.nextElementSibling;
+                            document.querySelectorAll('.dash-dropdown').forEach(function(d){ if(d !== m) d.style.display = 'none'; });
+                            if(m.style.display === 'block') { m.style.display = 'none'; return; }
+                            m.style.top = b.bottom + 'px';
+                            m.style.left = (b.right - 120) + 'px';
+                            m.style.display = 'block';
+                            event.stopPropagation();
+                        " class="text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition text-lg font-bold leading-none cursor-pointer focus:outline-none">
+                            &#8942;
+                        </button>
+                        <div class="dash-dropdown hidden fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-28 z-50 text-left">
+                            <a href="{% url 'booking_edit' booking.pk %}" class="block px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium no-underline">Edit</a>
+                            <a href="{% url 'booking_delete' booking.pk %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium no-underline">Delete</a>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No bookings found.</p>
+            {% endif %}
+        </section>
+
+        <section id="categories">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold display">Manage Categories</h2>
+                <a href="{% url 'category_create' %}" class="inline-block bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg font-semibold hover:bg-indigo-100">
+                    Add category
+                </a>
+            </div>
+            {% if categories %}
+            <ul class="divide-y divide-gray-100">
+                {% for category in categories %}
+                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                    <span>
+                        <strong>{{ category.name }}</strong>
+                        <span class="text-gray-500">— {{ category.description|default:"No description" }}</span>
+                    </span>
+                    <div class="relative inline-block text-left">
+                        <button type="button" onclick="
+                            var b = this.getBoundingClientRect();
+                            var m = this.nextElementSibling;
+                            document.querySelectorAll('.dash-dropdown').forEach(function(d){ if(d !== m) d.style.display = 'none'; });
+                            if(m.style.display === 'block') { m.style.display = 'none'; return; }
+                            m.style.top = b.bottom + 'px';
+                            m.style.left = (b.right - 120) + 'px';
+                            m.style.display = 'block';
+                            event.stopPropagation();
+                        " class="text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition text-lg font-bold leading-none cursor-pointer focus:outline-none">
+                            &#8942;
+                        </button>
+                        <div class="dash-dropdown hidden fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-28 z-50 text-left">
+                            <a href="{% url 'category_update' category.pk %}" class="block px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium no-underline">Edit</a>
+                            <a href="{% url 'category_delete' category.pk %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium no-underline">Delete</a>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-400 text-sm">No categories found.</p>
+            {% endif %}
+        </section>
+
+        <script>
+            document.addEventListener('click', function() {
+                document.querySelectorAll('.dash-dropdown').forEach(function(d) {
+                    d.style.display = 'none';
+                });
+            });
+        </script>
     </div>
 
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">

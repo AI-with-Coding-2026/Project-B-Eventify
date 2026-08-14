@@ -23,7 +23,7 @@
             <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
                 <div>
                     <span class="inline-block text-xs font-semibold uppercase tracking-wide px-2 py-1 rounded bg-indigo-50 text-indigo-700 mb-3">
-                        {{ event.get_category_display }}
+                        {{ event.category_label }}
                     </span>
                     <div class="mb-2">
                         <span class="inline-flex items-center rounded-full bg-[#edf8ff] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#1d6fd6]">
@@ -55,12 +55,9 @@
 
             <div class="flex flex-wrap gap-3 pt-4 border-t border-gray-100">
                 {% if can_book %}
-                <form method="post" action="{% url 'book_event' event.pk %}">
-                    {% csrf_token %}
-                    <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition">
-                        Book Event
-                    </button>
-                </form>
+                <a href="{% url 'book_ticket' event.pk %}" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition">
+                    Book Now
+                </a>
                 {% elif user_has_booked %}
                 <span class="inline-flex items-center rounded-xl bg-green-50 px-6 py-2.5 text-sm font-semibold text-green-700 border border-green-200">
                     ✓ Already booked

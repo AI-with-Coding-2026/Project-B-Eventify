@@ -1,4 +1,4 @@
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
@@ -169,14 +169,19 @@ class RoleBasedAccessControlTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_attendee_cannot_access_organizer_dashboard(self):
+        """Attendee → organizer dashboard uses the shared unauthorized page."""
         self.client.login(
             username='attendee_rbac',
             password='pass123',
         )
 
-        response = self.client.get(reverse('organizer_dashboard'))
+        response = self.client.get(
+            reverse('organizer_dashboard'),
+            follow=True,
+        )
 
         self.assertEqual(response.status_code, 403)
+        self.assertTemplateUsed(response, 'authentication/unauthorized.html')
 
     def test_attendee_can_access_attendee_dashboard(self):
         self.client.login(
@@ -189,14 +194,19 @@ class RoleBasedAccessControlTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_organizer_cannot_access_attendee_dashboard(self):
+        """Organizer → attendee dashboard uses the shared unauthorized page."""
         self.client.login(
             username='organizer_rbac',
             password='pass123',
         )
 
-        response = self.client.get(reverse('attendee_dashboard'))
+        response = self.client.get(
+            reverse('attendee_dashboard'),
+            follow=True,
+        )
 
         self.assertEqual(response.status_code, 403)
+        self.assertTemplateUsed(response, 'authentication/unauthorized.html')
 
     def test_admin_can_access_organizer_dashboard(self):
         self.client.login(
@@ -271,35 +281,29 @@ class AdminAccessTests(TestCase):
             role=UserRole.ATTENDEE,
         )
 
-    def test_admin_dashboard_is_available_to_admin_role(self):
+    def test_admin_dashboard_renders_for_admin(self):
         self.client.force_login(self.admin_user)
 
         response = self.client.get(reverse('admin_dashboard'))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Admin Dashboard')
+        self.assertContains(response, 'Events')
+        self.assertContains(response, 'Tickets')
+        self.assertContains(response, 'Bookings')
+        self.assertContains(response, 'Manage Categories')
+        self.assertNotContains(response, 'Open Django Admin Panel')
 
-    def test_admin_dashboard_displays_organizers_and_attendees(self):
-        self.client.force_login(self.admin_user)
+    def test_login_redirects_admin_to_dashboard(self):
+        response = self.client.post(
+            reverse('login'),
+            {
+                'username': 'adminuser',
+                'password': 'strong-pass-123',
+            },
+        )
 
-        response = self.client.get(reverse('admin_dashboard'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('organizers', response.context)
-        self.assertIn('attendees', response.context)
-
-        organizers = response.context['organizers']
-        attendees = response.context['attendees']
-
-        self.assertIn(self.organizer, organizers)
-        self.assertIn(self.attendee, attendees)
-        self.assertNotIn(self.admin_user, organizers)
-        self.assertNotIn(self.admin_user, attendees)
-
-        self.assertContains(response, 'Organizers')
-        self.assertContains(response, 'Attendees')
-        self.assertContains(response, self.organizer.username)
-        self.assertContains(response, self.attendee.username)
+        self.assertRedirects(response, reverse('admin_dashboard'))
 
     def test_admin_dashboard_denies_organizer_with_unauthorized(self):
         """Organizer accessing admin dashboard gets redirected to /unauthorized/ (403)."""
@@ -331,18 +335,12 @@ class AdminAccessTests(TestCase):
             'authentication/unauthorized.html',
         )
 
-    def test_custom_admin_site_is_mounted_and_restricted_to_admin_role(self):
+    def test_custom_admin_site_index_redirects_to_admin_dashboard(self):
         self.client.force_login(self.admin_user)
 
-        response = self.client.get(
-            reverse('eventify_admin:index')
-        )
+        response = self.client.get(reverse('eventify_admin:index'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(
-            response,
-            'Eventify Administration',
-        )
+        self.assertRedirects(response, reverse('admin_dashboard'))
 
     def test_admin_role_can_view_users_in_custom_admin_site(self):
         self.client.force_login(self.admin_user)
@@ -455,11 +453,13 @@ class RoleDashboardAccessTests(TestCase):
         request = self.factory.get('/dashboard/attendee/')
         request.user = self.organizer
 
-        with self.assertRaises(PermissionDenied):
-            views.attendee_dashboard(request)
+        response = views.attendee_dashboard(request)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('unauthorized'))
 
         request = self.factory.get('/dashboard/organizer/')
         request.user = self.attendee
 
-        with self.assertRaises(PermissionDenied):
-            views.organizer_dashboard(request)
+        response = views.organizer_dashboard(request)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('unauthorized'))
