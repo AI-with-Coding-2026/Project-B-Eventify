@@ -24,8 +24,8 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'authentication',  # Custom authentication application
-    'events.apps.EventsConfig', # Event listing app
+    'authentication',  # Added custom authentication application here
+    'events.apps.EventsConfig', # Event listing app for Sprint 2
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -58,7 +58,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'authentication.context_processors.dashboard_link',
+                # 'authentication.context_processors.dashboard_link',  # تم تعليقها المؤقت
             ],
         },
     },
@@ -139,3 +139,7 @@ LOGIN_URL = 'login'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Media files configuration
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
