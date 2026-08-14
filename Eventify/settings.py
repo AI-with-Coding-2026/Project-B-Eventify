@@ -112,6 +112,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Uploaded event images
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Activate the custom user model containing the 3 required roles
 AUTH_USER_MODEL = 'authentication.User'
 
@@ -120,7 +124,3 @@ LOGIN_URL = 'eventify_admin:login'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Media files configuration
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"

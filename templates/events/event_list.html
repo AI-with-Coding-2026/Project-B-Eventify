@@ -1,9 +1,39 @@
 {% extends "base.html" %}
+{% block title %}Upcoming Events | Eventify{% endblock %}
 {% block content %}
 <div class="container my-4">
     <h1>Upcoming Events</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    {% if user.is_authenticated and user.is_attendee %}
+        <p>
+            <a href="{% url 'my_tickets' %}">My tickets</a> |
+            <a href="{% url 'attendee_dashboard' %}">Dashboard</a>
+        </p>
+    {% endif %}
+
     {% for event in events %}
-        <p>{{ event.title }} — {{ event.date }} — ${{ event.price }} — {{ event.category }}</p>
+        <div style="margin-bottom: 1rem;">
+            <p>
+                <strong>{{ event.title }}</strong>
+                — {{ event.date }}
+                — ${{ event.price }}
+                — {{ event.get_category_display }}
+            </p>
+            {% if event.description %}
+                <p>{{ event.description }}</p>
+            {% endif %}
+            {% if user.is_authenticated and user.is_attendee %}
+                <p><a href="{% url 'book_ticket' event.pk %}">Book ticket</a></p>
+            {% elif not user.is_authenticated %}
+                <p><a href="{% url 'login' %}">Login to book</a></p>
+            {% endif %}
+        </div>
     {% empty %}
         <p>No events found.</p>
     {% endfor %}

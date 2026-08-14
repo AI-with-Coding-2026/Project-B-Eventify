@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}My Tickets | Eventify{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <h1>My Tickets</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    <p>
+        <a href="{% url 'event_list' %}">Browse events</a> |
+        <a href="{% url 'attendee_dashboard' %}">Dashboard</a>
+    </p>
+
+    {% for ticket in tickets %}
+        <div style="margin-bottom: 1rem;">
+            <p>
+                <strong>{{ ticket.event.title }}</strong>
+                — qty {{ ticket.quantity }}
+                — ${{ ticket.event.price }}
+                — booked {{ ticket.booked_at }}
+            </p>
+            <p>{{ ticket.event.date }} — {{ ticket.event.get_category_display }}</p>
+        </div>
+    {% empty %}
+        <p>You have not booked any tickets yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

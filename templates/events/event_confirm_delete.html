@@ -1,52 +1,28 @@
 {% extends "base.html" %}
 
-
 {% block title %}
 Delete Event | Eventify
 {% endblock title %}
 
-
 {% block content %}
-
 <div class="row justify-content-center">
-
     <div class="col-md-6">
-
         <h1>Delete Event</h1>
 
         <div class="alert alert-warning">
-
             Are you sure you want to delete
-
-            <strong>
-                {{ event.title }}
-            </strong>?
-
+            <strong>{{ event.title }}</strong>?
         </div>
 
-
         <form method="post">
-
             {% csrf_token %}
-
-            <button
-                type="submit"
-                class="btn btn-danger"
-            >
-                Yes, Delete Event
+            <button type="submit" class="btn btn-danger">
+                Yes, delete
             </button>
-
-            <a
-                href="{% url 'my_events' %}"
-                class="btn btn-secondary"
-            >
+            <a href="{% url 'organizer_event_list' %}" class="btn btn-secondary">
                 Cancel
             </a>
-
         </form>
-
     </div>
-
 </div>
-
 {% endblock content %}

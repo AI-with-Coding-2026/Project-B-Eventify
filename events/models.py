@@ -1,6 +1,7 @@
+from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
-from django.conf import settings
+
 
 class Category(models.Model):
     # Category name must be unique to avoid duplicates (e.g., Music, Sports)
@@ -47,55 +48,50 @@ class Category(models.Model):
         super().save(*args, **kwargs)
 
 
-from django.db import models
-from django.conf import settings
-
-
 class Event(models.Model):
     CATEGORY_CHOICES = [
-        ("music", "Music"),
-        ("sports", "Sports"),
-        ("tech", "Tech"),
-        ("arts", "Arts"),
-        ("other", "Other"),
+        ('music', 'Music'),
+        ('sports', 'Sports'),
+        ('tech', 'Tech'),
+        ('arts', 'Arts'),
+        ('other', 'Other'),
     ]
 
+    # Owner of the event — organizers can only manage their own events
     organizer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="events",
-        null=True,
-        blank=True,
+        related_name='events',
     )
-
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-
-    location = models.CharField(
-        max_length=255,
-        blank=True,
-    )
-
-    image = models.ImageField(
-        upload_to="event_images/",
-        blank=True,
-        null=True,
-    )
-
+    image = models.ImageField(upload_to='event_images/', blank=True, null=True)
     date = models.DateTimeField()
+    price = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
 
-    price = models.DecimalField(
-        max_digits=8,
-        decimal_places=2,
-        default=0,
-    )
+    def __str__(self):
+        return self.title
 
-    max_tickets = models.PositiveIntegerField(
-        default=1,
-    )
 
-    category = models.CharField(
-        max_length=20,
-        choices=CATEGORY_CHOICES,
-        default="other",
+class Ticket(models.Model):
+    """A ticket booked by an attendee for a specific event."""
+
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name='tickets',
     )
+    attendee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='tickets',
+    )
+    quantity = models.PositiveIntegerField(default=1)
+    booked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-booked_at']
+
+    def __str__(self):
+        return f'{self.attendee} → {self.event} ({self.quantity})'
