@@ -144,7 +144,7 @@ def event_delete(request, pk):
 @admin_required
 def category_list(request):
     """Display all event categories with edit and delete options."""
-    categories = Category.objects.all()
+    categories = Category.objects.order_by('name')
     return render(
         request,
         'events/category_list.html',
