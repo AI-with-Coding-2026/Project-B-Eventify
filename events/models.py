@@ -131,6 +131,8 @@ class EventBooking(models.Model):
     booked_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "Ticket"
+        verbose_name_plural = "Tickets"
         unique_together = ("user", "event")
         ordering = ["-booked_at"]
 
