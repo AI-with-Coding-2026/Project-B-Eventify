@@ -26,6 +26,11 @@
                 {% endif %}
             </div>
 
+            {% if event.is_sold_out %}
+            <div class="p-6 sm:p-8">
+                <p class="rounded-lg border border-red-200 bg-red-50 p-4 font-semibold text-red-700">This event is sold out.</p>
+            </div>
+            {% else %}
             <form method="post" class="p-6 sm:p-8">
                 {% csrf_token %}
                 <div class="mb-6">
@@ -60,6 +65,7 @@
                     </a>
                 </div>
             </form>
+            {% endif %}
         </div>
     </div>
 </div>
