@@ -29,3 +29,7 @@ staticfiles/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Media files
+media/
+.DS_Store

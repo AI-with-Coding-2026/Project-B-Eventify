@@ -33,6 +33,6 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f'{action} admin user "{username}". '
-                f'Log in at /admin/ with this account.'
+                f'Log in at /login/ — admin dashboard is at /admin/.'
             )
         )
