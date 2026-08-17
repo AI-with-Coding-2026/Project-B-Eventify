@@ -10,6 +10,65 @@ from django.utils import timezone
 from .models import Category, Event, EventBooking, Ticket
 
 
+# Tests for admin category creation
+class CategoryCreateTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            'createadmin',
+            'createadmin@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.organizer = User.objects.create_user(
+            'createorganizer',
+            'createorganizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+
+    def test_admin_can_load_create_form(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('category_create'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Create Category')
+        self.assertContains(response, reverse('admin_dashboard'))
+
+    def test_admin_can_create_category_and_redirects_to_admin_dashboard(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('category_create'),
+            {
+                'name': 'Art & Design',
+                'description': 'Creative arts and exhibitions',
+            },
+        )
+        self.assertRedirects(response, reverse('admin_dashboard'))
+        self.assertTrue(Category.objects.filter(name='Art & Design').exists())
+
+    def test_create_category_shows_success_message(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('category_create'),
+            {
+                'name': 'Workshops',
+                'description': 'Hands-on learning sessions',
+            },
+            follow=True,
+        )
+        self.assertContains(response, 'Category created successfully.')
+
+    def test_non_admin_cannot_access_category_create(self):
+        self.client.force_login(self.organizer)
+        response = self.client.get(reverse('category_create'))
+        self.assertRedirects(
+            response,
+            reverse('unauthorized'),
+            target_status_code=403,
+        )
+
+
 # Tests for admin category update/edit
 class CategoryUpdateTests(TestCase):
     def setUp(self):

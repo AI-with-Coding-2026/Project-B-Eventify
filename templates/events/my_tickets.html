@@ -24,11 +24,11 @@
         {% endif %}
 
         <div class="flex flex-wrap gap-3">
-            <a href="{% url 'event_list' %}" class="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition">
-                ← Browse Events
-            </a>
             <a href="{% url 'attendee_dashboard' %}" class="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition">
                 Dashboard
+            </a>
+            <a href="{% url 'event_list' %}" class="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition">
+                ← Browse Events
             </a>
         </div>
 

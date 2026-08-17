@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
@@ -5,7 +7,6 @@ from django.db import transaction
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
-from urllib.parse import urlparse
 
 from authentication.decorators import (
     admin_required,
@@ -323,7 +324,7 @@ def category_create(request):
                 'Category created successfully.',
             )
 
-            return redirect('category_create')
+            return redirect('admin_dashboard')
 
     else:
         form = CategoryForm()
