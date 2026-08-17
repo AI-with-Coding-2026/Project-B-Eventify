@@ -152,7 +152,8 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # إعدادات Cloudinary (تُجلب من ملف .env)
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': config('CLOUDINARY_API_KEY'),
-    'API_SECRET': config('CLOUDINARY_API_SECRET'),
+    
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default='dummy_name'),
+    'API_KEY': config('CLOUDINARY_API_KEY', default='123456789'),
+    'API_SECRET': config('CLOUDINARY_API_SECRET', default='dummy_secret'),
 }
