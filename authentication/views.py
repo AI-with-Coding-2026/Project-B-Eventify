@@ -114,21 +114,23 @@ def attendee_dashboard(request):
     upcoming_events = Event.objects.filter(
         date__gte=timezone.now()
     ).order_by('date')[:3]
+    
+    # FIXED: Querying 'Ticket' instead of 'EventBooking' and filtering by 'attendee'
+    base_bookings = Ticket.objects.filter(
+        attendee=request.user
+    ).select_related('event')
+
+    upcoming_bookings = base_bookings.filter(
+        event__date__gte=timezone.now()
+    ).order_by('event__date')
+
+    past_bookings = base_bookings.filter(
+        event__date__lt=timezone.now()
+    ).order_by('-event__date')
+    
     return render(request, 'authentication/attendee_dashboard.html', {
         'upcoming_events': upcoming_events,
-    })
-
-@role_required(UserRole.ADMIN, UserRole.ATTENDEE)
-def my_bookings(request):
-    bookings = EventBooking.objects.filter(
-        user=request.user
-    ).select_related('event').order_by('event__date')
-
-    now = timezone.now()
-    upcoming_bookings = [b for b in bookings if b.event.date >= now]
-    past_bookings = [b for b in bookings if b.event.date < now]
-
-    return render(request, 'authentication/my_bookings.html', {
-        'upcoming_bookings': upcoming_bookings,
+        'upcoming_bookings': upcoming_bookings,  
         'past_bookings': past_bookings,
+        'base_bookings': base_bookings, 
     })
