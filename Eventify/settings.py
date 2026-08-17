@@ -157,3 +157,23 @@ CLOUDINARY_STORAGE = {
     'API_KEY': config('CLOUDINARY_API_KEY', default='123456789'),
     'API_SECRET': config('CLOUDINARY_API_SECRET', default='dummy_secret'),
 }
+
+
+# ==========================================
+# Email Configuration (Task 2 - Sprint 2)
+# ==========================================
+
+# Using decouple to fetch environment variables securely from .env
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@eventify.com')
+
+# In development (DEBUG=True), redirect all outgoing emails to the console
+# to prevent spamming and allow easy testing in the terminal.
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
