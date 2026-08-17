@@ -32,53 +32,51 @@
             </a>
         </div>
 
-        {% if tickets %}
-            <div class="space-y-4">
+       {% if tickets %}
+    <div class="overflow-x-auto rounded-2xl border border-indigo-100 bg-white shadow-sm">
+        <table class="min-w-full divide-y divide-indigo-100 text-sm">
+            <thead class="bg-indigo-50">
+                <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Event</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Date</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Tickets</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-indigo-50">
                 {% for ticket in tickets %}
-                    <div class="rounded-2xl border border-indigo-100 bg-white p-6 shadow-sm hover:shadow-md transition">
-                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                            <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900">{{ ticket.event.title }}</h3>
-                                <p class="mt-1 text-sm text-gray-600">{{ ticket.event.date|date:"M d, Y" }} — {{ ticket.event.category_label }}</p>
-                            </div>
-                            <span class="inline-flex rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700 shrink-0">
-                                {{ ticket.event.category_label }}
+                    <tr class="hover:bg-indigo-50/50 transition">
+                        <td class="px-4 py-3 font-medium text-gray-900">{{ ticket.event.title }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ ticket.event.date|date:"M d, Y" }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ ticket.quantity }} ticket{{ ticket.quantity|pluralize }}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold
+                                {% if ticket.status == 'cancelled' %} bg-red-100 text-red-700
+                                {% elif ticket.status == 'pending' %} bg-yellow-100 text-yellow-700
+                                {% else %} bg-green-100 text-green-700
+                                {% endif %}">
+                                {{ ticket.get_status_display|default:"Confirmed" }}
                             </span>
-                        </div>
-
-                        <div class="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-                            <div class="rounded-lg bg-indigo-50 p-3">
-                                <p class="text-xs text-gray-600">Price per Ticket</p>
-                                <p class="mt-1 text-lg font-semibold text-gray-900">${{ ticket.event.price }}</p>
-                            </div>
-                            <div class="rounded-lg bg-indigo-50 p-3">
-                                <p class="text-xs text-gray-600">Quantity</p>
-                                <p class="mt-1 text-lg font-semibold text-gray-900">{{ ticket.quantity }} ticket{{ ticket.quantity|pluralize }}</p>
-                            </div>
-                            <div class="rounded-lg bg-indigo-50 p-3">
-                                <p class="text-xs text-gray-600">Booked On</p>
-                                <p class="mt-1 text-lg font-semibold text-gray-900">{{ ticket.booked_at|date:"M d, Y" }}</p>
-                            </div>
-                            <div class="rounded-lg bg-indigo-50 p-3">
-                                <p class="text-xs text-gray-600">Time</p>
-                                <p class="mt-1 text-lg font-semibold text-gray-900">{{ ticket.booked_at|date:"g:i A" }}</p>
-                            </div>
-                        </div>
-
-                        <a href="{% url 'event_detail' ticket.event.pk %}" class="mt-4 inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition">
-                            View Event
-                        </a>
-                    </div>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <a href="{% url 'event_detail' ticket.event.pk %}" class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs">
+                                View →
+                            </a>
+                        </td>
+                    </tr>
                 {% endfor %}
-            </div>
-        {% else %}
-            <div class="rounded-xl border border-dashed border-indigo-200 bg-indigo-50 px-4 py-12 text-center">
-                <p class="text-gray-600">You have not booked any tickets yet.</p>
-                <a href="{% url 'event_list' %}" class="mt-4 inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition">
-                    Browse Events
-                </a>
-            </div>
-        {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="rounded-xl border border-dashed border-indigo-200 bg-indigo-50 px-4 py-12 text-center">
+        <p class="text-gray-600">You have not booked any tickets yet.</p>
+        <a href="{% url 'event_list' %}" class="mt-4 inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition">
+            Browse Events
+        </a>
+    </div>
+{% endif %}
     </div>
 </div>
 {% endblock %}
