@@ -8,12 +8,11 @@
             <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
         </svg>
     </div>
-    <h1 class="text-2xl font-bold text-red-600 display mb-3">Access Denied</h1>
+    <h1 class="text-2xl font-bold text-red-600 mb-3">Access Denied</h1>
     <p class="text-gray-600 mb-8">You do not have permission to view this page.</p>
 
     {% if user.is_authenticated %}
-        <a href="{% url user_dashboard_url %}" class="inline-block bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition">
-            Go to Dashboard
+    <a href="{% url 'home' %}" class="inline-block bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition">            Go to Dashboard
         </a>
     {% else %}
         <a href="{% url 'login' %}" class="inline-block bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition">

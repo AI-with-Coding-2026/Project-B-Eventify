@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from urllib.parse import urlparse
@@ -153,52 +155,53 @@ def event_detail(request, pk):
 
 @role_required(UserRole.ATTENDEE)
 def book_event(request, pk):
-    if request.method != 'POST':
-        return redirect('event_detail', pk=pk)
-
-    event = get_object_or_404(Event, pk=pk)
-
-    if EventBooking.objects.filter(user=request.user, event=event).exists():
-        messages.info(request, f'You have already booked "{event.title}".')
-        return redirect('event_detail', pk=pk)
-
-    if event.is_sold_out:
-        messages.error(request, 'This event is fully booked.')
-        return redirect('event_detail', pk=pk)
-
-    EventBooking.objects.create(user=request.user, event=event)
-    messages.success(request, f'Successfully booked "{event.title}".')
-    return redirect('event_detail', pk=pk)
+    """Keep the legacy endpoint from bypassing the ticket-capacity flow."""
+    return redirect('book_ticket', pk=pk)
 
 
 @attendee_required
 def book_ticket(request, pk):
-    """Allow attendees to book a ticket for an event."""
+    """Book tickets without allowing a request to exceed event capacity."""
     event = get_object_or_404(Event, pk=pk)
-
-    # Check if user already has a ticket for this event
-    if Ticket.objects.filter(attendee=request.user, event=event).exists():
-        messages.info(request, f'You have already booked a ticket for "{event.title}".')
-        return redirect('event_detail', pk=pk)
 
     if request.method == 'POST':
         try:
             quantity = int(request.POST.get('quantity', 1))
         except (TypeError, ValueError):
-            quantity = 1
-        if quantity < 1:
-            quantity = 1
+            quantity = 0
 
-        Ticket.objects.create(
-            event=event,
-            attendee=request.user,
-            quantity=quantity,
-        )
-        messages.success(
-            request,
-            f'Ticket booked for "{event.title}".',
-        )
-        return redirect('my_tickets')
+        if quantity < 1:
+            messages.error(request, 'Choose at least one ticket.')
+        else:
+            # Locking the event makes the capacity check authoritative even when
+            # two attendees submit a booking at the same time.
+            with transaction.atomic():
+                event = Event.objects.select_for_update().get(pk=pk)
+                tickets_sold = Ticket.objects.filter(event=event).aggregate(
+                    total=Sum('quantity')
+                )['total'] or 0
+                tickets_sold += event.bookings.count()
+                remaining = event.max_tickets - tickets_sold
+
+                if quantity > remaining:
+                    if remaining <= 0:
+                        messages.error(request, 'This event is sold out.')
+                    else:
+                        messages.error(
+                            request,
+                            f'Only {remaining} ticket(s) remain for this event.',
+                        )
+                else:
+                    Ticket.objects.create(
+                        event=event,
+                        attendee=request.user,
+                        quantity=quantity,
+                    )
+                    messages.success(
+                        request,
+                        f'Ticket booked for "{event.title}".',
+                    )
+                    return redirect('my_tickets')
 
     return render(
         request,
