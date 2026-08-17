@@ -1,4 +1,4 @@
-<a href="{% url 'event_detail' event.pk %}" class="event-card-styled flex flex-col sm:flex-row overflow-hidden hover:shadow-md transition group no-underline text-inherit">
+<div class="event-card-styled flex flex-col sm:flex-row overflow-hidden hover:shadow-md transition group">
     {% if event.image %}
     <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full sm:w-48 h-40 sm:h-auto object-cover shrink-0">
     {% else %}
@@ -14,7 +14,7 @@
             </span>
             <span class="text-sm font-semibold text-indigo-600">${{ event.price }}</span>
         </div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-2 display group-hover:text-indigo-700 transition">{{ event.title }}</h3>
+        <a href="{% url 'event_detail' event.pk %}" class="text-lg font-semibold text-gray-900 mb-2 display group-hover:text-indigo-700 transition">{{ event.title }}</a>
         {% if event.description %}
         <p class="text-sm text-gray-600 mb-3">{{ event.description|truncatewords:40 }}</p>
         {% else %}
@@ -26,5 +26,14 @@
             <span><strong class="text-gray-700">Location:</strong> {{ event.location }}</span>
             {% endif %}
         </div>
+        {% if user.is_authenticated and user.is_attendee %}
+        <div class="mt-4">
+            {% if event.is_sold_out %}
+            <span class="text-sm font-semibold text-red-700">Sold out</span>
+            {% else %}
+            <a href="{% url 'book_ticket' event.pk %}" class="text-sm font-semibold text-indigo-600 hover:underline">Book ticket</a>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
-</a>
+</div>
