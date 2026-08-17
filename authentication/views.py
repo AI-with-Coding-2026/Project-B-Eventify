@@ -99,7 +99,7 @@ def unauthorized(request):
     return render(request, 'authentication/unauthorized.html', status=403)
 
 
-@role_required(UserRole.ADMIN, UserRole.ORGANIZER)
+@role_required(UserRole.ORGANIZER)
 def organizer_dashboard(request):
     upcoming_events = Event.objects.filter(
         date__gte=timezone.now()
@@ -109,7 +109,7 @@ def organizer_dashboard(request):
     })
 
 
-@role_required(UserRole.ADMIN, UserRole.ATTENDEE)
+@role_required(UserRole.ATTENDEE)
 def attendee_dashboard(request):
     upcoming_events = Event.objects.filter(
         date__gte=timezone.now()
