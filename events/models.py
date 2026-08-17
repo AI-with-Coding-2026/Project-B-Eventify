@@ -131,6 +131,12 @@ class Event(models.Model):
 class Ticket(models.Model):
     """A ticket booked by an attendee for a specific event."""
 
+    STATUS_CHOICES = [
+        ('confirmed', 'Confirmed'),
+        ('pending', 'Pending'),
+        ('cancelled', 'Cancelled'),
+    ]
+
     event = models.ForeignKey(
         Event,
         on_delete=models.CASCADE,
