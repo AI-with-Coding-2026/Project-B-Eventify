@@ -173,3 +173,11 @@ if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Public site URL used in email buttons (set this to the Render URL in production).
+SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000').rstrip('/')
+
+CSRF_TRUSTED_ORIGINS = [origin for origin in [SITE_URL] if origin.startswith('http')]
+render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if render_host:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{render_host}')

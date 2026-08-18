@@ -11,6 +11,8 @@ Booking Date: {{ ticket.booked_at|date:"F d, Y, h:i A" }}
 Ticket Quantity: {{ ticket.quantity }}
 Total Price: {{ total_price|floatformat:2 }}
 
+See my event: {{ event_url }}
+
 Thank you for choosing Eventify.
 
 We hope you enjoy the event!

@@ -11,9 +11,9 @@
             <td align="center">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e0e7ff;">
                     <tr>
-                        <td style="background-color:#4f46e5;padding:28px 32px;text-align:center;">
-                            <p style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:0.5px;">Eventify</p>
-                            <p style="margin:8px 0 0;font-size:14px;color:#c7d2fe;">Booking confirmed</p>
+                        <td style="background-color:#4f46e5;padding:22px 32px;text-align:center;">
+                            <img src="cid:eventify-logo" alt="Eventify" width="150" style="display:block;margin:0 auto;max-width:150px;height:auto;">
+                            <p style="margin:10px 0 0;font-size:14px;color:#c7d2fe;">Booking confirmed</p>
                         </td>
                     </tr>
                     <tr>
@@ -30,6 +30,16 @@
                                         <p style="margin:0 0 10px;font-size:15px;color:#111827;"><strong>Date:</strong> {{ ticket.booked_at|date:"F d, Y, h:i A" }}</p>
                                         <p style="margin:0 0 10px;font-size:15px;color:#111827;"><strong>Tickets:</strong> {{ ticket.quantity }}</p>
                                         <p style="margin:0;font-size:15px;color:#111827;"><strong>Total:</strong> ${{ total_price|floatformat:2 }}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:28px 0 8px;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{ event_url }}"
+                                           style="display:inline-block;background-color:#4f46e5;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:12px 28px;border-radius:10px;">
+                                            See my event
+                                        </a>
                                     </td>
                                 </tr>
                             </table>
