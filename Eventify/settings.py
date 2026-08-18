@@ -126,8 +126,6 @@ STATICFILES_DIRS = [
 # المسار الذي ستجمع فيه مكتبة WhiteNoise الملفات المجهزة للزبون
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Storage engine for WhiteNoise (Optimized serving)
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # Uploaded event images
@@ -143,9 +141,27 @@ LOGIN_URL = 'login'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- Media & Cloudinary Configuration ---
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
+if os.environ.get('DATABASE_URL'):
+    # على Render (إنتاج) → الصور تترفع لـ Cloudinary
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    # تطوير محلي → الصور تترفع على القرص المحلي (media/)
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+    
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default='dummy_name'),
     'API_KEY': config('CLOUDINARY_API_KEY', default='123456789'),
