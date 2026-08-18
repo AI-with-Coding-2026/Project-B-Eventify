@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from urllib.parse import urlparse
@@ -232,6 +233,44 @@ def organizer_event_list(request):
         {'events': events},
     )
 
+@organizer_required
+def organizer_sales_dashboard(request):
+    """Show ticket sales performance for the logged-in organizer."""
+
+    events = (
+        Event.objects
+        .filter(organizer=request.user)
+        .annotate(
+            tickets_sold=Sum('tickets__quantity')
+        )
+        .order_by('-date')
+    )
+
+    total_tickets_sold = 0
+    total_revenue = 0
+
+    for event in events:
+        event.tickets_sold = event.tickets_sold or 0
+
+        event.tickets_remaining_calculated = max(
+            event.max_tickets - event.tickets_sold,
+            0
+        )
+
+        event.revenue = event.price * event.tickets_sold
+
+        total_tickets_sold += event.tickets_sold
+        total_revenue += event.revenue
+
+    return render(
+        request,
+        'events/organizer_sales_dashboard.html',
+        {
+            'events': events,
+            'total_tickets_sold': total_tickets_sold,
+            'total_revenue': total_revenue,
+        },
+    )
 
 @organizer_required
 def event_create(request):

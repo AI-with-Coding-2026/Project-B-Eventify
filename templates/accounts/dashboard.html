@@ -1,139 +1,182 @@
-{% extends "base.html" %}
-
-{% block title %}
-    Dashboard | Eventify
-{% endblock %}
-
+{% extends "base.html" %} {% block title %} Dashboard | Eventify {% endblock %}
 {% block content %}
 <div class="min-h-screen bg-[#f3faff] px-4 py-10 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-6xl space-y-8">
-        <div class="rounded-2xl border border-[#dbeeff] bg-gradient-to-r from-[#edf8ff] to-[#dfeeff] p-6 shadow-sm sm:p-8">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#2c7be5]">Account dashboard</p>
-                    <h1 class="mt-2 text-3xl font-bold text-[#1f2937]">
-                        Welcome, {{ user.get_full_name|default:user.username }}
-                    </h1>
-                </div>
-
-                <div class="flex flex-wrap gap-3">
-                    <a
-                        href="{% url 'create_event' %}"
-                        class="inline-flex items-center justify-center rounded-xl bg-[#2c7be5] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1d6fd6]"
-                    >
-                        Create Event
-                    </a>
-                    <a
-                        href="{% url 'my_events' %}"
-                        class="inline-flex items-center justify-center rounded-xl border border-[#dbeeff] bg-white px-5 py-2.5 text-sm font-semibold text-[#1d6fd6] shadow-sm transition hover:bg-[#edf8ff]"
-                    >
-                        My Events
-                    </a>
-                </div>
-            </div>
+  <div class="mx-auto max-w-6xl space-y-8">
+    <div
+      class="rounded-2xl border border-[#dbeeff] bg-gradient-to-r from-[#edf8ff] to-[#dfeeff] p-6 shadow-sm sm:p-8"
+    >
+      <div
+        class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div>
+          <p
+            class="text-sm font-semibold uppercase tracking-[0.2em] text-[#2c7be5]"
+          >
+            Account dashboard
+          </p>
+          <h1 class="mt-2 text-3xl font-bold text-[#1f2937]">
+            Welcome, {{ user.get_full_name|default:user.username }}
+          </h1>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-2xl border border-[#dbeeff] bg-white p-5 shadow-sm">
-                <p class="text-sm text-[#5b7fae]">Total events</p>
-                <p class="mt-2 text-3xl font-bold text-[#1f2937]">{{ user_events|length }}</p>
-            </div>
-            <div class="rounded-2xl border border-[#dbeeff] bg-white p-5 shadow-sm">
-                <p class="text-sm text-[#5b7fae]">Upcoming</p>
-                <p class="mt-2 text-3xl font-bold text-[#1f2937]">{{ upcoming_events|length }}</p>
-            </div>
-            <div class="rounded-2xl border border-[#dbeeff] bg-white p-5 shadow-sm">
-                <p class="text-sm text-[#5b7fae]">Role</p>
-                <p class="mt-2 text-2xl font-bold text-[#1f2937]">{{ user.get_role_display }}</p>
-            </div>
+        <div class="flex flex-wrap gap-3">
+          <a
+            href="{% url 'event_create' %}"
+            class="inline-flex items-center justify-center rounded-xl bg-[#2c7be5] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1d6fd6]"
+          >
+            Create Event
+          </a>
+          <a
+            href="{% url 'my_events' %}"
+            class="inline-flex items-center justify-center rounded-xl border border-[#dbeeff] bg-white px-5 py-2.5 text-sm font-semibold text-[#1d6fd6] shadow-sm transition hover:bg-[#edf8ff]"
+          >
+            My Events
+          </a>
         </div>
-
-        <div class="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            <div class="rounded-2xl border border-[#dbeeff] bg-white p-6 shadow-sm">
-                <div class="mb-5 flex items-center justify-between">
-                    <h2 class="text-xl font-bold text-[#1f2937]">Your events</h2>
-                    <a href="{% url 'event_list' %}" class="text-sm font-semibold text-[#1d6fd6] hover:underline">View all events</a>
-                </div>
-
-                {% if user_events %}
-                    <div class="space-y-4">
-                        {% for event in user_events %}
-                            <div class="rounded-xl border border-[#dbeeff] bg-[#f9fcff] p-4">
-                                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-[#1f2937]">{{ event.title }}</h3>
-                                        <p class="mt-1 text-sm text-[#5b7fae]">{{ event.date|date:"M d, Y" }} • {{ event.location }}</p>
-                                    </div>
-                                    <span class="inline-flex rounded-full bg-[#edf8ff] px-2.5 py-1 text-xs font-semibold text-[#1d6fd6]">
-                                        {{ event.category_label }}
-                                    </span>
-                                </div>
-
-                                <div class="mt-3 flex flex-wrap gap-3 text-sm text-[#355d93]">
-                                    <span>Price: ${{ event.price }}</span>
-                                    <span>Tickets: {{ event.max_tickets }}</span>
-                                </div>
-
-                                <div class="mt-4 flex gap-3">
-                                    <a href="{% url 'edit_event' event.pk %}" class="inline-flex items-center justify-center rounded-lg bg-[#edf8ff] px-3 py-2 text-sm font-semibold text-[#1d6fd6] transition hover:bg-[#dfeeff]">
-                                        Edit
-                                    </a>
-                                    <a href="{% url 'delete_event' event.pk %}" class="inline-flex items-center justify-center rounded-lg border border-[#dbeeff] bg-white px-3 py-2 text-sm font-semibold text-[#1d6fd6] transition hover:bg-[#edf8ff]">
-                                        Delete
-                                    </a>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="rounded-xl border border-dashed border-[#dbeeff] bg-[#f9fcff] px-4 py-8 text-center text-sm text-[#5b7fae]">
-                        You haven’t created any events yet.
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="space-y-6">
-                <div class="rounded-2xl border border-[#dbeeff] bg-white p-6 shadow-sm">
-                    <h2 class="text-xl font-bold text-[#1f2937]">Profile</h2>
-
-                    <div class="mt-5 space-y-4 text-sm text-[#355d93]">
-                        <div class="flex justify-between gap-4 border-b border-[#eef5ff] pb-3">
-                            <span>Name</span>
-                            <strong class="text-[#1f2937]">{{ user.get_full_name|default:user.username }}</strong>
-                        </div>
-                        <div class="flex justify-between gap-4 border-b border-[#eef5ff] pb-3">
-                            <span>Email</span>
-                            <strong class="text-[#1f2937]">{{ user.email }}</strong>
-                        </div>
-                        <div class="flex justify-between gap-4 border-b border-[#eef5ff] pb-3">
-                            <span>Role</span>
-                            <strong class="text-[#1f2937]">{{ user.get_role_display }}</strong>
-                        </div>
-                        <div class="flex justify-between gap-4 pb-1">
-                            <span>Joined</span>
-                            <strong class="text-[#1f2937]">{{ user.date_joined|date:"F j, Y" }}</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-[#dbeeff] bg-white p-6 shadow-sm">
-                    <h2 class="text-xl font-bold text-[#1f2937]">Next events</h2>
-
-                    {% if upcoming_events %}
-                        <div class="mt-4 space-y-3">
-                            {% for event in upcoming_events %}
-                                <div class="rounded-lg bg-[#edf8ff] p-3 text-sm text-[#355d93]">
-                                    <p class="font-semibold text-[#1f2937]">{{ event.title }}</p>
-                                    <p class="mt-1">{{ event.date|date:"M d, Y" }}</p>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="mt-4 text-sm text-[#5b7fae]">No upcoming events created yet.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+
+    <div class="grid gap-4 md:grid-cols-3">
+      <div class="rounded-2xl border border-[#dbeeff] bg-white p-5 shadow-sm">
+        <p class="text-sm text-[#5b7fae]">Total events</p>
+        <p class="mt-2 text-3xl font-bold text-[#1f2937]">
+          {{ user_events|length }}
+        </p>
+      </div>
+      <div class="rounded-2xl border border-[#dbeeff] bg-white p-5 shadow-sm">
+        <p class="text-sm text-[#5b7fae]">Upcoming</p>
+        <p class="mt-2 text-3xl font-bold text-[#1f2937]">
+          {{ upcoming_events|length }}
+        </p>
+      </div>
+      <div class="rounded-2xl border border-[#dbeeff] bg-white p-5 shadow-sm">
+        <p class="text-sm text-[#5b7fae]">Role</p>
+        <p class="mt-2 text-2xl font-bold text-[#1f2937]">
+          {{ user.get_role_display }}
+        </p>
+      </div>
+    </div>
+
+    <div class="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+      <div class="rounded-2xl border border-[#dbeeff] bg-white p-6 shadow-sm">
+        <div class="mb-5 flex items-center justify-between">
+          <h2 class="text-xl font-bold text-[#1f2937]">Your events</h2>
+          <a
+            href="{% url 'event_list' %}"
+            class="text-sm font-semibold text-[#1d6fd6] hover:underline"
+            >View all events</a
+          >
+        </div>
+
+        {% if user_events %}
+        <div class="space-y-4">
+          {% for event in user_events %}
+          <div class="rounded-xl border border-[#dbeeff] bg-[#f9fcff] p-4">
+            <div
+              class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <h3 class="text-lg font-semibold text-[#1f2937]">
+                  {{ event.title }}
+                </h3>
+                <p class="mt-1 text-sm text-[#5b7fae]">
+                  {{ event.date|date:"M d, Y" }} • {{ event.location }}
+                </p>
+              </div>
+              <span
+                class="inline-flex rounded-full bg-[#edf8ff] px-2.5 py-1 text-xs font-semibold text-[#1d6fd6]"
+              >
+                {{ event.category_label }}
+              </span>
+            </div>
+
+            <div class="mt-3 flex flex-wrap gap-3 text-sm text-[#355d93]">
+              <span>Price: ${{ event.price }}</span>
+              <span>Tickets: {{ event.max_tickets }}</span>
+            </div>
+
+            <div class="mt-4 flex gap-3">
+              <a
+                href="{% url 'event_edit' event.pk %}"
+                class="inline-flex items-center justify-center rounded-lg bg-[#edf8ff] px-3 py-2 text-sm font-semibold text-[#1d6fd6] transition hover:bg-[#dfeeff]"
+              >
+                Edit
+              </a>
+              <a
+                href="{% url 'event_delete' event.pk %}"
+                class="inline-flex items-center justify-center rounded-lg border border-[#dbeeff] bg-white px-3 py-2 text-sm font-semibold text-[#1d6fd6] transition hover:bg-[#edf8ff]"
+              >
+                Delete
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div
+          class="rounded-xl border border-dashed border-[#dbeeff] bg-[#f9fcff] px-4 py-8 text-center text-sm text-[#5b7fae]"
+        >
+          You haven’t created any events yet.
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="space-y-6">
+        <div class="rounded-2xl border border-[#dbeeff] bg-white p-6 shadow-sm">
+          <h2 class="text-xl font-bold text-[#1f2937]">Profile</h2>
+
+          <div class="mt-5 space-y-4 text-sm text-[#355d93]">
+            <div
+              class="flex justify-between gap-4 border-b border-[#eef5ff] pb-3"
+            >
+              <span>Name</span>
+              <strong class="text-[#1f2937]"
+                >{{ user.get_full_name|default:user.username }}</strong
+              >
+            </div>
+            <div
+              class="flex justify-between gap-4 border-b border-[#eef5ff] pb-3"
+            >
+              <span>Email</span>
+              <strong class="text-[#1f2937]">{{ user.email }}</strong>
+            </div>
+            <div
+              class="flex justify-between gap-4 border-b border-[#eef5ff] pb-3"
+            >
+              <span>Role</span>
+              <strong class="text-[#1f2937]"
+                >{{ user.get_role_display }}</strong
+              >
+            </div>
+            <div class="flex justify-between gap-4 pb-1">
+              <span>Joined</span>
+              <strong class="text-[#1f2937]"
+                >{{ user.date_joined|date:"F j, Y" }}</strong
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-[#dbeeff] bg-white p-6 shadow-sm">
+          <h2 class="text-xl font-bold text-[#1f2937]">Next events</h2>
+
+          {% if upcoming_events %}
+          <div class="mt-4 space-y-3">
+            {% for event in upcoming_events %}
+            <div class="rounded-lg bg-[#edf8ff] p-3 text-sm text-[#355d93]">
+              <p class="font-semibold text-[#1f2937]">{{ event.title }}</p>
+              <p class="mt-1">{{ event.date|date:"M d, Y" }}</p>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="mt-4 text-sm text-[#5b7fae]">
+            No upcoming events created yet.
+          </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

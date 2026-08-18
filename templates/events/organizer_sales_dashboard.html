@@ -1,0 +1,122 @@
+{% extends "base.html" %} {% block title %} Organizer Sales Dashboard — Eventify
+{% endblock %} {% block content %}
+
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <!-- Page Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Sales Dashboard</h1>
+
+    <p class="mt-2 text-gray-600">
+      Track ticket sales and revenue for your events.
+    </p>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <!-- Total Tickets -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <p class="text-sm text-gray-500">Total Tickets Sold</p>
+
+      <p class="text-3xl font-bold text-gray-900 mt-2">
+        {{ total_tickets_sold }}
+      </p>
+    </div>
+
+    <!-- Total Revenue -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <p class="text-sm text-gray-500">Total Revenue</p>
+
+      <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_revenue }}</p>
+    </div>
+  </div>
+
+  <!-- Events Table -->
+  <div
+    class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden"
+  >
+    <div class="px-6 py-5 border-b border-gray-200">
+      <h2 class="text-xl font-semibold text-gray-900">Event Performance</h2>
+    </div>
+
+    {% if events %}
+
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+              Event
+            </th>
+
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+              Ticket Price
+            </th>
+
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+              Tickets Sold
+            </th>
+
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+              Tickets Remaining
+            </th>
+
+            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+              Revenue
+            </th>
+          </tr>
+        </thead>
+
+        <tbody class="divide-y divide-gray-200">
+          {% for event in events %}
+
+          <tr class="hover:bg-gray-50">
+            <!-- Event -->
+            <td class="px-6 py-4">
+              <div class="font-medium text-gray-900">{{ event.title }}</div>
+
+              <div class="text-sm text-gray-500">
+                {{ event.date|date:"M d, Y H:i" }}
+              </div>
+            </td>
+
+            <!-- Price -->
+            <td class="px-6 py-4 text-gray-700">{{ event.price }}</td>
+
+            <!-- Sold -->
+            <td class="px-6 py-4">
+              <span class="font-semibold text-gray-900">
+                {{ event.tickets_sold }}
+              </span>
+            </td>
+
+            <!-- Remaining -->
+            <td class="px-6 py-4">
+              <span class="font-semibold text-gray-900">
+                {{ event.tickets_remaining_calculated }}
+              </span>
+            </td>
+
+            <!-- Revenue -->
+            <td class="px-6 py-4">
+              <span class="font-semibold text-gray-900">
+                {{ event.revenue }}
+              </span>
+            </td>
+          </tr>
+
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+
+    <div class="px-6 py-12 text-center">
+      <p class="text-gray-500">You haven't created any events yet.</p>
+    </div>
+
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

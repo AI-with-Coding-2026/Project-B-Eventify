@@ -15,6 +15,11 @@ urlpatterns = [
         name='organizer_event_list',
     ),
     path(
+    'organizer/sales/',
+    views.organizer_sales_dashboard,
+    name='organizer_sales_dashboard',
+    ),
+    path(
         'organizer/create/',
         views.event_create,
         name='event_create',
