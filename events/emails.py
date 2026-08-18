@@ -21,7 +21,6 @@ def _attach_eventify_logo(message):
     logo.add_header('Content-ID', '<eventify-logo>')
     logo.add_header('Content-Disposition', 'inline', filename=LOGO_PATH.name)
     message.attach(logo)
-    message.mixed_subtype = 'related'
 
 
 def send_booking_confirmation_email(ticket):
