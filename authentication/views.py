@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from events.models import Category, Event, EventBooking, Ticket
 from .decorators import admin_required, role_required
@@ -58,6 +58,33 @@ def admin_dashboard(request):
         'upcoming_events': upcoming_events,
     }
     return render(request, 'authentication/admin_dashboard.html', context)
+
+
+@admin_required
+def user_delete(request, pk):
+    """Allow admins to delete organizers and attendees after confirmation."""
+    target = get_object_or_404(User, pk=pk)
+
+    if target.pk == request.user.pk:
+        messages.error(request, 'You cannot delete your own account.')
+        return redirect('admin_dashboard')
+
+    if target.role == UserRole.ADMIN:
+        messages.error(request, 'Admin accounts cannot be deleted from the dashboard.')
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        username = target.username
+        target.delete()
+        messages.success(request, f'User "{username}" deleted successfully.')
+        return redirect('admin_dashboard')
+
+    return render(
+        request,
+        'authentication/user_confirm_delete.html',
+        {'target_user': target},
+    )
+
 
 @login_not_required
 def login_view(request):
