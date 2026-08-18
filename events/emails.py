@@ -1,4 +1,5 @@
 from decimal import Decimal
+from email.utils import formataddr
 
 from django.conf import settings
 from django.core.mail import EmailMessage
@@ -8,12 +9,7 @@ BOOKING_CONFIRMATION_TEMPLATE = 'events/booking_confirmation_email.txt'
 
 
 def send_booking_confirmation_email(ticket):
-    """Send a booking confirmation email for a saved Ticket.
-
-    Uses Person 2's template. Hamza should call this after a ticket is created.
-    Leave exception handling to Person 5 so a send failure can be caught
-    without blocking the booking.
-    """
+    """Send a booking confirmation email for a saved Ticket."""
     attendee_email = (getattr(ticket.attendee, 'email', '') or '').strip()
     if not attendee_email:
         raise ValueError(
@@ -37,10 +33,11 @@ def send_booking_confirmation_email(ticket):
         subject = 'Your Eventify Booking Confirmation'
         body = rendered
 
+    sender_address = settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL
     message = EmailMessage(
         subject=subject,
         body=body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
+        from_email=formataddr(('Eventify', sender_address)),
         to=[attendee_email],
     )
     message.send(fail_silently=False)

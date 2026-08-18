@@ -15,6 +15,7 @@ from authentication.decorators import (
     role_required,
 )
 from authentication.models import UserRole
+from .emails import send_booking_confirmation_email
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
 from .models import Category, Event, EventBooking, Ticket
 
@@ -227,15 +228,23 @@ def book_ticket(request, pk):
                             f'Only {remaining} ticket(s) remain for this event.',
                         )
                 else:
-                    Ticket.objects.create(
+                    ticket = Ticket.objects.create(
                         event=event,
                         attendee=request.user,
                         quantity=quantity,
                     )
-                    messages.success(
-                        request,
-                        f'Ticket booked for "{event.title}".',
-                    )
+                    try:
+                        send_booking_confirmation_email(ticket)
+                    except Exception:
+                        messages.warning(
+                            request,
+                            'Ticket booked, but the confirmation email could not be sent.',
+                        )
+                    else:
+                        messages.success(
+                            request,
+                            f'Ticket booked for "{event.title}".',
+                        )
                     return redirect('my_tickets')
 
     return render(
