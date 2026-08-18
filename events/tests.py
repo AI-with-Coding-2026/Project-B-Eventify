@@ -1,12 +1,14 @@
 from datetime import timedelta
+from decimal import Decimal
 
+from django.core import mail
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from authentication.models import User, UserRole
 
-from django.utils import timezone
-
+from .emails import send_booking_confirmation_email
 from .models import Category, Event, EventBooking, Ticket
 
 
@@ -611,3 +613,53 @@ class EventListViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Tech Conference")
         self.assertNotContains(response, "Music Festival")
+
+
+class BookingConfirmationEmailTests(TestCase):
+    def setUp(self):
+        self.attendee = User.objects.create_user(
+            'email_attendee',
+            'email_attendee@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+        self.organizer = User.objects.create_user(
+            'email_organizer',
+            'email_organizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.event = Event.objects.create(
+            organizer=self.organizer,
+            title='Email Concert',
+            date=timezone.now(),
+            price=Decimal('25.00'),
+            category='music',
+            max_tickets=10,
+        )
+        self.ticket = Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=2,
+        )
+
+    def test_sends_confirmation_with_booking_details(self):
+        send_booking_confirmation_email(self.ticket)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertEqual(message.subject, 'Your Eventify Booking Confirmation')
+        self.assertEqual(message.to, ['email_attendee@example.com'])
+        self.assertIn('Email Concert', message.body)
+        self.assertIn('Ticket Quantity: 2', message.body)
+        self.assertIn('Total Price: 50.00', message.body)
+
+    def test_requires_attendee_email(self):
+        self.attendee.email = ''
+        self.attendee.save()
+        self.ticket.refresh_from_db()
+
+        with self.assertRaises(ValueError):
+            send_booking_confirmation_email(self.ticket)
+
+        self.assertEqual(len(mail.outbox), 0)
