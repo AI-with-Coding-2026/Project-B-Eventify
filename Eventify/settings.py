@@ -142,7 +142,6 @@ LOGIN_URL = 'login'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 if os.environ.get('DATABASE_URL'):
-    # على Render (إنتاج) → الصور تترفع لـ Cloudinary
     STORAGES = {
         "default": {
             "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
@@ -152,7 +151,6 @@ if os.environ.get('DATABASE_URL'):
         },
     }
 else:
-    # تطوير محلي → الصور تترفع على القرص المحلي (media/)
     STORAGES = {
         "default": {
             "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -161,7 +159,11 @@ else:
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
-    
+
+# إضافة توافق خلفي لمكتبة django-cloudinary-storage التي لا تزال تفتش
+# عن STATICFILES_STORAGE كمتغير مستقل بدل قراءتها من STORAGES
+STATICFILES_STORAGE = STORAGES["staticfiles"]["BACKEND"]
+
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default='dummy_name'),
     'API_KEY': config('CLOUDINARY_API_KEY', default='123456789'),
