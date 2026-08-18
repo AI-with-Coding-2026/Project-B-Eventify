@@ -1,0 +1,28 @@
+{% extends 'base.html' %} {% block content %}
+
+<h1>Students in the Class</h1>
+
+<h2>Add Student</h2>
+
+<form method="POST">
+  {% csrf_token %} {{ form.as_p }}
+
+  <button type="submit">Add Student</button>
+</form>
+
+<hr />
+
+<h2>Student List</h2>
+
+{% if students %}
+<ul>
+  {% for student in students %}
+  <li>
+    <strong>{{ student.name }}</strong>
+    - {{ student.favourite_subject }} - {{ student.birth_date }}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No students have been added yet.</p>
+{% endif %} {% endblock %}

@@ -15,6 +15,7 @@ urlpatterns = [
     ),
     path('django-admin/', eventify_admin_site.urls),
     path('events/', include('events.urls')),
+    path('students/', include('students.urls')),
 ]
 
 # تمكين عرض ملفات الصور والميديا في جميع البيئات
