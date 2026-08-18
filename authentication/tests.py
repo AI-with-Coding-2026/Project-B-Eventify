@@ -428,7 +428,12 @@ class RoleDashboardAccessTests(TestCase):
             render.assert_called_once_with(
                 request,
                 'authentication/organizer_dashboard.html',
-                {'upcoming_events': ANY},
+                {
+                    'upcoming_events': ANY,
+                    'total_tickets_sold': ANY,
+                    'total_revenue': ANY,
+                    'sales_events': ANY,
+                },
             )
 
         request = self.factory.get('/dashboard/attendee/')

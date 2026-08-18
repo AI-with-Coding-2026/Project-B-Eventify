@@ -5,6 +5,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from events.models import Category, Event, EventBooking, Ticket
+from events.views import get_organizer_ticket_stats
 
 from .decorators import admin_required, role_required
 from .forms import UserRegistrationForm
@@ -104,8 +105,12 @@ def organizer_dashboard(request):
     upcoming_events = Event.objects.filter(
         date__gte=timezone.now()
     ).order_by('date')[:3]
+    stats = get_organizer_ticket_stats(request.user)
     return render(request, 'authentication/organizer_dashboard.html', {
         'upcoming_events': upcoming_events,
+        'total_tickets_sold': stats['total_tickets_sold'],
+        'total_revenue': stats['total_revenue'],
+        'sales_events': stats['events'],
     })
 
 

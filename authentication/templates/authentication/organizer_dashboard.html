@@ -14,8 +14,52 @@
             <a href="{% url 'my_events' %}" class="bg-indigo-50 text-indigo-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition">
                 My Events
             </a>
-            
         </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 display">Ticket Sales</h2>
+            <a href="{% url 'organizer_performance' %}" class="text-sm text-indigo-600 font-medium hover:underline">Full report →</a>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2 mb-6">
+            <div class="rounded-xl border border-gray-200 bg-indigo-50/50 p-5">
+                <p class="text-sm text-gray-500 mb-1">Total Tickets Sold</p>
+                <p class="text-3xl font-bold text-gray-900">{{ total_tickets_sold }}</p>
+            </div>
+            <div class="rounded-xl border border-gray-200 bg-indigo-50/50 p-5">
+                <p class="text-sm text-gray-500 mb-1">Total Revenue</p>
+                <p class="text-3xl font-bold text-gray-900">${{ total_revenue|floatformat:2 }}</p>
+            </div>
+        </div>
+
+        {% if sales_events %}
+        <div class="overflow-x-auto rounded-xl border border-gray-200">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 text-left text-gray-500">
+                    <tr>
+                        <th class="px-4 py-3 font-medium">Event</th>
+                        <th class="px-4 py-3 font-medium">Sold</th>
+                        <th class="px-4 py-3 font-medium">Remaining</th>
+                        <th class="px-4 py-3 font-medium">Revenue</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for event in sales_events %}
+                    <tr>
+                        <td class="px-4 py-3 font-medium text-gray-900">{{ event.title }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ event.tickets_sold }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ event.tickets_remaining_for_performance }}</td>
+                        <td class="px-4 py-3 font-semibold text-gray-900">${{ event.revenue_for_performance|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-400 text-center py-6">No events yet — create one to start tracking sales.</p>
+        {% endif %}
     </div>
 
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">

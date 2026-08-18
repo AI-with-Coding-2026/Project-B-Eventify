@@ -14,16 +14,12 @@ from authentication.decorators import (
 from authentication.models import UserRole
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
 from .models import Category, Event, EventBooking, Ticket
-from django.db.models import Count
-
-@organizer_required
-def organizer_performance(request):
-    """Performance dashboard for the logged-in organizer."""
-
+def get_organizer_ticket_stats(organizer):
+    """Return ticket sales and revenue stats for an organizer's events."""
     events = (
         Event.objects
-        .filter(organizer=request.user)
-        .annotate(tickets_sold=Count('bookings', distinct=True))
+        .filter(organizer=organizer)
+        .prefetch_related('tickets')
         .order_by('-date')
     )
 
@@ -31,27 +27,23 @@ def organizer_performance(request):
     total_revenue = 0
 
     for event in events:
+        event.tickets_sold = sum(
+            ticket.quantity
+            for ticket in event.tickets.all()
+        )
         event.tickets_remaining_for_performance = max(
             event.max_tickets - event.tickets_sold,
             0,
         )
-
-        event.revenue_for_performance = (
-            event.price * event.tickets_sold
-        )
-
+        event.revenue_for_performance = event.price * event.tickets_sold
         total_tickets_sold += event.tickets_sold
         total_revenue += event.revenue_for_performance
 
-    return render(
-        request,
-        'events/organizer_performance.html',
-        {
-            'events': events,
-            'total_tickets_sold': total_tickets_sold,
-            'total_revenue': total_revenue,
-        },
-    )
+    return {
+        'events': events,
+        'total_tickets_sold': total_tickets_sold,
+        'total_revenue': total_revenue,
+    }
 
 
 def _user_can_manage_event(user, event):
@@ -273,39 +265,11 @@ def organizer_event_list(request):
 @organizer_required
 def organizer_performance(request):
     """Show ticket sales and revenue for the logged-in organizer's events."""
-    events = (
-        Event.objects
-        .filter(organizer=request.user)
-        .prefetch_related('tickets')
-    )
-
-    total_tickets_sold = 0
-    total_revenue = 0
-
-    for event in events:
-        event.tickets_sold = sum(
-            ticket.quantity
-            for ticket in event.tickets.all()
-        )
-
-        event.performance_tickets_remaining = max(
-            event.max_tickets - event.tickets_sold,
-            0,
-        )
-
-        event.revenue = event.price * event.tickets_sold
-
-        total_tickets_sold += event.tickets_sold
-        total_revenue += event.revenue
-
+    stats = get_organizer_ticket_stats(request.user)
     return render(
         request,
         'events/organizer_performance.html',
-        {
-            'events': events,
-            'total_tickets_sold': total_tickets_sold,
-            'total_revenue': total_revenue,
-        },
+        stats,
     )
 
 
