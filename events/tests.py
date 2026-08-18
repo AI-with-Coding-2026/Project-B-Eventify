@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.core import mail
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.contrib import admin
 from django.utils import timezone
 
 from authentication.models import User, UserRole
@@ -546,6 +547,35 @@ class CategoryDeleteTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
 
+    def test_get_confirmation_does_not_delete_category(self):
+        """Opening the confirmation page via GET must NOT delete the category."""
+        self.client.force_login(self.admin)
+
+        self.client.get(self.delete_url)
+
+        self.assertTrue(
+            Category.objects.filter(pk=self.category.pk).exists()
+        )
+
+    def test_successful_deletion_shows_success_message(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.post(self.delete_url, follow=True)
+
+        self.assertContains(response, 'Category deleted successfully.')
+
+    def test_cancel_leaves_category_unchanged(self):
+        """Visiting the confirmation page and navigating away (cancel)
+        must leave the category in the database."""
+        self.client.force_login(self.admin)
+
+        # Simulate cancel: GET the confirmation page, then navigate to the list
+        self.client.get(self.delete_url)
+        self.client.get(reverse('category_list'))
+
+        self.assertTrue(
+            Category.objects.filter(pk=self.category.pk).exists()
+        )
 
 class CategoryListTests(TestCase):
     def setUp(self):
@@ -557,9 +587,21 @@ class CategoryListTests(TestCase):
             role=UserRole.ADMIN,
             is_staff=True,
         )
+        self.organizer = User.objects.create_user(
+            'listorganizer',
+            'listorganizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            'listattendee',
+            'listattendee@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
 
-        Category.objects.create(name='Cat 1')
-        Category.objects.create(name='Cat 2')
+        self.cat1 = Category.objects.create(name='Cat 1', description='First category')
+        self.cat2 = Category.objects.create(name='Cat 2')
 
     def test_admin_can_view_category_list(self):
         self.client.force_login(self.admin)
@@ -570,6 +612,149 @@ class CategoryListTests(TestCase):
         self.assertContains(response, 'Cat 1')
         self.assertContains(response, 'Cat 2')
 
+    def test_category_list_displays_description(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('category_list'))
+
+        self.assertContains(response, 'First category')
+
+    def test_category_list_contains_edit_links(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('category_list'))
+
+        edit_url_1 = reverse('category_update', kwargs={'pk': self.cat1.pk})
+        edit_url_2 = reverse('category_update', kwargs={'pk': self.cat2.pk})
+        self.assertContains(response, edit_url_1)
+        self.assertContains(response, edit_url_2)
+
+    def test_category_list_contains_delete_links(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('category_list'))
+
+        delete_url_1 = reverse('category_delete', kwargs={'pk': self.cat1.pk})
+        delete_url_2 = reverse('category_delete', kwargs={'pk': self.cat2.pk})
+        self.assertContains(response, delete_url_1)
+        self.assertContains(response, delete_url_2)
+
+    def test_organizer_cannot_access_category_list(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(reverse('category_list'))
+
+        self.assertRedirects(
+            response,
+            reverse('unauthorized'),
+            target_status_code=403,
+        )
+
+    def test_attendee_cannot_access_category_list(self):
+        self.client.force_login(self.attendee)
+
+        response = self.client.get(reverse('category_list'))
+
+        self.assertRedirects(
+            response,
+            reverse('unauthorized'),
+            target_status_code=403,
+        )
+
+
+class EventAdminDeleteActionTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_superuser(
+            'actionadmin',
+            'actionadmin@example.com',
+            'strong-pass-123',
+        )
+        self.organizer = User.objects.create_user(
+            'actionorg',
+            'actionorg@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            'actionatt',
+            'actionatt@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+        self.event1 = Event.objects.create(
+            organizer=self.organizer,
+            title='Delete Me 1',
+            date=timezone.now(),
+            price='10.00',
+            category='music',
+        )
+        self.event2 = Event.objects.create(
+            organizer=self.organizer,
+            title='Delete Me 2',
+            date=timezone.now(),
+            price='20.00',
+            category='tech',
+        )
+        # Using the custom admin site for events
+        self.changelist_url = reverse('eventify_admin:events_event_changelist')
+
+    def test_admin_can_see_delete_action_confirmation(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            self.changelist_url,
+            {
+                'action': 'delete_selected_events',
+                admin.helpers.ACTION_CHECKBOX_NAME: [self.event1.pk],
+            }
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Are you sure you want to delete this event?')
+        self.assertContains(response, self.event1.title)
+
+    def test_admin_can_confirm_delete(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            self.changelist_url,
+            {
+                'action': 'delete_selected_events',
+                admin.helpers.ACTION_CHECKBOX_NAME: [self.event1.pk],
+                'post': 'yes',
+            },
+            follow=True
+        )
+        self.assertFalse(Event.objects.filter(pk=self.event1.pk).exists())
+        self.assertContains(response, 'Event deleted successfully.')
+
+    def test_admin_can_confirm_multiple_delete(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            self.changelist_url,
+            {
+                'action': 'delete_selected_events',
+                admin.helpers.ACTION_CHECKBOX_NAME: [self.event1.pk, self.event2.pk],
+                'post': 'yes',
+            },
+            follow=True
+        )
+        self.assertFalse(Event.objects.filter(pk=self.event1.pk).exists())
+        self.assertFalse(Event.objects.filter(pk=self.event2.pk).exists())
+        self.assertContains(response, 'Events deleted successfully.')
+
+    def test_organizer_cannot_access_eventify_admin_changelist(self):
+        self.client.force_login(self.organizer)
+        response = self.client.get(self.changelist_url)
+        # Organizer gets 403 redirected to /unauthorized/
+        self.assertRedirects(response, reverse('unauthorized'), target_status_code=403)
+
+    def test_attendee_cannot_access_eventify_admin_changelist(self):
+        self.client.force_login(self.attendee)
+        response = self.client.get(self.changelist_url)
+        self.assertRedirects(response, reverse('unauthorized'), target_status_code=403)
+
+    def test_unauthenticated_cannot_access_eventify_admin_changelist(self):
+        response = self.client.get(self.changelist_url)
+        self.assertRedirects(response, reverse('eventify_admin:login') + '?next=' + self.changelist_url)
 
 class EventListViewTest(TestCase):
     def setUp(self):

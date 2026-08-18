@@ -143,16 +143,10 @@ LOGIN_URL = 'login'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Media files configuration
 # --- Media & Cloudinary Configuration ---
-MEDIA_URL = '/media/'
-
-# إذا كنت تريد تخزين كل شيء على Cloudinary دائماً (سواء محلي أو سيرفر):
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
-# إعدادات Cloudinary (تُجلب من ملف .env)
 CLOUDINARY_STORAGE = {
-    
     'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default='dummy_name'),
     'API_KEY': config('CLOUDINARY_API_KEY', default='123456789'),
     'API_SECRET': config('CLOUDINARY_API_SECRET', default='dummy_secret'),
