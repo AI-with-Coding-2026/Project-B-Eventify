@@ -432,7 +432,12 @@ class RoleDashboardAccessTests(TestCase):
                     'events': ANY,
                     'total_events': ANY,
                     'total_tickets_sold': ANY,
+                    'total_tickets_remaining': ANY,
                     'total_revenue': ANY,
+                    'chart_labels_json': ANY,
+                    'chart_tickets_sold_json': ANY,
+                    'chart_tickets_remaining_json': ANY,
+                    'chart_revenue_json': ANY,
                 },
             )
 

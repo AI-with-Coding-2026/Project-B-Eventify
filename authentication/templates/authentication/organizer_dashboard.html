@@ -2,6 +2,9 @@
 {% block title %}Organizer Dashboard — Eventify{% endblock %}
 
 {% block content %}
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <div class="max-w-6xl mx-auto space-y-8">
 
     <!-- Header Section -->
@@ -57,6 +60,45 @@
             </div>
         </div>
     </div>
+
+    <!-- Analytics Charts Section -->
+    {% if events %}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Column-Line Combo Chart (Tickets Sold vs Revenue) -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-900 display">Sales Volume & Revenue Comparison</h2>
+                    <p class="text-xs text-gray-500">Column bars indicate tickets sold; line indicates revenue ($) generated per event.</p>
+                </div>
+            </div>
+            <div class="relative h-72 w-full">
+                <canvas id="salesComboChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Ticket Allocation & Capacity Doughnut Chart -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900 display mb-1">Ticket Capacity Allocation</h2>
+                <p class="text-xs text-gray-500 mb-4">Overall breakdown of tickets sold vs remaining capacity.</p>
+            </div>
+            <div class="relative h-60 w-full flex items-center justify-center">
+                <canvas id="capacityDoughnutChart"></canvas>
+            </div>
+            <div class="flex items-center justify-around border-t border-gray-100 pt-4 mt-2 text-center text-xs">
+                <div>
+                    <span class="inline-block w-3 h-3 rounded-full bg-indigo-600 mr-1"></span>
+                    <span class="text-gray-600 font-semibold">Sold: {{ total_tickets_sold }}</span>
+                </div>
+                <div>
+                    <span class="inline-block w-3 h-3 rounded-full bg-slate-200 mr-1"></span>
+                    <span class="text-gray-600 font-semibold">Remaining: {{ total_tickets_remaining }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Event Sales Performance Table -->
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -181,4 +223,151 @@
     </div>
 
 </div>
+
+{% if events %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const labels = {{ chart_labels_json|safe }};
+    const ticketsSold = {{ chart_tickets_sold_json|safe }};
+    const revenue = {{ chart_revenue_json|safe }};
+    const totalSold = {{ total_tickets_sold }};
+    const totalRemaining = {{ total_tickets_remaining }};
+
+    // 1. Column-Line Combo Chart
+    const comboCtx = document.getElementById('salesComboChart').getContext('2d');
+    new Chart(comboCtx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Tickets Sold',
+                    data: ticketsSold,
+                    backgroundColor: 'rgba(79, 70, 229, 0.85)',
+                    hoverBackgroundColor: 'rgba(67, 56, 202, 1)',
+                    borderRadius: 8,
+                    yAxisID: 'yTickets',
+                    order: 2
+                },
+                {
+                    type: 'line',
+                    label: 'Revenue ($)',
+                    data: revenue,
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                    tension: 0.3,
+                    yAxisID: 'yRevenue',
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.label.includes('Revenue')) {
+                                return `Revenue: $${context.raw.toFixed(2)}`;
+                            }
+                            return `Tickets Sold: ${context.raw}`;
+                        }
+                    }
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 8,
+                        font: { family: 'Inter', size: 12, weight: '500' }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { family: 'Inter', size: 11 } }
+                },
+                yTickets: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Tickets Sold',
+                        font: { family: 'Inter', size: 11, weight: '600' }
+                    },
+                    ticks: {
+                        stepSize: 1,
+                        font: { family: 'Inter', size: 11 }
+                    },
+                    grid: { borderDash: [4, 4], color: '#f1f5f9' }
+                },
+                yRevenue: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Revenue ($)',
+                        font: { family: 'Inter', size: 11, weight: '600' }
+                    },
+                    ticks: {
+                        callback: function(value) { return '$' + value; },
+                        font: { family: 'Inter', size: 11 }
+                    },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+
+    // 2. Capacity Doughnut Chart
+    const doughnutCtx = document.getElementById('capacityDoughnutChart').getContext('2d');
+    new Chart(doughnutCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Tickets Sold', 'Tickets Remaining'],
+            datasets: [{
+                data: [totalSold, totalRemaining],
+                backgroundColor: [
+                    'rgba(79, 70, 229, 0.9)',
+                    'rgba(226, 232, 240, 0.9)'
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = totalSold + totalRemaining;
+                            const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
+                            return `${context.label}: ${context.raw} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+
 {% endblock %}
