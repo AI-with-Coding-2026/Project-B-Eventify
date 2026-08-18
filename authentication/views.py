@@ -159,7 +159,8 @@ def my_bookings(request):
         if not any(t.event_id == b.event_id for t in past_tickets)
     ]
 
-upcoming_bookings = sorted(
+# 1. ترتيب الحجوزات وحساب المجموع (نهاية دالة my_bookings)
+    upcoming_bookings = sorted(
         upcoming_tickets + upcoming_legacy,
         key=lambda x: x.event.date,
     )
@@ -175,6 +176,8 @@ upcoming_bookings = sorted(
         'total_bookings': len(upcoming_bookings) + len(past_bookings),
     })
 
+
+# 2. دالة إغلاق/إلغاء الحجز (دالة مستقلة تبدأ من بداية السطر)
 @role_required(UserRole.ATTENDEE)
 def cancel_booking(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk, attendee=request.user)
