@@ -280,7 +280,6 @@ def event_create(request):
             event = form.save(commit=False)
             event.organizer = request.user
             event.save()
-            messages.success(request, 'Event created successfully.')
             return redirect('organizer_event_list')
     else:
         form = EventForm()
