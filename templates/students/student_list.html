@@ -20,6 +20,26 @@
   <li>
     <strong>{{ student.name }}</strong>
     - {{ student.favourite_subject }} - {{ student.birth_date }}
+
+    <br />
+
+    <a href="{% url 'student_detail' student.pk %}"> View Details </a>
+
+    |
+
+    <a href="{% url 'student_edit' student.pk %}"> Edit </a>
+
+    |
+
+    <form
+      method="POST"
+      action="{% url 'student_delete' student.pk %}"
+      style="display: inline"
+    >
+      {% csrf_token %}
+
+      <button type="submit">Delete</button>
+    </form>
   </li>
   {% endfor %}
 </ul>
