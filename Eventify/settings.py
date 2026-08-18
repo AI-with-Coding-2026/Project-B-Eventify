@@ -145,14 +145,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Media files configuration
 # --- Media & Cloudinary Configuration ---
+# Media files configuration
 MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
-# إذا كنت تريد تخزين كل شيء على Cloudinary دائماً (سواء محلي أو سيرفر):
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-# إعدادات Cloudinary (تُجلب من ملف .env)
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': config('CLOUDINARY_API_KEY'),
-    'API_SECRET': config('CLOUDINARY_API_SECRET'),
-}
+# Local development: store uploaded files in the local media/ folder
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'

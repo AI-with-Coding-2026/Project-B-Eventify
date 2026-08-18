@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Event Performance{% endblock %}
+
+{% block content %}
+
+<div class="container mx-auto px-4 py-8">
+
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold">
+            Event Performance
+        </h1>
+
+        <p class="mt-2 text-gray-600">
+            Track ticket sales and revenue for your events.
+        </p>
+    </div>
+
+    <!-- Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-sm text-gray-500">
+                Total Tickets Sold
+            </h2>
+
+            <p class="mt-2 text-3xl font-bold">
+                {{ total_tickets_sold }}
+            </p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-sm text-gray-500">
+                Total Revenue
+            </h2>
+
+            <p class="mt-2 text-3xl font-bold">
+                ${{ total_revenue|floatformat:2 }}
+            </p>
+        </div>
+
+    </div>
+
+    <!-- Event performance -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+
+        <div class="px-6 py-4 border-b">
+            <h2 class="text-xl font-semibold">
+                Your Events
+            </h2>
+        </div>
+
+        {% if events %}
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full">
+
+                <thead class="bg-gray-100">
+
+                    <tr>
+                        <th class="px-6 py-3 text-left">
+                            Event
+                        </th>
+
+                        <th class="px-6 py-3 text-left">
+                            Ticket Price
+                        </th>
+
+                        <th class="px-6 py-3 text-left">
+                            Tickets Sold
+                        </th>
+
+                        <th class="px-6 py-3 text-left">
+                            Tickets Remaining
+                        </th>
+
+                        <th class="px-6 py-3 text-left">
+                            Revenue
+                        </th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for event in events %}
+
+                    <tr class="border-b">
+
+                        <td class="px-6 py-4 font-medium">
+                            {{ event.title }}
+                        </td>
+
+                        <td class="px-6 py-4">
+                            ${{ event.price|floatformat:2 }}
+                        </td>
+
+                        <td class="px-6 py-4">
+                            {{ event.tickets_sold }}
+                        </td>
+
+                        <td class="px-6 py-4">
+                            {{ event.tickets_remaining_for_performance }}
+                        </td>
+
+                        <td class="px-6 py-4 font-semibold">
+                            ${{ event.revenue_for_performance|floatformat:2 }}
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="p-6 text-gray-600">
+            You have not created any events yet.
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}
