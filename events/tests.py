@@ -362,7 +362,7 @@ class AttendeeTicketBookingTests(TestCase):
             {'quantity': 2},
         )
 
-        self.assertRedirects(response, reverse('my_tickets'))
+        self.assertRedirects(response, reverse('my_bookings'))
         ticket = Ticket.objects.get(
             event=self.event,
             attendee=self.attendee,
@@ -428,10 +428,15 @@ class AttendeeTicketBookingTests(TestCase):
         )
         self.client.force_login(self.attendee)
 
-        response = self.client.get(reverse('my_tickets'))
-
+        # Test direct access to my_bookings
+        response = self.client.get(reverse('my_bookings'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Bookable Show')
+
+        # Test legacy my_tickets redirects to my_bookings
+        legacy_response = self.client.get(reverse('my_tickets'), follow=True)
+        self.assertEqual(legacy_response.status_code, 200)
+        self.assertContains(legacy_response, 'Bookable Show')
 
     def test_organizer_cannot_book_ticket(self):
         self.client.force_login(self.organizer)
