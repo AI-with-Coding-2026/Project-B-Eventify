@@ -46,7 +46,8 @@
         </div>
     {% elif user.role == "organizer" %}
         <div class="role-message">
-            You will be able to create and manage events.
+            You can create and manage your own events.
+            <a href="{% url 'events:event_list' %}">Go to My Events &rarr;</a>
         </div>
     {% elif user.role == "attendee" %}
         <div class="role-message">

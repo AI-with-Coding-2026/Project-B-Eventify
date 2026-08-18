@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}
+    My Events | Event Platform
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="eyebrow">
+            Organizer
+        </p>
+
+        <h1>
+            My events
+        </h1>
+    </div>
+
+    <a class="button-link" href="{% url 'events:event_create' %}">
+        + New event
+    </a>
+</div>
+
+{% if events %}
+    <div class="event-grid">
+        {% for event in events %}
+            <article class="event-card">
+                {% if event.poster %}
+                    <img src="{{ event.poster.url }}" alt="{{ event.title }} poster">
+                {% endif %}
+
+                <div class="event-card-body">
+                    <h2>{{ event.title }}</h2>
+
+                    <p class="event-meta">
+                        {{ event.date|date:"F j, Y, g:i A" }} &middot; {{ event.location }}
+                    </p>
+
+                    <p class="event-meta">
+                        ${{ event.ticket_price }} &middot; {{ event.max_tickets }} tickets available
+                    </p>
+
+                    <p class="event-description">
+                        {{ event.description|truncatewords:20 }}
+                    </p>
+
+                    <div class="event-card-actions">
+                        <a class="secondary-button" href="{% url 'events:event_update' event.pk %}">
+                            Edit
+                        </a>
+
+                        <a class="danger-button" href="{% url 'events:event_delete' event.pk %}">
+                            Delete
+                        </a>
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>
+            You haven't created any events yet.
+        </p>
+
+        <a href="{% url 'events:event_create' %}">
+            Create your first event
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

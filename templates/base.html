@@ -33,6 +33,12 @@
                         Dashboard
                     </a>
 
+                    {% if user.role == "organizer" %}
+                        <a href="{% url 'events:event_list' %}">
+                            My Events
+                        </a>
+                    {% endif %}
+
                     <form
                         method="post"
                         action="{% url 'logout' %}"

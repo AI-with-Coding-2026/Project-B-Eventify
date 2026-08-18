@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if is_edit %}Edit event{% else %}New event{% endif %} | Event Platform
+{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <p class="eyebrow">
+        Organizer
+    </p>
+
+    <h1>
+        {% if is_edit %}Edit event{% else %}Create a new event{% endif %}
+    </h1>
+
+    <p class="subtitle">
+        {% if is_edit %}
+            Update the details for {{ event.title }}.
+        {% else %}
+            Fill in the details below to publish a new event.
+        {% endif %}
+    </p>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="{{ form.title.id_for_label }}">Title</label>
+            {{ form.title }}
+            {% for error in form.title.errors %}
+                <div class="field-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description }}
+            {% for error in form.description.errors %}
+                <div class="field-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.location.id_for_label }}">Location</label>
+            {{ form.location }}
+            {% for error in form.location.errors %}
+                <div class="field-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.date.id_for_label }}">Date and time</label>
+            {{ form.date }}
+            {% for error in form.date.errors %}
+                <div class="field-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.ticket_price.id_for_label }}">Ticket price ($)</label>
+            {{ form.ticket_price }}
+            {% for error in form.ticket_price.errors %}
+                <div class="field-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.max_tickets.id_for_label }}">Maximum tickets</label>
+            {{ form.max_tickets }}
+            {% for error in form.max_tickets.errors %}
+                <div class="field-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.poster.id_for_label }}">Poster image</label>
+
+            {% if is_edit and event.poster %}
+                <div class="current-poster">
+                    <img src="{{ event.poster.url }}" alt="Current poster for {{ event.title }}">
+                    <span>Current poster. Upload a new file to replace it.</span>
+                </div>
+            {% endif %}
+
+            {{ form.poster }}
+
+            <p class="help-text">
+                JPEG, PNG or WEBP, up to 5MB.
+            </p>
+
+            {% for error in form.poster.errors %}
+                <div class="field-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="form-actions">
+            <a class="secondary-button" href="{% url 'events:event_list' %}">
+                Cancel
+            </a>
+
+            <button type="submit" class="primary-button">
+                {% if is_edit %}Save changes{% else %}Create event{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

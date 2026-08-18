@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Delete event | Event Platform
+{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <p class="eyebrow">
+        Organizer
+    </p>
+
+    <h1>
+        Delete "{{ event.title }}"?
+    </h1>
+
+    <p class="subtitle">
+        This will permanently remove this event and its poster image. This action cannot be undone.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-actions">
+            <a class="secondary-button" href="{% url 'events:event_list' %}">
+                Cancel
+            </a>
+
+            <button type="submit" class="danger-button">
+                Delete event
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
