@@ -428,7 +428,12 @@ class RoleDashboardAccessTests(TestCase):
             render.assert_called_once_with(
                 request,
                 'authentication/organizer_dashboard.html',
-                {'upcoming_events': ANY},
+                {
+                    'events': ANY,
+                    'total_events': ANY,
+                    'total_tickets_sold': ANY,
+                    'total_revenue': ANY,
+                },
             )
 
         request = self.factory.get('/dashboard/attendee/')
@@ -463,3 +468,99 @@ class RoleDashboardAccessTests(TestCase):
         response = views.organizer_dashboard(request)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('unauthorized'))
+
+
+class OrganizerDashboardSalesPerformanceTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        self.organizer = User.objects.create_user(
+            'sales_organizer',
+            'organizer@example.com',
+            'pass123',
+            role=UserRole.ORGANIZER,
+        )
+
+        self.other_organizer = User.objects.create_user(
+            'other_organizer',
+            'other@example.com',
+            'pass123',
+            role=UserRole.ORGANIZER,
+        )
+
+        self.attendee = User.objects.create_user(
+            'sales_attendee',
+            'attendee@example.com',
+            'pass123',
+            role=UserRole.ATTENDEE,
+        )
+
+        from events.models import Event, EventBooking, Ticket
+        from django.utils import timezone
+        from decimal import Decimal
+
+        self.event1 = Event.objects.create(
+            organizer=self.organizer,
+            title='Tech Summit 2026',
+            description='Innovations in Tech',
+            date=timezone.now(),
+            price=Decimal('50.00'),
+            max_tickets=100,
+            category='tech',
+        )
+
+        self.event2 = Event.objects.create(
+            organizer=self.organizer,
+            title='Music Fest',
+            description='Live outdoor concert',
+            date=timezone.now(),
+            price=Decimal('100.00'),
+            max_tickets=50,
+            category='music',
+        )
+
+        self.other_event = Event.objects.create(
+            organizer=self.other_organizer,
+            title='Other Organizer Event',
+            date=timezone.now(),
+            price=Decimal('20.00'),
+            max_tickets=10,
+        )
+
+        # Bookings & tickets for event1
+        EventBooking.objects.create(user=self.attendee, event=self.event1)
+        Ticket.objects.create(event=self.event1, attendee=self.attendee, quantity=3)
+
+        # Tickets for event2
+        Ticket.objects.create(event=self.event2, attendee=self.attendee, quantity=2)
+
+    def test_event_sales_and_revenue_properties(self):
+        # event1: 1 booking + 3 tickets = 4 sold
+        self.assertEqual(self.event1.tickets_sold, 4)
+        self.assertEqual(self.event1.tickets_remaining, 96)
+        self.assertEqual(self.event1.revenue, 200.00)
+
+        # event2: 2 tickets = 2 sold
+        self.assertEqual(self.event2.tickets_sold, 2)
+        self.assertEqual(self.event2.tickets_remaining, 48)
+        self.assertEqual(self.event2.revenue, 200.00)
+
+    def test_organizer_dashboard_displays_correct_sales_data(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(reverse('organizer_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Tech Summit 2026')
+        self.assertContains(response, 'Music Fest')
+        self.assertNotContains(response, 'Other Organizer Event')
+
+        # Total events: 2, total tickets sold: 6, total revenue: 400.00
+        self.assertEqual(response.context['total_events'], 2)
+        self.assertEqual(response.context['total_tickets_sold'], 6)
+        self.assertEqual(response.context['total_revenue'], 400.00)
+
+    def test_unauthenticated_access_redirects_to_login(self):
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('organizer_dashboard')}")
+

@@ -56,6 +56,9 @@
                     <div class="space-y-1 text-sm text-gray-500">
                         <p><strong class="text-gray-700">Date:</strong> {{ event.date|date:"M d, Y" }}</p>
                         <p><strong class="text-gray-700">Price:</strong> ${{ event.price }}</p>
+                        <p><strong class="text-gray-700">Tickets Sold:</strong> {{ event.tickets_sold }} / {{ event.max_tickets }}</p>
+                        <p><strong class="text-gray-700">Remaining:</strong> {{ event.tickets_remaining }}</p>
+                        <p><strong class="text-emerald-700 font-semibold">Revenue:</strong> <span class="text-emerald-600 font-bold">${{ event.revenue|floatformat:2 }}</span></p>
                     </div>
                 </div>
             </a>
@@ -87,6 +90,9 @@
                         <div class="flex flex-wrap gap-4 text-sm text-gray-500">
                             <span><strong class="text-gray-700">Date:</strong> {{ event.date|date:"M d, Y" }}</span>
                             <span><strong class="text-gray-700">Price:</strong> ${{ event.price }}</span>
+                            <span><strong class="text-gray-700">Sold:</strong> {{ event.tickets_sold }}/{{ event.max_tickets }}</span>
+                            <span><strong class="text-gray-700">Remaining:</strong> {{ event.tickets_remaining }}</span>
+                            <span><strong class="text-emerald-700">Revenue:</strong> <span class="text-emerald-600 font-bold">${{ event.revenue|floatformat:2 }}</span></span>
                         </div>
                     </div>
                 </a>

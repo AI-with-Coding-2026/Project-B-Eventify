@@ -113,9 +113,19 @@ class Event(models.Model):
         return f"#{self.pk}"
 
     @property
+    def tickets_sold(self):
+        from django.db.models import Sum
+        bookings_count = self.bookings.count()
+        tickets_count = self.tickets.aggregate(total=Sum('quantity'))['total'] or 0
+        return bookings_count + tickets_count
+
+    @property
     def tickets_remaining(self):
-        booked = self.bookings.count()
-        return max(self.max_tickets - booked, 0)
+        return max(self.max_tickets - self.tickets_sold, 0)
+
+    @property
+    def revenue(self):
+        return self.price * self.tickets_sold
 
     @property
     def is_sold_out(self):

@@ -1,51 +1,182 @@
 {% extends 'base.html' %}
 {% block title %}Organizer Dashboard — Eventify{% endblock %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-8">
+<div class="max-w-6xl mx-auto space-y-8">
 
-    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
-        <h1 class="text-2xl font-bold text-gray-900 display mb-2">Organizer Dashboard</h1>
-        <p class="text-gray-600 mb-6">Welcome, {{ user.username }}. You are logged in as an Organizer.</p>
-
-        <div class="flex flex-wrap justify-center items-center gap-4">
-            <a href="{% url 'create_event' %}" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 shadow-sm transition">
-                + Create Event
+    <!-- Header Section -->
+    <div class="bg-gradient-to-r from-indigo-950 via-indigo-900 to-indigo-800 rounded-2xl p-6 sm:p-8 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div>
+            <div class="inline-flex items-center gap-2 bg-indigo-500/20 backdrop-blur-md text-indigo-200 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-3">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Organizer Portal
+            </div>
+            <h1 class="text-3xl font-extrabold tracking-tight display">Welcome back, {{ user.username }}!</h1>
+            <p class="text-indigo-200 text-sm mt-1">Here is how your events are performing in ticket sales and overall revenue.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="{% url 'create_event' %}" class="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-5 py-3 rounded-xl shadow-lg hover:shadow-emerald-500/25 transition-all transform hover:-translate-y-0.5 text-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Create New Event
             </a>
-            <a href="{% url 'my_events' %}" class="bg-indigo-50 text-indigo-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition">
-                My Events
-            </a>
-            
         </div>
     </div>
 
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-gray-900 display">Upcoming Events</h2>
-            <a href="{% url 'event_list' %}" class="text-sm text-indigo-600 font-medium hover:underline">View all events →</a>
+    <!-- Overview Stats Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Card 1: Total Events -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition">
+            <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Total Events</p>
+                <h3 class="text-3xl font-bold text-gray-900 mt-1">{{ total_events }}</h3>
+            </div>
         </div>
 
-        {% if upcoming_events %}
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {% for event in upcoming_events %}
-            <a href="{% url 'event_detail' event.pk %}" class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit">
-                {% if event.image %}
-                    <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-32 object-cover">
-                {% else %}
-                    <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">No image</div>
-                {% endif %}
-                <div class="p-4 flex flex-col flex-1">
-                    <h3 class="font-semibold text-gray-900 mb-1">{{ event.title }}</h3>
-                    {% if event.description %}
-                    <p class="text-xs text-gray-500 mb-2">{{ event.description|truncatewords:12 }}</p>
-                    {% endif %}
-                    <p class="text-xs text-gray-500"><strong>Date:</strong> {{ event.date|date:"M d, Y" }}</p>
-                    <p class="text-xs text-gray-500"><strong>Price:</strong> ${{ event.price }}</p>
-                </div>
-            </a>
-            {% endfor %}
+        <!-- Card 2: Total Tickets Sold -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition">
+            <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+            </div>
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Total Tickets Sold</p>
+                <h3 class="text-3xl font-bold text-gray-900 mt-1">{{ total_tickets_sold }}</h3>
+            </div>
+        </div>
+
+        <!-- Card 3: Total Revenue -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Total Revenue Generated</p>
+                <h3 class="text-3xl font-bold text-emerald-600 mt-1">${{ total_revenue|floatformat:2 }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Sales Performance Table -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 display">Event Sales & Performance</h2>
+                <p class="text-sm text-gray-500">Track ticket capacity, sales progress, and total revenue per event.</p>
+            </div>
+            {% if events %}
+            <span class="text-xs font-medium bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                {{ events|length }} event{{ events|length|pluralize }} total
+            </span>
+            {% endif %}
+        </div>
+
+        {% if events %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-50/80 text-gray-500 font-semibold text-xs uppercase tracking-wider border-b border-gray-100">
+                        <th class="py-4 px-6">Event Details</th>
+                        <th class="py-4 px-6">Ticket Price</th>
+                        <th class="py-4 px-6">Tickets Sold</th>
+                        <th class="py-4 px-6">Tickets Remaining</th>
+                        <th class="py-4 px-6">Total Revenue</th>
+                        <th class="py-4 px-6 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for event in events %}
+                    <tr class="hover:bg-gray-50/50 transition-colors">
+                        <!-- Event Info -->
+                        <td class="py-4 px-6">
+                            <div class="flex items-center gap-3">
+                                {% if event.image %}
+                                    <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-12 h-12 rounded-xl object-cover shrink-0 border border-gray-100">
+                                {% else %}
+                                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
+                                        EVENT
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <a href="{% url 'event_detail' event.pk %}" class="font-bold text-gray-900 hover:text-indigo-600 transition">
+                                        {{ event.title }}
+                                    </a>
+                                    <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                                        <span>📅 {{ event.date|date:"M d, Y @ H:i" }}</span>
+                                        {% if event.location %}
+                                        <span>• 📍 {{ event.location }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Ticket Price -->
+                        <td class="py-4 px-6 font-semibold text-gray-800">
+                            ${{ event.price }}
+                        </td>
+
+                        <!-- Tickets Sold -->
+                        <td class="py-4 px-6">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-gray-900">{{ event.tickets_sold }}</span>
+                                <span class="text-xs text-gray-400">/ {{ event.max_tickets }} capacity</span>
+                            </div>
+                        </td>
+
+                        <!-- Tickets Remaining -->
+                        <td class="py-4 px-6">
+                            {% if event.is_sold_out %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                    Sold Out (0 remaining)
+                                </span>
+                            {% elif event.tickets_remaining <= 5 %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+                                    Only {{ event.tickets_remaining }} left!
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                    {{ event.tickets_remaining }} remaining
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Revenue Generated -->
+                        <td class="py-4 px-6 font-extrabold text-emerald-600">
+                            ${{ event.revenue|floatformat:2 }}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="py-4 px-6 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{% url 'event_detail' event.pk %}" class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-xs transition">
+                                    View
+                                </a>
+                                <a href="{% url 'edit_event' event.pk %}" class="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium text-xs transition">
+                                    Edit
+                                </a>
+                                <a href="{% url 'delete_event' event.pk %}" class="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-medium text-xs transition">
+                                    Delete
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
         {% else %}
-        <p class="text-gray-400 text-center py-8">No upcoming events at the moment.</p>
+        <div class="py-12 px-6 text-center">
+            <div class="w-16 h-16 bg-indigo-50 text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-1">No Events Found</h3>
+            <p class="text-sm text-gray-500 max-w-md mx-auto mb-6">You haven't created any events yet. Once you create events, your ticket sales and revenue metrics will appear here.</p>
+            <a href="{% url 'create_event' %}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition text-sm">
+                + Create Your First Event
+            </a>
+        </div>
         {% endif %}
     </div>
 

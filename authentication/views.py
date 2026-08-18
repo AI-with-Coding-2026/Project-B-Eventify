@@ -6,7 +6,9 @@ from django.utils import timezone
 
 from events.models import Category, Event, EventBooking, Ticket
 
-from .decorators import admin_required, role_required
+from decimal import Decimal
+
+from .decorators import admin_required, organizer_required, role_required
 from .forms import UserRegistrationForm
 from .models import User, UserRole
 
@@ -99,14 +101,22 @@ def unauthorized(request):
     return render(request, 'authentication/unauthorized.html', status=403)
 
 
-@role_required(UserRole.ADMIN, UserRole.ORGANIZER)
+@organizer_required
 def organizer_dashboard(request):
-    upcoming_events = Event.objects.filter(
-        date__gte=timezone.now()
-    ).order_by('date')[:3]
-    return render(request, 'authentication/organizer_dashboard.html', {
-        'upcoming_events': upcoming_events,
-    })
+    """Dashboard showing ticket sales performance and revenue for the organizer's events."""
+    events = Event.objects.filter(organizer=request.user).order_by('-date')
+    
+    total_events = events.count()
+    total_tickets_sold = sum(event.tickets_sold for event in events)
+    total_revenue = sum((event.revenue for event in events), Decimal('0.00'))
+
+    context = {
+        'events': events,
+        'total_events': total_events,
+        'total_tickets_sold': total_tickets_sold,
+        'total_revenue': total_revenue,
+    }
+    return render(request, 'authentication/organizer_dashboard.html', context)
 
 
 @role_required(UserRole.ADMIN, UserRole.ATTENDEE)
