@@ -25,7 +25,7 @@
                     Yes, Delete Event
                 </button>
                 <a
-                    href="{% if user.is_admin %}{% url 'admin_dashboard' %}{% else %}{% url 'my_events' %}{% endif %}"
+                    href="{% url 'event_detail' event.pk %}"
                     class="inline-flex items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 px-6 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100"
                 >
                     Cancel

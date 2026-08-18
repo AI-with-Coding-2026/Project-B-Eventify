@@ -37,6 +37,40 @@ _BACK_LABEL_MAP = [
     ('/events/', 'Back to Events'),
 ]
 
+def get_user_bookings(user_id):
+    """
+    Fetch all bookings for a given user ID, combining current Ticket
+    records and legacy EventBooking records into one list.
+    """
+    tickets = Ticket.objects.filter(
+        attendee_id=user_id
+    ).select_related('event').order_by('-booked_at')
+
+    legacy_bookings = EventBooking.objects.filter(
+        user_id=user_id
+    ).select_related('event').order_by('-booked_at')
+
+    bookings = []
+
+    for ticket in tickets:
+        bookings.append({
+            'event': ticket.event,
+            'quantity': ticket.quantity,
+            'booked_at': ticket.booked_at,
+            'source': 'ticket',
+        })
+
+    for booking in legacy_bookings:
+        bookings.append({
+            'event': booking.event,
+            'quantity': 1,
+           'booked_at': booking.booked_at,
+            'source': 'legacy',
+        })
+
+    bookings.sort(key=lambda b: b['booked_at'], reverse=True)
+
+    return bookings
 
 def _resolve_back_navigation(request):
     """Return (back_url, back_label) from the HTTP Referer header.
@@ -114,7 +148,7 @@ def event_list(request):
         'events': page_obj,
         'page_obj': page_obj,
         'paginator': paginator,
-        'categories': Event.CATEGORY_CHOICES,
+        'categories': Event.get_all_category_choices(),
         'search_query': search_query,
         'selected_category': selected_category,
         'max_price': max_price,
