@@ -84,4 +84,24 @@ urlpatterns = [
         views.category_delete,
         name='category_delete',
     ),
+    path(
+        'tickets/<int:pk>/edit/',
+        views.ticket_edit,
+        name='ticket_edit',
+    ),
+    path(
+        'tickets/<int:pk>/delete/',
+        views.ticket_delete,
+        name='ticket_delete',
+    ),
+    path(
+        'bookings/<int:pk>/edit/',
+        views.booking_edit,
+        name='booking_edit',
+    ),
+    path(
+        'bookings/<int:pk>/delete/',
+        views.booking_delete,
+        name='booking_delete',
+    ),
 ]

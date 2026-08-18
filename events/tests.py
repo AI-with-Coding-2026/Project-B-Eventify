@@ -1,14 +1,16 @@
 from datetime import timedelta
+from decimal import Decimal
 
+from django.core import mail
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib import admin
+from django.utils import timezone
 
 from authentication.models import User, UserRole
 
-from django.utils import timezone
-
-from .models import Category, Event, Ticket
+from .emails import send_booking_confirmation_email
+from .models import Category, Event, EventBooking, Ticket
 
 
 # Tests for admin category update/edit
@@ -182,6 +184,46 @@ class OrganizerEventPermissionTests(TestCase):
         event = Event.objects.get(title='New Concert')
         self.assertEqual(event.organizer, self.organizer_a)
 
+    def test_organizer_can_enter_custom_category_when_other_is_selected(self):
+        self.client.force_login(self.organizer_a)
+
+        response = self.client.post(
+            reverse('event_create'),
+            {
+                'title': 'Comedy Night',
+                'description': 'Stand up',
+                'date': timezone.now().strftime('%Y-%m-%dT%H:%M'),
+                'price': '20.00',
+                'category': 'other',
+                'custom_category': 'Comedy',
+            },
+        )
+
+        self.assertRedirects(response, reverse('organizer_event_list'))
+        event = Event.objects.get(title='Comedy Night')
+        self.assertEqual(event.category, 'other')
+        self.assertEqual(event.custom_category, 'Comedy')
+        self.assertEqual(event.category_label, 'Comedy')
+
+    def test_other_category_requires_custom_name(self):
+        self.client.force_login(self.organizer_a)
+
+        response = self.client.post(
+            reverse('event_create'),
+            {
+                'title': 'Needs Category',
+                'description': 'Missing custom name',
+                'date': timezone.now().strftime('%Y-%m-%dT%H:%M'),
+                'price': '10.00',
+                'category': 'other',
+                'custom_category': '',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Please enter a category name.')
+        self.assertFalse(Event.objects.filter(title='Needs Category').exists())
+
     def test_organizer_cannot_edit_another_organizer_event(self):
         self.client.force_login(self.organizer_b)
 
@@ -228,6 +270,12 @@ class AttendeeTicketBookingTests(TestCase):
             'strong-pass-123',
             role=UserRole.ATTENDEE,
         )
+        self.other_attendee = User.objects.create_user(
+            'second_ticket_attendee',
+            'second_ticket_attendee@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
         self.event = Event.objects.create(
             organizer=self.organizer,
             title='Bookable Show',
@@ -235,6 +283,7 @@ class AttendeeTicketBookingTests(TestCase):
             date=timezone.now(),
             price='25.00',
             category='arts',
+            max_tickets=3,
         )
 
     def test_attendee_can_browse_events(self):
@@ -260,6 +309,57 @@ class AttendeeTicketBookingTests(TestCase):
             attendee=self.attendee,
         )
         self.assertEqual(ticket.quantity, 2)
+
+    def test_card_and_detail_use_the_same_ticket_page(self):
+        self.client.force_login(self.attendee)
+        ticket_url = reverse('book_ticket', kwargs={'pk': self.event.pk})
+
+        list_response = self.client.get(reverse('event_list'))
+        detail_response = self.client.get(
+            reverse('event_detail', kwargs={'pk': self.event.pk})
+        )
+
+        self.assertContains(list_response, ticket_url)
+        self.assertContains(detail_response, ticket_url)
+
+    def test_direct_post_cannot_exceed_event_ticket_limit(self):
+        ticket_url = reverse('book_ticket', kwargs={'pk': self.event.pk})
+        self.client.force_login(self.attendee)
+        self.client.post(ticket_url, {'quantity': 2})
+
+        self.client.force_login(self.other_attendee)
+        response = self.client.post(ticket_url, {'quantity': 2})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Only 1 ticket(s) remain')
+        self.assertEqual(self.event.tickets_sold, 2)
+
+    def test_sold_out_event_is_labelled_and_rejects_booking(self):
+        Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=self.event.max_tickets,
+        )
+        self.client.force_login(self.other_attendee)
+
+        list_response = self.client.get(reverse('event_list'))
+        detail_response = self.client.get(
+            reverse('event_detail', kwargs={'pk': self.event.pk})
+        )
+        post_response = self.client.post(
+            reverse('book_ticket', kwargs={'pk': self.event.pk}),
+            {'quantity': 1},
+        )
+
+        self.assertContains(list_response, 'Sold out')
+        self.assertContains(detail_response, 'Sold out')
+        self.assertContains(post_response, 'This event is sold out')
+        self.assertEqual(self.event.tickets_sold, self.event.max_tickets)
+
+    def test_legacy_booking_still_uses_one_available_ticket(self):
+        EventBooking.objects.create(user=self.attendee, event=self.event)
+
+        self.assertEqual(self.event.tickets_remaining, 2)
 
     def test_attendee_can_view_own_tickets(self):
         Ticket.objects.create(
@@ -640,3 +740,52 @@ class EventListViewTest(TestCase):
         self.assertContains(response, "Tech Conference")
         self.assertNotContains(response, "Music Festival")
 
+
+class BookingConfirmationEmailTests(TestCase):
+    def setUp(self):
+        self.attendee = User.objects.create_user(
+            'email_attendee',
+            'email_attendee@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+        self.organizer = User.objects.create_user(
+            'email_organizer',
+            'email_organizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.event = Event.objects.create(
+            organizer=self.organizer,
+            title='Email Concert',
+            date=timezone.now(),
+            price=Decimal('25.00'),
+            category='music',
+            max_tickets=10,
+        )
+        self.ticket = Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=2,
+        )
+
+    def test_sends_confirmation_with_booking_details(self):
+        send_booking_confirmation_email(self.ticket)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertEqual(message.subject, 'Your Eventify Booking Confirmation')
+        self.assertEqual(message.to, ['email_attendee@example.com'])
+        self.assertIn('Email Concert', message.body)
+        self.assertIn('Ticket Quantity: 2', message.body)
+        self.assertIn('Total Price: 50.00', message.body)
+
+    def test_requires_attendee_email(self):
+        self.attendee.email = ''
+        self.attendee.save()
+        self.ticket.refresh_from_db()
+
+        with self.assertRaises(ValueError):
+            send_booking_confirmation_email(self.ticket)
+
+        self.assertEqual(len(mail.outbox), 0)

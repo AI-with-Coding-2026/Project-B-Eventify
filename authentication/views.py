@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
-from events.models import Event
+from events.models import Category, Event, EventBooking, Ticket
 
 from .decorators import admin_required, role_required
 from .forms import UserRegistrationForm
@@ -58,8 +58,12 @@ def admin_dashboard(request):
         'admin_count': users.filter(role=UserRole.ADMIN).count(),
         'organizer_count': organizers.count(),
         'attendee_count': attendees.count(),
-        'organizers': organizers,
-        'attendees': attendees,
+        'organizers': organizers.order_by('username'),
+        'attendees': attendees.order_by('username'),
+        'events': Event.objects.select_related('organizer').order_by('date'),
+        'tickets': Ticket.objects.select_related('attendee', 'event').order_by('-booked_at'),
+        'bookings': EventBooking.objects.select_related('user', 'event').order_by('-booked_at'),
+        'categories': Category.objects.order_by('name'),
         'upcoming_events': upcoming_events,
     }
     return render(request, 'authentication/admin_dashboard.html', context)
@@ -112,4 +116,19 @@ def attendee_dashboard(request):
     ).order_by('date')[:3]
     return render(request, 'authentication/attendee_dashboard.html', {
         'upcoming_events': upcoming_events,
+    })
+
+@role_required(UserRole.ADMIN, UserRole.ATTENDEE)
+def my_bookings(request):
+    bookings = EventBooking.objects.filter(
+        user=request.user
+    ).select_related('event').order_by('event__date')
+
+    now = timezone.now()
+    upcoming_bookings = [b for b in bookings if b.event.date >= now]
+    past_bookings = [b for b in bookings if b.event.date < now]
+
+    return render(request, 'authentication/my_bookings.html', {
+        'upcoming_bookings': upcoming_bookings,
+        'past_bookings': past_bookings,
     })

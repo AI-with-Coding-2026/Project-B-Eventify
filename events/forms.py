@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Category, Event
+from .models import Category, Event, EventBooking, Ticket
 
 
 INPUT_CLASSES = (
@@ -85,6 +85,7 @@ class EventForm(forms.ModelForm):
             "price",
             "max_tickets",
             "category",
+            "custom_category",
             "image",
         ]
 
@@ -113,6 +114,12 @@ class EventForm(forms.ModelForm):
                     "class": INPUT_CLASSES,
                 }
             ),
+            "custom_category": forms.TextInput(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "placeholder": "Enter your category",
+                }
+            ),
             "image": forms.ClearableFileInput(
                 attrs={
                     "class": INPUT_CLASSES,
@@ -124,6 +131,24 @@ class EventForm(forms.ModelForm):
     def clean_max_tickets(self):
         value = self.cleaned_data.get("max_tickets")
         return value or 1
+
+    def clean(self):
+        cleaned_data = super().clean()
+        category = cleaned_data.get("category")
+        custom_category = (cleaned_data.get("custom_category") or "").strip()
+
+        if category == "other":
+            if not custom_category:
+                self.add_error(
+                    "custom_category",
+                    "Please enter a category name.",
+                )
+            else:
+                cleaned_data["custom_category"] = custom_category
+        else:
+            cleaned_data["custom_category"] = ""
+
+        return cleaned_data
 
     def clean_image(self):
         image = self.cleaned_data.get("image")
@@ -143,3 +168,25 @@ class EventForm(forms.ModelForm):
             )
 
         return image
+
+
+class TicketForm(forms.ModelForm):
+    class Meta:
+        model = Ticket
+        fields = ['event', 'attendee', 'quantity']
+        widgets = {
+            'event': forms.Select(attrs={'class': INPUT_CLASSES}),
+            'attendee': forms.Select(attrs={'class': INPUT_CLASSES}),
+            'quantity': forms.NumberInput(attrs={'class': INPUT_CLASSES, 'min': 1}),
+        }
+
+
+class BookingForm(forms.ModelForm):
+    class Meta:
+        model = EventBooking
+        fields = ['user', 'event']
+        widgets = {
+            'user': forms.Select(attrs={'class': INPUT_CLASSES}),
+            'event': forms.Select(attrs={'class': INPUT_CLASSES}),
+        }
+

@@ -1,8 +1,9 @@
 {% extends "base.html" %}
-{# Shared Create/Edit labels via page_title and submit_label #}
+
 {% block title %}
     {{ page_title }} | Eventify
 {% endblock %}
+
 {% block content %}
 <div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-10 mb-8">
     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Manage</p>
@@ -55,7 +56,7 @@
                         {{ submit_label }}
                     </button>
                     <a
-                        href="{% url 'event_list' %}"
+                        href="{% url 'admin_dashboard' %}"
                         class="inline-flex items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 px-6 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100"
                     >
                         Cancel
@@ -65,32 +66,4 @@
         </div>
     </div>
 </div>
-
-<style>
-    .form-group input[type="text"],
-    .form-group input[type="email"],
-    .form-group input[type="number"],
-    .form-group textarea,
-    .form-group select {
-        width: 100%;
-        padding: 0.625rem 1rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        font-size: 0.875rem;
-        transition: border-color 0.2s, box-shadow 0.2s;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus,
-    .form-group select:focus {
-        outline: none;
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-    }
-
-    .form-group textarea {
-        resize: vertical;
-        min-height: 120px;
-    }
-</style>
 {% endblock %}

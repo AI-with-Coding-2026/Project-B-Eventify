@@ -1,8 +1,8 @@
 from django.contrib import admin, messages
 from django.template.response import TemplateResponse
-from authentication.admin_site import eventify_admin_site
-from .models import Event, Category, Ticket
 from django.utils.html import format_html
+from authentication.admin_site import eventify_admin_site
+from .models import Category, Event, EventBooking, Ticket
 
 
 def render_actions_menu(obj):
@@ -46,15 +46,16 @@ def render_actions_menu(obj):
     )
 
 
-@admin.register(Event, site=eventify_admin_site)
 class EventAdmin(admin.ModelAdmin):
     list_display = ('title', 'organizer', 'date', 'price', 'category', 'actions_menu')
+    list_filter = ('category', 'date')
+    search_fields = ('title', 'organizer__username', 'location')
     actions = ['delete_selected_events']
 
     @admin.display(description='')
     def actions_menu(self, obj):
         return render_actions_menu(obj)
-    
+
     def get_actions(self, request):
         actions = super().get_actions(request)
         if 'delete_selected' in actions:
@@ -71,14 +72,14 @@ class EventAdmin(admin.ModelAdmin):
                 if request.user.is_admin:
                     event.delete()
                     deleted_count += 1
-            
+
             if deleted_count == 1:
                 self.message_user(request, "Event deleted successfully.", messages.SUCCESS)
             elif deleted_count > 1:
                 self.message_user(request, "Events deleted successfully.", messages.SUCCESS)
-            
+
             return None
-            
+
         context = {
             **self.admin_site.each_context(request),
             'title': "Are you sure you want to delete these events?",
@@ -90,13 +91,35 @@ class EventAdmin(admin.ModelAdmin):
         return TemplateResponse(request, "admin/events/event/delete_selected_confirmation.html", context)
 
 
-@admin.register(Ticket, site=eventify_admin_site)
+eventify_admin_site.register(Event, EventAdmin)
+
+
 class TicketAdmin(admin.ModelAdmin):
-    list_display = ('event', 'attendee', 'quantity', 'booked_at', 'actions_menu')
+    list_display = ('attendee', 'event', 'quantity', 'booked_at', 'actions_menu')
+    list_filter = ('booked_at',)
+    search_fields = ('attendee__username', 'event__title')
+    ordering = ('-booked_at',)
 
     @admin.display(description='')
     def actions_menu(self, obj):
         return render_actions_menu(obj)
+
+
+eventify_admin_site.register(Ticket, TicketAdmin)
+
+
+class EventBookingAdmin(admin.ModelAdmin):
+    list_display = ('user', 'event', 'booked_at', 'actions_menu')
+    list_filter = ('booked_at',)
+    search_fields = ('user__username', 'event__title')
+    ordering = ('-booked_at',)
+
+    @admin.display(description='')
+    def actions_menu(self, obj):
+        return render_actions_menu(obj)
+
+
+eventify_admin_site.register(EventBooking, EventBookingAdmin)
 
 
 # Register Category model using standard admin decorator

@@ -1,0 +1,32 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    :root {
+        --primary: #4f46e5;
+        --secondary: #6366f1;
+    }
+    #header {
+        background: var(--primary) !important;
+    }
+    #header a:link, #header a:visited {
+        color: #fff;
+    }
+    .module h2, .module caption, .inline-group h2 {
+        background: var(--secondary) !important;
+    }
+    div.breadcrumbs {
+        background: #eef2ff !important;
+        color: #4338ca !important;
+    }
+    .button, input[type=submit], input[type=button], .submit-row input, a.button {
+        background: var(--primary) !important;
+        border-radius: 6px;
+    }
+    .button:hover, input[type=submit]:hover {
+        background: var(--secondary) !important;
+    }
+</style>
+{% endblock %}
