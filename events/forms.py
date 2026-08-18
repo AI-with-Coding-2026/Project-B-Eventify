@@ -63,6 +63,11 @@ class EventForm(forms.ModelForm):
         ),
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Dynamically merge hardcoded + admin-created categories.
+        self.fields['category'].choices = Event.get_all_category_choices()
+
     date = forms.DateTimeField(
         widget=forms.DateTimeInput(
             attrs={

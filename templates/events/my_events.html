@@ -3,12 +3,13 @@
 {% block title %}My Events — Eventify{% endblock %}
 
 {% block content %}
+<div class="mb-4">
+    <a href="{% url 'organizer_dashboard' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
+        ← Back to Dashboard
+    </a>
+</div>
+
 <div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-8 sm:py-10 mb-8">
-    <div class="mb-3 -mt-5">
-        <a href="{% url 'organizer_dashboard' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
-            ← Back to Dashboard
-        </a>
-    </div>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="ml-4 sm:ml-6">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Organizer</p>
@@ -23,7 +24,8 @@
 {% if events %}
     <div class="flex items-center justify-between mb-6">
         <p class="text-sm text-gray-500">{{ events|length }} event{{ events|length|pluralize }}</p>
-        <div class="inline-flex rounded-lg border border-indigo-200 overflow-hidden">
+        <!-- التعديل هنا: أضفنا hidden md:inline-flex لتختفي الأزرار على الموبايل -->
+        <div class="hidden md:inline-flex rounded-lg border border-indigo-200 overflow-hidden">
             <button type="button" id="view-grid-btn" class="view-toggle px-4 py-2 text-sm font-medium bg-indigo-600 text-white transition" aria-pressed="true">Grid</button>
             <button type="button" id="view-list-btn" class="view-toggle px-4 py-2 text-sm font-medium bg-white text-indigo-700 hover:bg-indigo-50 transition" aria-pressed="false">List</button>
         </div>
@@ -105,28 +107,35 @@
     var listBtn = document.getElementById('view-list-btn');
     var gridView = document.getElementById('events-grid-view');
     var listView = document.getElementById('events-list-view');
-    if (!gridBtn || !listBtn) return;
 
     var storageKey = 'eventify-my-events-view';
 
     function setView(mode) {
         var isGrid = mode === 'grid';
-        gridView.classList.toggle('hidden', !isGrid);
-        listView.classList.toggle('hidden', isGrid);
-        gridBtn.classList.toggle('bg-indigo-600', isGrid);
-        gridBtn.classList.toggle('text-white', isGrid);
-        gridBtn.classList.toggle('bg-white', !isGrid);
-        gridBtn.classList.toggle('text-indigo-700', !isGrid);
-        listBtn.classList.toggle('bg-indigo-600', !isGrid);
-        listBtn.classList.toggle('text-white', !isGrid);
-        listBtn.classList.toggle('bg-white', isGrid);
-        listBtn.classList.toggle('text-indigo-700', isGrid);
+        if (gridView) gridView.classList.toggle('hidden', !isGrid);
+        if (listView) listView.classList.toggle('hidden', isGrid);
+        if (gridBtn && listBtn) {
+            gridBtn.classList.toggle('bg-indigo-600', isGrid);
+            gridBtn.classList.toggle('text-white', isGrid);
+            gridBtn.classList.toggle('bg-white', !isGrid);
+            gridBtn.classList.toggle('text-indigo-700', !isGrid);
+            listBtn.classList.toggle('bg-indigo-600', !isGrid);
+            listBtn.classList.toggle('text-white', !isGrid);
+            listBtn.classList.toggle('bg-white', isGrid);
+            listBtn.classList.toggle('text-indigo-700', isGrid);
+            gridBtn.setAttribute('aria-pressed', isGrid ? 'true' : 'false');
+            listBtn.setAttribute('aria-pressed', isGrid ? 'false' : 'true');
+        }
         localStorage.setItem(storageKey, mode);
     }
 
-    gridBtn.addEventListener('click', function () { setView('grid'); });
-    listBtn.addEventListener('click', function () { setView('list'); });
-    setView(localStorage.getItem(storageKey) || 'grid');
+    if (gridBtn) gridBtn.addEventListener('click', function () { setView('grid'); });
+    if (listBtn) listBtn.addEventListener('click', function () { setView('list'); });
+
+    // إذا كانت الشاشة صغيرة (< 768px)، فرض وضع الـ list دائماً، وإلا اعتماد الـ localStorage أو grid
+    var isMobile = window.innerWidth < 768;
+    var initialMode = isMobile ? 'list' : (localStorage.getItem(storageKey) || 'grid');
+    setView(initialMode);
 })();
 </script>
 {% endblock %}

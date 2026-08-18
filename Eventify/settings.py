@@ -24,20 +24,23 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'authentication',  # Added custom authentication application here
-    'events.apps.EventsConfig', # Event listing app for Sprint 2
+    'authentication', 
+    'events.apps.EventsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'cloudinary_storage',       # ضرورية قبل staticfiles
     'django.contrib.staticfiles',
-    'rest_framework', # Django REST Framework
+    'cloudinary',              
+    'rest_framework',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # WhiteNoise للملفات الثابتة على Render
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -140,9 +143,14 @@ LOGIN_URL = 'login'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Media files configuration
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+# --- Media & Cloudinary Configuration ---
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default='dummy_name'),
+    'API_KEY': config('CLOUDINARY_API_KEY', default='123456789'),
+    'API_SECRET': config('CLOUDINARY_API_SECRET', default='dummy_secret'),
+}
 
 
 # ==========================================

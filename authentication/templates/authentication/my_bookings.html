@@ -1,8 +1,56 @@
 {% extends 'base.html' %}
 {% block title %}My Bookings — Eventify{% endblock %}
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <h1 class="text-2xl font-bold mb-6 display">My Bookings</h1>
-    <p class="text-gray-500">Upcoming: {{ upcoming_bookings|length }} · Past: {{ past_bookings|length }}</p>
+<div class="max-w-4xl mx-auto space-y-8">
+    <div class="mb-4">
+        <a href="{% url 'attendee_dashboard' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
+            ← Back to Dashboard
+        </a>
+    </div>
+    <h1 class="text-2xl font-bold mb-2 display">My Bookings</h1>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900 display mb-4">Upcoming Bookings</h2>
+        <div class="space-y-3">
+            {% for booking in upcoming_bookings %}
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 transition hover:bg-white hover:shadow-sm">
+                <div>
+                    <h3 class="font-semibold text-gray-900">{{ booking.event.title }}</h3>
+                    <p class="text-sm text-gray-500">{{ booking.event.date|date:"M d, Y - h:i A" }}</p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Booked
+                    </span>
+                    <p class="text-xs text-gray-400 mt-1">on {{ booking.booked_at|date:"M d, Y" }}</p>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-400 text-center py-6 border-2 border-dashed border-gray-100 rounded-xl">You have no upcoming bookings.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900 display mb-4">Past Bookings</h2>
+        <div class="space-y-3">
+            {% for booking in past_bookings %}
+            <div class="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl border border-gray-100 opacity-75 transition hover:opacity-100">
+                <div>
+                    <h3 class="font-medium text-gray-700">{{ booking.event.title }}</h3>
+                    <p class="text-sm text-gray-500">{{ booking.event.date|date:"M d, Y - h:i A" }}</p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+                        Past Event
+                    </span>
+                    <p class="text-xs text-gray-400 mt-1">Booked on {{ booking.booked_at|date:"M d, Y" }}</p>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-400 text-center py-6 border-2 border-dashed border-gray-100 rounded-xl">No past bookings found.</p>
+            {% endfor %}
+        </div>
+    </div>
 </div>
 {% endblock %}

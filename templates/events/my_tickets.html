@@ -3,6 +3,13 @@
 {% block title %}My Tickets | Eventify{% endblock %}
 
 {% block content %}
+<div class="mb-4">
+    <a href="{% url 'attendee_dashboard' %}"
+        class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
+        ← Back to Dashboard
+    </a>
+</div>
+
 <div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-10 mb-8">
     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Bookings</p>
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -16,40 +23,39 @@
 <div class="pb-12">
     <div class="mx-auto max-w-6xl space-y-8 px-4">
         {% if messages %}
-            <div class="rounded-lg border border-green-200 bg-green-50 p-4">
-                {% for message in messages %}
-                    <p class="text-sm text-green-700">{{ message }}</p>
-                {% endfor %}
-            </div>
+        <div class="rounded-lg border border-green-200 bg-green-50 p-4">
+            {% for message in messages %}
+            <p class="text-sm text-green-700">{{ message }}</p>
+            {% endfor %}
+        </div>
         {% endif %}
 
         <div class="flex flex-wrap gap-3">
-            <a href="{% url 'event_list' %}" class="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition">
+            <a href="{% url 'event_list' %}"
+                class="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition">
                 ← Browse Events
-            </a>
-            <a href="{% url 'attendee_dashboard' %}" class="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-white px-5 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition">
-                Dashboard
             </a>
         </div>
 
-       {% if tickets %}
-    <div class="overflow-x-auto rounded-2xl border border-indigo-100 bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-indigo-100 text-sm">
-            <thead class="bg-indigo-50">
-                <tr>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Event</th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Date</th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Tickets</th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-700"></th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-indigo-50">
-                {% for ticket in tickets %}
+        {% if tickets %}
+        <div class="overflow-x-auto rounded-2xl border border-indigo-100 bg-white shadow-sm">
+            <table class="min-w-full divide-y divide-indigo-100 text-sm">
+                <thead class="bg-indigo-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700">Event</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700">Date</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700">Tickets</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-indigo-50">
+                    {% for ticket in tickets %}
                     <tr class="hover:bg-indigo-50/50 transition">
                         <td class="px-4 py-3 font-medium text-gray-900">{{ ticket.event.title }}</td>
                         <td class="px-4 py-3 text-gray-600">{{ ticket.event.date|date:"M d, Y" }}</td>
-                        <td class="px-4 py-3 text-gray-600">{{ ticket.quantity }} ticket{{ ticket.quantity|pluralize }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ ticket.quantity }} ticket{{ ticket.quantity|pluralize }}
+                        </td>
                         <td class="px-4 py-3">
                             <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold
                                 {% if ticket.status == 'cancelled' %} bg-red-100 text-red-700
@@ -60,23 +66,25 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <a href="{% url 'event_detail' ticket.event.pk %}" class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs">
+                            <a href="{% url 'event_detail' ticket.event.pk %}"
+                                class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs">
                                 View →
                             </a>
                         </td>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <div class="rounded-xl border border-dashed border-indigo-200 bg-indigo-50 px-4 py-12 text-center">
-        <p class="text-gray-600">You have not booked any tickets yet.</p>
-        <a href="{% url 'event_list' %}" class="mt-4 inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition">
-            Browse Events
-        </a>
-    </div>
-{% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="rounded-xl border border-dashed border-indigo-200 bg-indigo-50 px-4 py-12 text-center">
+            <p class="text-gray-600">You have not booked any tickets yet.</p>
+            <a href="{% url 'event_list' %}"
+                class="mt-4 inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition">
+                Browse Events
+            </a>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

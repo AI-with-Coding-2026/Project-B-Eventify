@@ -3,7 +3,15 @@
 {% block title %}Upcoming Events — Eventify{% endblock %}
 
 {% block content %}
-<div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-10 mb-8">
+<div class="mb-4">
+    <a href="{% if user.is_authenticated %}{% if user.is_admin %}{% url 'admin_dashboard' %}{% elif user.is_organizer %}{% url 'organizer_dashboard' %}{% else %}{% url 'attendee_dashboard' %}{% endif %}{% else %}/{% endif %}"
+       onclick="if (document.referrer && document.referrer.indexOf(window.location.host) !== -1) { event.preventDefault(); history.back(); }"
+       class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
+        ← Back
+    </a>
+</div>
+
+<div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-8 sm:py-10 mb-8">
     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Discover</p>
     <h1 class="text-3xl font-bold text-gray-900 display">Upcoming Events</h1>
 </div>
@@ -50,7 +58,9 @@
 
     <div class="flex items-center justify-between mb-6">
         <p class="text-sm text-gray-500">{{ events.paginator.count }} event{{ events.paginator.count|pluralize }}</p>
-        <div class="inline-flex rounded-lg border border-indigo-200 overflow-hidden">
+        
+        <!-- التعديل هنا: أضفنا hidden md:inline-flex لتختفي الأزرار تماماً على الشاشات الصغيرة وتظهر فقط في الـ md وما فوق -->
+        <div class="hidden md:inline-flex rounded-lg border border-indigo-200 overflow-hidden">
             <button type="button" id="view-grid-btn" class="view-toggle px-4 py-2 text-sm font-medium bg-indigo-600 text-white transition" aria-pressed="true">
                 Grid
             </button>
@@ -60,7 +70,7 @@
         </div>
     </div>
 
-    <div id="events-grid-view" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div id="events-grid-view" class="grid gap-5 sm:grid-cols-2">
         {% for event in events %}
             {% include "events/partials/event_card_grid.html" with event=event %}
         {% empty %}
@@ -118,22 +128,28 @@
         var isGrid = mode === 'grid';
         gridView.classList.toggle('hidden', !isGrid);
         listView.classList.toggle('hidden', isGrid);
-        gridBtn.classList.toggle('bg-indigo-600', isGrid);
-        gridBtn.classList.toggle('text-white', isGrid);
-        gridBtn.classList.toggle('bg-white', !isGrid);
-        gridBtn.classList.toggle('text-indigo-700', !isGrid);
-        listBtn.classList.toggle('bg-indigo-600', !isGrid);
-        listBtn.classList.toggle('text-white', !isGrid);
-        listBtn.classList.toggle('bg-white', isGrid);
-        listBtn.classList.toggle('text-indigo-700', isGrid);
-        gridBtn.setAttribute('aria-pressed', isGrid ? 'true' : 'false');
-        listBtn.setAttribute('aria-pressed', isGrid ? 'false' : 'true');
+        if (gridBtn && listBtn) {
+            gridBtn.classList.toggle('bg-indigo-600', isGrid);
+            gridBtn.classList.toggle('text-white', isGrid);
+            gridBtn.classList.toggle('bg-white', !isGrid);
+            gridBtn.classList.toggle('text-indigo-700', !isGrid);
+            listBtn.classList.toggle('bg-indigo-600', !isGrid);
+            listBtn.classList.toggle('text-white', !isGrid);
+            listBtn.classList.toggle('bg-white', isGrid);
+            listBtn.classList.toggle('text-indigo-700', isGrid);
+            gridBtn.setAttribute('aria-pressed', isGrid ? 'true' : 'false');
+            listBtn.setAttribute('aria-pressed', isGrid ? 'false' : 'true');
+        }
         localStorage.setItem(storageKey, mode);
     }
 
-    gridBtn.addEventListener('click', function () { setView('grid'); });
-    listBtn.addEventListener('click', function () { setView('list'); });
-    setView(localStorage.getItem(storageKey) || 'grid');
+    if (gridBtn) gridBtn.addEventListener('click', function () { setView('grid'); });
+    if (listBtn) listBtn.addEventListener('click', function () { setView('list'); });
+
+    // تحديد العرض الافتراضي: إذا كانت الشاشة صغيرة (< 768px أي أقل من md) نلزمها بـ list، وإلا نقرأ من الـ localStorage أو grid
+    var isMobile = window.innerWidth < 768;
+    var initialMode = isMobile ? 'list' : (localStorage.getItem(storageKey) || 'grid');
+    setView(initialMode);
 })();
 </script>
 {% endblock %}
