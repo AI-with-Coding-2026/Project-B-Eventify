@@ -148,7 +148,7 @@ def event_list(request):
         'events': page_obj,
         'page_obj': page_obj,
         'paginator': paginator,
-        'categories': Event.CATEGORY_CHOICES,
+        'categories': Event.get_all_category_choices(),
         'search_query': search_query,
         'selected_category': selected_category,
         'max_price': max_price,
