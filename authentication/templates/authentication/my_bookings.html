@@ -2,6 +2,11 @@
 {% block title %}My Bookings — Eventify{% endblock %}
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-8">
+    <div class="mb-4">
+        <a href="{% url 'attendee_dashboard' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
+            ← Back to Dashboard
+        </a>
+    </div>
     <h1 class="text-2xl font-bold mb-2 display">My Bookings</h1>
 
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
