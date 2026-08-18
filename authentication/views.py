@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 from events.models import Category, Event, EventBooking, Ticket
 from .decorators import admin_required, role_required
@@ -102,6 +102,7 @@ def attendee_dashboard(request):
     return render(request, 'authentication/attendee_dashboard.html', {
         'upcoming_events': upcoming_events,
     })
+
 @role_required(UserRole.ATTENDEE)
 def my_bookings(request):
     base_bookings = Ticket.objects.filter(
@@ -121,15 +122,12 @@ def my_bookings(request):
         'past_bookings': past_bookings,
     })
 
-    upcoming_bookings = base_bookings.filter(
-        event_date_gte=timezone.now()
-    ).order_by('event__date')
+@role_required(UserRole.ATTENDEE)
+def cancel_booking(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk, attendee=request.user)
 
-    past_bookings = base_bookings.filter(
-        event_date_lt=timezone.now()
-    ).order_by('-event__date')
+    if request.method == 'POST':
+        ticket.delete()
+        messages.success(request, 'Booking cancelled successfully.')
 
-    return render(request, 'authentication/my_bookings.html', {
-        'upcoming_bookings': upcoming_bookings,
-        'past_bookings': past_bookings,
-    })
+    return redirect('my_bookings')
