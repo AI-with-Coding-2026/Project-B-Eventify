@@ -31,7 +31,10 @@
                 </div>
             </div>
             {% empty %}
-            <p class="text-gray-400 text-center py-6 border-2 border-dashed border-gray-100 rounded-xl">You have no upcoming bookings.</p>
+            <div class="text-center py-6 border-2 border-dashed border-gray-100 rounded-xl animate-fade-slide">
+                <div class="empty-state-icon mb-2" style="font-size: 2rem;">📅</div>
+                <p class="text-gray-400">You have no upcoming bookings.</p>
+            </div>
             {% endfor %}
         </div>
     </div>
@@ -52,7 +55,10 @@
                 </div>
             </div>
             {% empty %}
-            <p class="text-gray-400 text-center py-6 border-2 border-dashed border-gray-100 rounded-xl">No past bookings found.</p>
+            <div class="text-center py-6 border-2 border-dashed border-gray-100 rounded-xl animate-fade-slide">
+                <div class="empty-state-icon mb-2" style="font-size: 2rem;">📭</div>
+                <p class="text-gray-400">No past bookings found.</p>
+            </div>
             {% endfor %}
         </div>
     </div>
