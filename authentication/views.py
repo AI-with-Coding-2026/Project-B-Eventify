@@ -159,23 +159,7 @@ def my_bookings(request):
         if not any(t.event_id == b.event_id for t in past_tickets)
     ]
 
-<<<<<<< HEAD
-    return render(request, 'authentication/my_bookings.html', {
-        'upcoming_bookings': upcoming_bookings,
-        'past_bookings': past_bookings,
-    })
-
-@role_required(UserRole.ATTENDEE)
-def cancel_booking(request, pk):
-    ticket = get_object_or_404(Ticket, pk=pk, attendee=request.user)
-
-    if request.method == 'POST':
-        ticket.delete()
-        messages.success(request, 'Booking cancelled successfully.')
-
-    return redirect('my_bookings')
-=======
-    upcoming_bookings = sorted(
+upcoming_bookings = sorted(
         upcoming_tickets + upcoming_legacy,
         key=lambda x: x.event.date,
     )
@@ -190,4 +174,13 @@ def cancel_booking(request, pk):
         'past_bookings': past_bookings,
         'total_bookings': len(upcoming_bookings) + len(past_bookings),
     })
->>>>>>> ahmed
+
+@role_required(UserRole.ATTENDEE)
+def cancel_booking(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk, attendee=request.user)
+
+    if request.method == 'POST':
+        ticket.delete()
+        messages.success(request, 'Booking cancelled successfully.')
+
+    return redirect('my_bookings')
