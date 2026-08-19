@@ -21,7 +21,7 @@ urlpatterns = [
         name='attendee_dashboard',
     ),
     path(
-        'dashboard/attendee/bookings/',
+        'dashboard/attendee/my-bookings/',
         views.my_bookings,
         name='my_bookings',
     ),
