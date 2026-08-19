@@ -35,12 +35,9 @@ _BACK_LABEL_MAP = [
     ('/dashboard/organizer/', 'Back to Organizer Dashboard'),
     ('/dashboard/attendee/bookings/', 'Back to My Bookings'),
     ('/dashboard/attendee/', 'Back to Attendee Dashboard'),
-<<<<<<< HEAD
     ('/events/organizer/', 'Back to Organizer Events'),
-=======
     ('/my-bookings/', 'Back to My Bookings'),
     ('/bookings/', 'Back to My Bookings'),
->>>>>>> 36859fe877e57797b67cdde84f649abfc01bcc36
     ('/events/mine/', 'Back to My Events'),
     ('/events/my-tickets/', 'Back to My Tickets'),
     ('/events/', 'Back to Events'),
