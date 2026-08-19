@@ -1,7 +1,5 @@
 from django.urls import path
-
 from . import views
-
 
 urlpatterns = [
     path('register/', views.register, name='register'),
@@ -24,6 +22,11 @@ urlpatterns = [
         'dashboard/attendee/bookings/',
         views.my_bookings,
         name='my_bookings',
+    ),
+    path(
+        'dashboard/attendee/bookings/<int:pk>/cancel/',
+        views.cancel_booking,
+        name='cancel_booking',
     ),
     path(
         'admin/users/<int:pk>/delete/',

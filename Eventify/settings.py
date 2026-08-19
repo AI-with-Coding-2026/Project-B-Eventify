@@ -31,8 +31,8 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'cloudinary_storage',       # ضرورية قبل staticfiles
     'django.contrib.staticfiles',
+    'cloudinary_storage',
     'cloudinary',              
     'rest_framework',
 ]
@@ -126,8 +126,6 @@ STATICFILES_DIRS = [
 # المسار الذي ستجمع فيه مكتبة WhiteNoise الملفات المجهزة للزبون
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Storage engine for WhiteNoise (Optimized serving)
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # Uploaded event images
@@ -143,8 +141,28 @@ LOGIN_URL = 'login'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- Media & Cloudinary Configuration ---
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+if os.environ.get('DATABASE_URL'):
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+
+# إضافة توافق خلفي لمكتبة django-cloudinary-storage التي لا تزال تفتش
+# عن STATICFILES_STORAGE كمتغير مستقل بدل قراءتها من STORAGES
+STATICFILES_STORAGE = STORAGES["staticfiles"]["BACKEND"]
 
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default='dummy_name'),

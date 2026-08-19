@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
+from django.shortcuts import redirect, render, get_object_or_404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from events.models import Category, Event, EventBooking, Ticket
@@ -129,6 +130,7 @@ def attendee_dashboard(request):
     return render(request, 'authentication/attendee_dashboard.html', {
         'upcoming_events': upcoming_events,
     })
+
 @role_required(UserRole.ATTENDEE)
 def my_bookings(request):
     now = timezone.now()
@@ -157,6 +159,7 @@ def my_bookings(request):
         if not any(t.event_id == b.event_id for t in past_tickets)
     ]
 
+
     upcoming_bookings = sorted(
         upcoming_tickets + upcoming_legacy,
         key=lambda x: x.event.date,
@@ -167,8 +170,23 @@ def my_bookings(request):
         reverse=True,
     )
 
+    next_booking = upcoming_bookings[0] if upcoming_bookings else None
+
     return render(request, 'authentication/my_bookings.html', {
         'upcoming_bookings': upcoming_bookings,
         'past_bookings': past_bookings,
         'total_bookings': len(upcoming_bookings) + len(past_bookings),
+        'next_booking': next_booking,
     })
+
+
+# 2. دالة إغلاق/إلغاء الحجز (دالة مستقلة تبدأ من بداية السطر)
+@role_required(UserRole.ATTENDEE)
+def cancel_booking(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk, attendee=request.user)
+
+    if request.method == 'POST':
+        ticket.delete()
+        messages.success(request, 'Booking cancelled successfully.')
+
+    return redirect('my_bookings')
