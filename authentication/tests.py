@@ -569,3 +569,28 @@ class OrganizerDashboardSalesPerformanceTests(TestCase):
         response = self.client.get(reverse('organizer_dashboard'))
         self.assertRedirects(response, f"{reverse('login')}?next={reverse('organizer_dashboard')}")
 
+    def test_organizer_dashboard_stats_api_returns_json_payload(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(reverse('organizer_dashboard_stats_api'))
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        self.assertEqual(data['total_events'], 2)
+        self.assertEqual(data['total_tickets_sold'], 6)
+        self.assertEqual(data['total_tickets_remaining'], 144)
+        self.assertEqual(data['total_revenue'], 400.0)
+        self.assertEqual(len(data['events']), 2)
+        self.assertIn('chart_labels', data)
+        self.assertIn('chart_tickets_sold', data)
+        self.assertIn('chart_revenue', data)
+
+    def test_organizer_dashboard_stats_api_denies_attendee(self):
+        self.client.force_login(self.attendee)
+
+        response = self.client.get(reverse('organizer_dashboard_stats_api'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('unauthorized'))
+
