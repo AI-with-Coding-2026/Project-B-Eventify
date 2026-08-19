@@ -189,10 +189,10 @@ def event_detail(request, pk):
             and user.role == UserRole.ATTENDEE
             and not user_has_booked
             and not event.is_sold_out
-            and not is_past_event
+            and not event.is_expired
         ),
         'user_has_booked': user_has_booked,
-        'is_past_event': is_past_event,
+        'is_past_event': event.is_expired,
         'back_url': back_url,
         'back_label': back_label,
     }
@@ -210,8 +210,8 @@ def book_ticket(request, pk):
     """Book tickets without allowing a request to exceed event capacity."""
     event = get_object_or_404(Event, pk=pk)
 
-    if event.date < timezone.now():
-        messages.error(request, 'This event has already passed and cannot be booked.')
+    if event.is_expired:
+        messages.error(request, 'Booking is not available because this event has ended.')
         return redirect('event_detail', pk=pk)
 
     if request.method == 'POST':

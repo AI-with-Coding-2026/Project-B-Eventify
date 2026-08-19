@@ -195,6 +195,16 @@ class RoleBasedAccessControlTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_my_bookings_route_exists_for_attendee_dashboard(self):
+        self.client.login(
+            username='attendee_rbac',
+            password='pass123',
+        )
+
+        response = self.client.get(reverse('my_bookings'))
+
+        self.assertEqual(response.status_code, 200)
+
     def test_organizer_cannot_access_attendee_dashboard(self):
         """Organizer → attendee dashboard uses the shared unauthorized page."""
         self.client.login(
