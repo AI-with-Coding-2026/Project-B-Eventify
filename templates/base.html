@@ -24,6 +24,13 @@
             animation: toast-shrink 5s linear forwards;
         }
 
+        a, button {
+            text-decoration: none !important;
+        }
+        
+        a:hover, button:hover {
+            text-decoration: none !important;
+        }
         /* ── Site-wide animations ── */
         @keyframes fadeSlideIn {
             from { opacity: 0; transform: translateY(16px); }
@@ -126,7 +133,7 @@
             position: relative;
             margin: 0;
             border-left: 2px dashed transparent;
-            background-image: linear-gradient(to bottom, #c7d2fe 55%, transparent 45%);
+            background-image: linear-gradient(to bottom, #d1d5db 55%, transparent 45%);
             background-size: 2px 22px;
             background-repeat: repeat-y;
             background-position: center;
@@ -160,7 +167,7 @@
             z-index: 2;
         }
 
-        /* Darker Right-Side Stub */
+        /* Darker Right-Side Stub (Neutral Grey) */
         .ticket-card-stub {
             width: 120px;
             flex-shrink: 0;
@@ -170,16 +177,14 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            background: #f1f5f9;
+            background: #efefef;
             border-radius: 0 15px 15px 0;
-            border-left: 1px solid #e2e8f0;
         }
 
         .ticket-card--wide .ticket-card-stub {
             width: 145px;
             padding: 20px 16px;
-            background: #f1f5f9;
-            border-left: 1px solid #e2e8f0;
+            background: #efefef;
         }
 
         /* ── Ticket Card: Vertical (Grid View - Normal Tickets) ── */
@@ -215,7 +220,7 @@
             height: 2px;
             width: 100%;
             position: relative;
-            background-image: linear-gradient(to right, #c7d2fe 55%, transparent 45%);
+            background-image: linear-gradient(to right, #d1d5db 55%, transparent 45%);
             background-size: 22px 2px;
             background-repeat: repeat-x;
             background-position: center;
@@ -248,12 +253,11 @@
             border-radius: 9px 0 0 9px;
             z-index: 2;
         }
-        /* Darker Bottom Stub */
+        /* Darker Bottom Stub (Neutral Grey) */
         .ticket-card-vert-stub {
-            background: #f1f5f9;
+            background: #efefef;
             padding: 14px 16px;
             border-radius: 0 0 15px 15px;
-            border-top: 1px solid #e2e8f0;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -274,7 +278,7 @@
             .ticket-card-perforation {
                 height: 2px;
                 width: 100%;
-                background-image: linear-gradient(to right, #c7d2fe 55%, transparent 45%);
+                background-image: linear-gradient(to right, #d1d5db 55%, transparent 45%);
                 background-size: 22px 2px;
                 background-repeat: repeat-x;
             }
@@ -304,9 +308,8 @@
                 justify-content: space-between;
                 border-radius: 0 0 15px 15px;
                 border-left: none;
-                border-top: 1px solid #e2e8f0;
                 padding: 12px 16px;
-                background: #f1f5f9;
+                background: #efefef;
             }
         }
 
@@ -419,20 +422,20 @@
         {% endif %}
 
         var progressBar = document.getElementById('page-progress');
-if (progressBar) {
-    progressBar.style.width = '30%';
-    setTimeout(function () {
-        progressBar.style.width = '70%';
-    }, 150);
-    window.addEventListener('load', function () {
-        setTimeout(function () {
-            progressBar.style.width = '100%';
+        if (progressBar) {
+            progressBar.style.width = '30%';
             setTimeout(function () {
-                progressBar.style.opacity = '0';
-            }, 300);
-        }, 200);
-    });
-}
+                progressBar.style.width = '70%';
+            }, 150);
+            window.addEventListener('load', function () {
+                setTimeout(function () {
+                    progressBar.style.width = '100%';
+                    setTimeout(function () {
+                        progressBar.style.opacity = '0';
+                    }, 300);
+                }, 200);
+            });
+        }
 
         // Global Split-Flap 3D Flip Clock Controller
         function updateFlipCard(cardEl, newValue) {

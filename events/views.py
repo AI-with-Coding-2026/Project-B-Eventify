@@ -15,6 +15,7 @@ from authentication.decorators import (
     role_required,
 )
 from authentication.models import UserRole
+from .emails import send_booking_confirmation_email
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
 from .models import Category, Event, EventBooking, Ticket
 
@@ -35,6 +36,8 @@ _BACK_LABEL_MAP = [
     ('/dashboard/attendee/bookings/', 'Back to My Bookings'),
     ('/dashboard/attendee/', 'Back to Attendee Dashboard'),
     ('/events/organizer/', 'Back to Organizer Events'),
+    ('/my-bookings/', 'Back to My Bookings'),
+    ('/bookings/', 'Back to My Bookings'),
     ('/events/mine/', 'Back to My Events'),
     ('/events/my-tickets/', 'Back to My Tickets'),
     ('/events/', 'Back to Events'),
@@ -183,6 +186,7 @@ def event_detail(request, pk):
             and user.role == UserRole.ATTENDEE
             and not user_has_booked
             and not event.is_sold_out
+            and not event.is_expired
         ),
         'user_has_booked': user_has_booked,
         'back_url': back_url,
@@ -201,6 +205,10 @@ def book_event(request, pk):
 def book_ticket(request, pk):
     """Book tickets without allowing a request to exceed event capacity."""
     event = get_object_or_404(Event, pk=pk)
+
+    if event.is_expired:
+        messages.error(request, 'Booking is not available because this event has ended.')
+        return redirect('event_detail', pk=pk)
 
     if request.method == 'POST':
         try:
@@ -230,16 +238,24 @@ def book_ticket(request, pk):
                             f'Only {remaining} ticket(s) remain for this event.',
                         )
                 else:
-                    Ticket.objects.create(
+                    ticket = Ticket.objects.create(
                         event=event,
                         attendee=request.user,
                         quantity=quantity,
                     )
-                    messages.success(
-                        request,
-                        f'Ticket booked for "{event.title}".',
-                    )
-                    return redirect('my_tickets')
+                    try:
+                        send_booking_confirmation_email(ticket)
+                    except Exception:
+                        messages.warning(
+                            request,
+                            'Ticket booked, but the confirmation email could not be sent.',
+                        )
+                    else:
+                        messages.success(
+                            request,
+                            f'Ticket booked for "{event.title}".',
+                        )
+                    return redirect('my_bookings')
 
     return render(
         request,
@@ -250,17 +266,8 @@ def book_ticket(request, pk):
 
 @attendee_required
 def my_tickets(request):
-    """Show tickets booked by the logged-in attendee."""
-    tickets = (
-        Ticket.objects.filter(attendee=request.user)
-        .select_related('event')
-        .order_by('-booked_at')
-    )
-    return render(
-        request,
-        'events/my_tickets.html',
-        {'tickets': tickets},
-    )
+    """Redirect legacy my_tickets endpoint to unified my_bookings page."""
+    return redirect('my_bookings')
 
 
 @organizer_required
