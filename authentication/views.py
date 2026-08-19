@@ -131,32 +131,44 @@ def attendee_dashboard(request):
     })
 @role_required(UserRole.ATTENDEE)
 def my_bookings(request):
-    base_bookings = Ticket.objects.filter(
-        attendee=request.user
-    ).select_related('event')
+    now = timezone.now()
+    tickets = (
+        Ticket.objects.filter(attendee=request.user)
+        .select_related('event')
+    )
+    legacy_bookings = (
+        EventBooking.objects.filter(user=request.user)
+        .select_related('event')
+    )
 
-    upcoming_bookings = base_bookings.filter(
-        event__date__gte=timezone.now()
-    ).order_by('event__date')
+    upcoming_tickets = list(
+        tickets.filter(event__date__gte=now).order_by('event__date')
+    )
+    past_tickets = list(
+        tickets.filter(event__date__lt=now).order_by('-event__date')
+    )
 
-    past_bookings = base_bookings.filter(
-        event__date__lt=timezone.now()
-    ).order_by('-event__date')
+    upcoming_legacy = [
+        b for b in legacy_bookings.filter(event__date__gte=now).order_by('event__date')
+        if not any(t.event_id == b.event_id for t in upcoming_tickets)
+    ]
+    past_legacy = [
+        b for b in legacy_bookings.filter(event__date__lt=now).order_by('-event__date')
+        if not any(t.event_id == b.event_id for t in past_tickets)
+    ]
+
+    upcoming_bookings = sorted(
+        upcoming_tickets + upcoming_legacy,
+        key=lambda x: x.event.date,
+    )
+    past_bookings = sorted(
+        past_tickets + past_legacy,
+        key=lambda x: x.event.date,
+        reverse=True,
+    )
 
     return render(request, 'authentication/my_bookings.html', {
         'upcoming_bookings': upcoming_bookings,
         'past_bookings': past_bookings,
-    })
-
-    upcoming_bookings = base_bookings.filter(
-        event_date_gte=timezone.now()
-    ).order_by('event__date')
-
-    past_bookings = base_bookings.filter(
-        event_date_lt=timezone.now()
-    ).order_by('-event__date')
-
-    return render(request, 'authentication/my_bookings.html', {
-        'upcoming_bookings': upcoming_bookings,
-        'past_bookings': past_bookings,
+        'total_bookings': len(upcoming_bookings) + len(past_bookings),
     })
