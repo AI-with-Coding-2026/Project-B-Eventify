@@ -219,8 +219,6 @@ def book_ticket(request, pk):
         if quantity < 1:
             messages.error(request, 'Choose at least one ticket.')
         else:
-            # Locking the event makes the capacity check authoritative even when
-            # two attendees submit a booking at the same time.
             with transaction.atomic():
                 event = Event.objects.select_for_update().get(pk=pk)
                 tickets_sold = Ticket.objects.filter(event=event).aggregate(
@@ -243,18 +241,19 @@ def book_ticket(request, pk):
                         attendee=request.user,
                         quantity=quantity,
                     )
-                    try:
-                        send_booking_confirmation_email(ticket)
-                    except Exception:
-                        messages.warning(
-                            request,
-                            'Ticket booked, but the confirmation email could not be sent.',
-                        )
-                    else:
-                        messages.success(
-                            request,
-                            f'Ticket booked for "{event.title}".',
-                        )
+                    
+                    # --------------------------------------------------
+                    # Email being sent seperately using threading
+                    # --------------------------------------------------
+                    threading.Thread(
+                        target=send_booking_confirmation_email,
+                        args=(ticket,)
+                    ).start()
+
+                    messages.success(
+                        request,
+                        f'Ticket booked for "{event.title}". Confirmation email is on its way.',
+                    )
                     return redirect('my_bookings')
 
     return render(
