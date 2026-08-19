@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from authentication.decorators import (
@@ -178,6 +179,8 @@ def event_detail(request, pk):
 
     back_url, back_label = _resolve_back_navigation(request)
 
+    is_past_event = event.date < timezone.now()
+
     context = {
         'event': event,
         'can_manage': user.is_authenticated and _user_can_manage_event(user, event),
@@ -186,8 +189,10 @@ def event_detail(request, pk):
             and user.role == UserRole.ATTENDEE
             and not user_has_booked
             and not event.is_sold_out
+            and not is_past_event
         ),
         'user_has_booked': user_has_booked,
+        'is_past_event': is_past_event,
         'back_url': back_url,
         'back_label': back_label,
     }
@@ -204,6 +209,10 @@ def book_event(request, pk):
 def book_ticket(request, pk):
     """Book tickets without allowing a request to exceed event capacity."""
     event = get_object_or_404(Event, pk=pk)
+
+    if event.date < timezone.now():
+        messages.error(request, 'This event has already passed and cannot be booked.')
+        return redirect('event_detail', pk=pk)
 
     if request.method == 'POST':
         try:

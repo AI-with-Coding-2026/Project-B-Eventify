@@ -412,18 +412,18 @@
         });
 
         {% if messages %}
-            {% for message in messages %}
-                {% if 'booked' in message.message|lower or 'ticket' in message.message|lower %}
-                    if (typeof confetti === 'function') {
-                        confetti({
-                            particleCount: 120,
-                            spread: 90,
-                            origin: { y: 0.6 }
-                        });
-                    }
-                {% endif %}
-            {% endfor %}
+    {% for message in messages %}
+        {% if message.tags == 'success' and 'booked' in message.message|lower %}
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 90,
+                    origin: { y: 0.6 }
+                });
+            }
         {% endif %}
+    {% endfor %}
+{% endif %}
 
         var progressBar = document.getElementById('page-progress');
 if (progressBar) {
