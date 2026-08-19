@@ -1,8 +1,14 @@
+from datetime import timedelta
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
+from django.utils import timezone
 from unittest.mock import ANY, patch
+
+from events.models import Event, EventBooking
 
 from .forms import UserRegistrationForm
 from .models import User, UserRole
@@ -428,7 +434,11 @@ class RoleDashboardAccessTests(TestCase):
             render.assert_called_once_with(
                 request,
                 'authentication/organizer_dashboard.html',
-                {'upcoming_events': ANY},
+                {
+                    'event_stats': ANY,
+                    'total_tickets_sold': ANY,
+                    'total_revenue': ANY,
+                },
             )
 
         request = self.factory.get('/dashboard/attendee/')
@@ -463,3 +473,112 @@ class RoleDashboardAccessTests(TestCase):
         response = views.organizer_dashboard(request)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('unauthorized'))
+
+
+class OrganizerDashboardSalesTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        self.organizer = User.objects.create_user(
+            'sales_organizer',
+            'sales_organizer@example.com',
+            'pass123',
+            role=UserRole.ORGANIZER,
+        )
+
+        self.other_organizer = User.objects.create_user(
+            'other_organizer',
+            'other_organizer@example.com',
+            'pass123',
+            role=UserRole.ORGANIZER,
+        )
+
+        self.attendee_one = User.objects.create_user(
+            'attendee_one',
+            'attendee_one@example.com',
+            'pass123',
+            role=UserRole.ATTENDEE,
+        )
+
+        self.attendee_two = User.objects.create_user(
+            'attendee_two',
+            'attendee_two@example.com',
+            'pass123',
+            role=UserRole.ATTENDEE,
+        )
+
+        self.event_a = Event.objects.create(
+            title='Summer Concert',
+            organizer=self.organizer,
+            date=timezone.now() + timedelta(days=10),
+            price=Decimal('50.00'),
+            max_tickets=100,
+        )
+
+        self.event_b = Event.objects.create(
+            title='Tech Meetup',
+            organizer=self.organizer,
+            date=timezone.now() + timedelta(days=20),
+            price=Decimal('25.00'),
+            max_tickets=50,
+        )
+
+        self.other_event = Event.objects.create(
+            title='Other Event',
+            organizer=self.other_organizer,
+            date=timezone.now() + timedelta(days=5),
+            price=Decimal('10.00'),
+            max_tickets=20,
+        )
+
+        EventBooking.objects.create(user=self.attendee_one, event=self.event_a)
+        EventBooking.objects.create(user=self.attendee_two, event=self.event_a)
+        EventBooking.objects.create(user=self.attendee_one, event=self.event_b)
+        EventBooking.objects.create(user=self.attendee_one, event=self.other_event)
+
+    def test_organizer_sees_only_their_event_sales(self):
+        self.client.login(username='sales_organizer', password='pass123')
+
+        response = self.client.get(reverse('organizer_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Summer Concert')
+        self.assertContains(response, 'Tech Meetup')
+        self.assertNotContains(response, 'Other Event')
+
+    def test_organizer_dashboard_calculates_sales_metrics(self):
+        self.client.login(username='sales_organizer', password='pass123')
+
+        response = self.client.get(reverse('organizer_dashboard'))
+
+        self.assertEqual(response.context['total_tickets_sold'], 3)
+        self.assertEqual(response.context['total_revenue'], Decimal('125.00'))
+
+        stats_by_title = {
+            row['event'].title: row
+            for row in response.context['event_stats']
+        }
+
+        self.assertEqual(stats_by_title['Summer Concert']['tickets_sold'], 2)
+        self.assertEqual(stats_by_title['Summer Concert']['tickets_remaining'], 98)
+        self.assertEqual(stats_by_title['Summer Concert']['revenue'], Decimal('100.00'))
+
+        self.assertEqual(stats_by_title['Tech Meetup']['tickets_sold'], 1)
+        self.assertEqual(stats_by_title['Tech Meetup']['tickets_remaining'], 49)
+        self.assertEqual(stats_by_title['Tech Meetup']['revenue'], Decimal('25.00'))
+
+    def test_organizer_with_no_events_sees_empty_state(self):
+        User.objects.create_user(
+            'empty_organizer',
+            'empty_organizer@example.com',
+            'pass123',
+            role=UserRole.ORGANIZER,
+        )
+        self.client.login(username='empty_organizer', password='pass123')
+
+        response = self.client.get(reverse('organizer_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_tickets_sold'], 0)
+        self.assertEqual(response.context['total_revenue'], Decimal('0.00'))
+        self.assertContains(response, "You haven't created any events yet")

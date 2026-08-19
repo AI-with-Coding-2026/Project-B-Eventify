@@ -9,7 +9,9 @@ from events.models import Category, Event, EventBooking, Ticket
 from .decorators import admin_required, role_required
 from .forms import UserRegistrationForm
 from .models import User, UserRole
+from decimal import Decimal
 
+from django.db.models import Count
 
 @login_not_required
 def register(request):
@@ -99,13 +101,38 @@ def unauthorized(request):
     return render(request, 'authentication/unauthorized.html', status=403)
 
 
-@role_required(UserRole.ADMIN, UserRole.ORGANIZER)
+@role_required(UserRole.ORGANIZER)
 def organizer_dashboard(request):
-    upcoming_events = Event.objects.filter(
-        date__gte=timezone.now()
-    ).order_by('date')[:3]
+    """Show ticket sales performance for events owned by the logged-in organizer."""
+    my_events = (
+        Event.objects.filter(organizer=request.user)
+        .annotate(tickets_sold=Count('bookings'))
+        .order_by('-date')
+    )
+
+    total_tickets_sold = 0
+    total_revenue = Decimal('0.00')
+    event_stats = []
+
+    for event in my_events:
+        sold = event.tickets_sold
+        remaining = max(event.max_tickets - sold, 0)
+        revenue = event.price * sold
+
+        total_tickets_sold += sold
+        total_revenue += revenue
+
+        event_stats.append({
+            'event': event,
+            'tickets_sold': sold,
+            'tickets_remaining': remaining,
+            'revenue': revenue,
+        })
+
     return render(request, 'authentication/organizer_dashboard.html', {
-        'upcoming_events': upcoming_events,
+        'event_stats': event_stats,
+        'total_tickets_sold': total_tickets_sold,
+        'total_revenue': total_revenue,
     })
 
 

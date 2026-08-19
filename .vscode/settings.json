@@ -1,11 +1,4 @@
 {
-    "workbench.editorAssociations": {
-        "*.copilotmd": "vscode.markdown.preview.editor",
-        "*.zip": "default",
-        "*.py": "default",
-        "*.parquet": "duckdb.dataFileViewer",
-        "*.csv": "duckdb.dataFileViewer",
-        "*.tsv": "duckdb.dataFileViewer",
-        "*.xlsx": "duckdb.dataFileViewer"
-    }
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true
 }
