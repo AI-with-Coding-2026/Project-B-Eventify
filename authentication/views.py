@@ -159,7 +159,7 @@ def my_bookings(request):
         if not any(t.event_id == b.event_id for t in past_tickets)
     ]
 
-# 1. ترتيب الحجوزات وحساب المجموع (نهاية دالة my_bookings)
+
     upcoming_bookings = sorted(
         upcoming_tickets + upcoming_legacy,
         key=lambda x: x.event.date,
@@ -170,10 +170,13 @@ def my_bookings(request):
         reverse=True,
     )
 
+    next_booking = upcoming_bookings[0] if upcoming_bookings else None
+
     return render(request, 'authentication/my_bookings.html', {
         'upcoming_bookings': upcoming_bookings,
         'past_bookings': past_bookings,
         'total_bookings': len(upcoming_bookings) + len(past_bookings),
+        'next_booking': next_booking,
     })
 
 
