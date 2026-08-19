@@ -1,7 +1,8 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.template.response import TemplateResponse
 from django.utils.html import format_html
 from authentication.admin_site import eventify_admin_site
-from .models import Event, Category, EventBooking, Ticket
+from .models import Category, Event, EventBooking, Ticket
 
 
 def render_actions_menu(obj):
@@ -49,10 +50,45 @@ class EventAdmin(admin.ModelAdmin):
     list_display = ('title', 'organizer', 'date', 'price', 'category', 'actions_menu')
     list_filter = ('category', 'date')
     search_fields = ('title', 'organizer__username', 'location')
+    actions = ['delete_selected_events']
 
     @admin.display(description='')
     def actions_menu(self, obj):
         return render_actions_menu(obj)
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if 'delete_selected' in actions:
+            del actions['delete_selected']
+        return actions
+
+    @admin.action(description="Delete selected events")
+    def delete_selected_events(self, request, queryset):
+        # We only perform deletion if POST includes 'post' field indicating confirmation
+        if request.POST.get('post'):
+            deleted_count = 0
+            for event in queryset:
+                # Security: double check the user is admin (enforced by the site anyway)
+                if request.user.is_admin:
+                    event.delete()
+                    deleted_count += 1
+
+            if deleted_count == 1:
+                self.message_user(request, "Event deleted successfully.", messages.SUCCESS)
+            elif deleted_count > 1:
+                self.message_user(request, "Events deleted successfully.", messages.SUCCESS)
+
+            return None
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': "Are you sure you want to delete these events?",
+            'queryset': queryset,
+            'action': 'delete_selected_events',
+            'opts': self.model._meta,
+            'action_checkbox_name': admin.helpers.ACTION_CHECKBOX_NAME,
+        }
+        return TemplateResponse(request, "admin/events/event/delete_selected_confirmation.html", context)
 
 
 eventify_admin_site.register(Event, EventAdmin)
@@ -84,6 +120,7 @@ class EventBookingAdmin(admin.ModelAdmin):
 
 
 eventify_admin_site.register(EventBooking, EventBookingAdmin)
+
 
 # Register Category model using standard admin decorator
 @admin.register(Category)

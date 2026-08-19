@@ -31,8 +31,8 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'cloudinary_storage',       # ضرورية قبل staticfiles
     'django.contrib.staticfiles',
+    'cloudinary_storage',
     'cloudinary',              
     'rest_framework',
 ]
@@ -126,8 +126,6 @@ STATICFILES_DIRS = [
 # المسار الذي ستجمع فيه مكتبة WhiteNoise الملفات المجهزة للزبون
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Storage engine for WhiteNoise (Optimized serving)
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # Uploaded event images
@@ -143,17 +141,61 @@ LOGIN_URL = 'login'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Media files configuration
-# --- Media & Cloudinary Configuration ---
-MEDIA_URL = '/media/'
+if os.environ.get('DATABASE_URL'):
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
-# إذا كنت تريد تخزين كل شيء على Cloudinary دائماً (سواء محلي أو سيرفر):
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# إضافة توافق خلفي لمكتبة django-cloudinary-storage التي لا تزال تفتش
+# عن STATICFILES_STORAGE كمتغير مستقل بدل قراءتها من STORAGES
+STATICFILES_STORAGE = STORAGES["staticfiles"]["BACKEND"]
 
-# إعدادات Cloudinary (تُجلب من ملف .env)
 CLOUDINARY_STORAGE = {
-    
     'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default='dummy_name'),
     'API_KEY': config('CLOUDINARY_API_KEY', default='123456789'),
     'API_SECRET': config('CLOUDINARY_API_SECRET', default='dummy_secret'),
 }
+
+
+# ==========================================
+# Email Configuration (Task 2 - Sprint 2)
+# ==========================================
+
+# Using decouple to fetch environment variables securely from .env
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+DEFAULT_FROM_EMAIL = config(
+    'DEFAULT_FROM_EMAIL',
+    default=EMAIL_HOST_USER or 'Eventify <noreply@eventify.com>',
+)
+
+# Use Gmail SMTP when credentials are set. Otherwise print emails in the terminal.
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Public site URL used in email buttons (set this to the Render URL in production).
+SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000').rstrip('/')
+
+CSRF_TRUSTED_ORIGINS = [origin for origin in [SITE_URL] if origin.startswith('http')]
+render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if render_host:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{render_host}')
