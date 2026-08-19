@@ -111,8 +111,6 @@
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         {{ booking.get_status_display|default:"Confirmed" }}
                     </span>
-<<<<<<< HEAD
-<<<<<<< HEAD
                     <p class="text-xs text-gray-400 mt-1">on {{ booking.booked_at|date:"M d, Y" }}</p>
                     <form method="post" action="{% url 'cancel_booking' booking.pk %}" onsubmit="return confirm('Cancel this booking?');">
                         {% csrf_token %}
@@ -120,14 +118,12 @@
                             Cancel Booking
                         </button>
                     </form>
-=======
                     <p class="text-xs text-gray-400">Booked {{ booking.booked_at|date:"M d, Y" }}</p>
                     <a href="{% url 'event_detail' booking.event.pk %}"
                         class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs transition">
                         View Event
                     </a>
->>>>>>> ahmed
-=======
+
                     <p class="text-xs text-gray-400">Booked {{ booking.booked_at|date:"M d, Y" }}</p>
                     <div class="flex items-center gap-3 mt-2">
                         <a href="{% url 'event_detail' booking.event.pk %}"
@@ -141,7 +137,7 @@
                             </button>
                         </form>
                     </div>
->>>>>>> ritvik-new
+
                 </div>
             </div>
             {% empty %}
@@ -168,10 +164,7 @@
             <span class="text-xs font-medium text-gray-500">{{ past_bookings|length }} past</span>
         </h2>
         <div class="space-y-4">
-<<<<<<< HEAD
->>>>>>> ahmed
-=======
->>>>>>> ritvik-new
+
             {% for booking in past_bookings %}
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50/50 rounded-xl border border-gray-100 opacity-80 transition hover:opacity-100 gap-4">
                 <div class="flex-1">
