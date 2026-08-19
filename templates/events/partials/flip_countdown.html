@@ -1,0 +1,42 @@
+<div class="flip-clock-wrapper" data-target-date="{{ target_date }}">
+    {% if title %}
+    <div class="text-[11px] font-semibold uppercase tracking-wider text-indigo-300 mb-2 text-center">
+        {{ title }}
+    </div>
+    {% endif %}
+
+    <div class="flip-clock-columns">
+        <!-- Hours Column -->
+        <div class="flip-column">
+            <div class="flip-card" data-unit="hours">
+                <div class="card-top"><span>00</span></div>
+                <div class="card-bottom"><span>00</span></div>
+                <div class="card-flip-top"><span>00</span></div>
+                <div class="card-flip-bottom"><span>00</span></div>
+            </div>
+            <span class="flip-column-label">Hours</span>
+        </div>
+
+        <!-- Minutes Column -->
+        <div class="flip-column">
+            <div class="flip-card" data-unit="minutes">
+                <div class="card-top"><span>00</span></div>
+                <div class="card-bottom"><span>00</span></div>
+                <div class="card-flip-top"><span>00</span></div>
+                <div class="card-flip-bottom"><span>00</span></div>
+            </div>
+            <span class="flip-column-label">Minutes</span>
+        </div>
+
+        <!-- Seconds Column -->
+        <div class="flip-column">
+            <div class="flip-card" data-unit="seconds">
+                <div class="card-top"><span>00</span></div>
+                <div class="card-bottom"><span>00</span></div>
+                <div class="card-flip-top"><span>00</span></div>
+                <div class="card-flip-bottom"><span>00</span></div>
+            </div>
+            <span class="flip-column-label">Seconds</span>
+        </div>
+    </div>
+</div>

@@ -23,6 +23,62 @@
             animation: toast-shrink 5s linear forwards;
         }
 
+        /* ── Site-wide animations ── */
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes toastSlideIn {
+            from { opacity: 0; transform: translateX(24px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-fade-slide {
+            animation: fadeSlideIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        .animate-fade {
+            animation: fadeIn 0.4s ease-out forwards;
+            opacity: 0;
+        }
+        .hover-lift {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        @keyframes gentleBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+.empty-state-icon {
+    animation: gentleBounce 2s ease-in-out infinite;
+    font-size: 3rem;
+    display: inline-block;
+}
+        .hover-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(79,70,229,0.12);
+        }
+        .btn-press {
+            transition: transform 0.1s ease;
+        }
+        .btn-press:active {
+            transform: scale(0.96);
+        }
+        .toast-message {
+            animation: toastSlideIn 0.35s ease-out forwards;
+        }
+        #page-progress {
+            position: fixed;
+            top: 0; left: 0;
+            height: 3px;
+            background: #4f46e5;
+            z-index: 9999;
+            width: 0%;
+            transition: width 0.3s ease, opacity 0.3s ease;
+        }
+
         /* ── Ticket Card ── */
         .ticket-card {
             display: flex;
@@ -39,7 +95,6 @@
             box-shadow: 0 12px 32px rgba(79,70,229,0.15);
         }
 
-        /* Image strip */
         .ticket-card-image {
             width: 120px;
             min-height: 140px;
@@ -52,7 +107,6 @@
             min-height: 160px;
         }
 
-        /* Info body */
         .ticket-card-body {
             flex: 1;
             padding: 16px 20px;
@@ -64,7 +118,6 @@
             padding: 20px 24px;
         }
 
-        /* Perforation (dashed tear line) */
         .ticket-card-perforation {
             width: 0;
             flex-shrink: 0;
@@ -72,7 +125,6 @@
             position: relative;
             margin: 12px 0;
         }
-        /* Semicircle notches */
         .ticket-card-perforation::before,
         .ticket-card-perforation::after {
             content: '';
@@ -87,7 +139,6 @@
         .ticket-card-perforation::before { top: -20px; }
         .ticket-card-perforation::after  { bottom: -20px; }
 
-        /* Tear-off stub */
         .ticket-card-stub {
             width: 110px;
             flex-shrink: 0;
@@ -100,13 +151,11 @@
             border-radius: 0 16px 16px 0;
         }
 
-        /* Wide variant for list view */
         .ticket-card--wide .ticket-card-stub {
             width: 140px;
             padding: 20px 16px;
         }
 
-        /* Responsive: stack on very small screens */
         @media (max-width: 480px) {
             .ticket-card { flex-direction: column; border-radius: 16px; }
             .ticket-card-image,
@@ -142,7 +191,6 @@
             }
         }
 
-        /* Line clamp utility */
         .line-clamp-2 {
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -152,6 +200,8 @@
     </style>
 </head>
 <body class="min-h-screen bg-gray-100 antialiased flex flex-col">
+
+    <div id="page-progress"></div>
 
     <nav class="bg-indigo-600 text-white shadow">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -190,7 +240,7 @@
         </div>
     </nav>
 
-    <main class="flex-grow max-w-6xl mx-auto w-full px-4 py-8">
+    <main class="flex-grow max-w-6xl mx-auto w-full px-4 py-8 animate-fade">
         {% if messages %}
             <div id="toast-container" class="space-y-3">
                 {% for message in messages %}
@@ -223,6 +273,7 @@
         </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <script>
         document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
             var ms = parseInt(el.dataset.autoDismiss, 10);
@@ -233,6 +284,36 @@
                 setTimeout(function () { el.remove(); }, 300);
             }, ms);
         });
+
+        {% if messages %}
+            {% for message in messages %}
+                {% if 'booked' in message.message|lower or 'ticket' in message.message|lower %}
+                    if (typeof confetti === 'function') {
+                        confetti({
+                            particleCount: 120,
+                            spread: 90,
+                            origin: { y: 0.6 }
+                        });
+                    }
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        var progressBar = document.getElementById('page-progress');
+if (progressBar) {
+    progressBar.style.width = '30%';
+    setTimeout(function () {
+        progressBar.style.width = '70%';
+    }, 150);
+    window.addEventListener('load', function () {
+        setTimeout(function () {
+            progressBar.style.width = '100%';
+            setTimeout(function () {
+                progressBar.style.opacity = '0';
+            }, 300);
+        }, 200);
+    });
+}
     </script>
 </body>
 </html>
