@@ -43,9 +43,7 @@ def role_required(*allowed_roles, login_url='login'):
         @login_required(login_url=login_url)
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
-            user_role = request.user.role
-
-            if request.user.role in roles:
+            if request.user.role in roles or request.user.is_admin:
                 return view_func(request, *args, **kwargs)
 
             return redirect('unauthorized')
