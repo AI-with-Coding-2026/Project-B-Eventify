@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.shortcuts import redirect, render, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from events.models import Category, Event, EventBooking, Ticket
 from .decorators import admin_required, role_required
@@ -59,6 +60,33 @@ def admin_dashboard(request):
     }
     return render(request, 'authentication/admin_dashboard.html', context)
 
+
+@admin_required
+def user_delete(request, pk):
+    """Allow admins to delete organizers and attendees after confirmation."""
+    target = get_object_or_404(User, pk=pk)
+
+    if target.pk == request.user.pk:
+        messages.error(request, 'You cannot delete your own account.')
+        return redirect('admin_dashboard')
+
+    if target.role == UserRole.ADMIN:
+        messages.error(request, 'Admin accounts cannot be deleted from the dashboard.')
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        username = target.username
+        target.delete()
+        messages.success(request, f'User "{username}" deleted successfully.')
+        return redirect('admin_dashboard')
+
+    return render(
+        request,
+        'authentication/user_confirm_delete.html',
+        {'target_user': target},
+    )
+
+
 @login_not_required
 def login_view(request):
     if request.method == 'POST':
@@ -105,22 +133,50 @@ def attendee_dashboard(request):
 
 @role_required(UserRole.ATTENDEE)
 def my_bookings(request):
-    base_bookings = Ticket.objects.filter(
-        attendee=request.user
-    ).select_related('event')
+    now = timezone.now()
+    tickets = (
+        Ticket.objects.filter(attendee=request.user)
+        .select_related('event')
+    )
+    legacy_bookings = (
+        EventBooking.objects.filter(user=request.user)
+        .select_related('event')
+    )
 
-    upcoming_bookings = base_bookings.filter(
-        event__date__gte=timezone.now()
-    ).order_by('event__date')
+    upcoming_tickets = list(
+        tickets.filter(event__date__gte=now).order_by('event__date')
+    )
+    past_tickets = list(
+        tickets.filter(event__date__lt=now).order_by('-event__date')
+    )
 
-    past_bookings = base_bookings.filter(
-        event__date__lt=timezone.now()
-    ).order_by('-event__date')
+    upcoming_legacy = [
+        b for b in legacy_bookings.filter(event__date__gte=now).order_by('event__date')
+        if not any(t.event_id == b.event_id for t in upcoming_tickets)
+    ]
+    past_legacy = [
+        b for b in legacy_bookings.filter(event__date__lt=now).order_by('-event__date')
+        if not any(t.event_id == b.event_id for t in past_tickets)
+    ]
+
+
+    upcoming_bookings = sorted(
+        upcoming_tickets + upcoming_legacy,
+        key=lambda x: x.event.date,
+    )
+    past_bookings = sorted(
+        past_tickets + past_legacy,
+        key=lambda x: x.event.date,
+        reverse=True,
+    )
 
     return render(request, 'authentication/my_bookings.html', {
         'upcoming_bookings': upcoming_bookings,
         'past_bookings': past_bookings,
+        'total_bookings': len(upcoming_bookings) + len(past_bookings),
     })
+
+
 
 @role_required(UserRole.ATTENDEE)
 def cancel_booking(request, pk):

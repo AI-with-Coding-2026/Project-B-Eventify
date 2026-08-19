@@ -15,6 +15,7 @@ from authentication.decorators import (
     role_required,
 )
 from authentication.models import UserRole
+from .emails import send_booking_confirmation_email
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
 from .models import Category, Event, EventBooking, Ticket
 
@@ -34,7 +35,12 @@ _BACK_LABEL_MAP = [
     ('/dashboard/organizer/', 'Back to Organizer Dashboard'),
     ('/dashboard/attendee/bookings/', 'Back to My Bookings'),
     ('/dashboard/attendee/', 'Back to Attendee Dashboard'),
+<<<<<<< HEAD
     ('/events/organizer/', 'Back to Organizer Events'),
+=======
+    ('/my-bookings/', 'Back to My Bookings'),
+    ('/bookings/', 'Back to My Bookings'),
+>>>>>>> 36859fe877e57797b67cdde84f649abfc01bcc36
     ('/events/mine/', 'Back to My Events'),
     ('/events/my-tickets/', 'Back to My Tickets'),
     ('/events/', 'Back to Events'),
@@ -230,16 +236,24 @@ def book_ticket(request, pk):
                             f'Only {remaining} ticket(s) remain for this event.',
                         )
                 else:
-                    Ticket.objects.create(
+                    ticket = Ticket.objects.create(
                         event=event,
                         attendee=request.user,
                         quantity=quantity,
                     )
-                    messages.success(
-                        request,
-                        f'Ticket booked for "{event.title}".',
-                    )
-                    return redirect('my_tickets')
+                    try:
+                        send_booking_confirmation_email(ticket)
+                    except Exception:
+                        messages.warning(
+                            request,
+                            'Ticket booked, but the confirmation email could not be sent.',
+                        )
+                    else:
+                        messages.success(
+                            request,
+                            f'Ticket booked for "{event.title}".',
+                        )
+                    return redirect('my_bookings')
 
     return render(
         request,
@@ -250,17 +264,8 @@ def book_ticket(request, pk):
 
 @attendee_required
 def my_tickets(request):
-    """Show tickets booked by the logged-in attendee."""
-    tickets = (
-        Ticket.objects.filter(attendee=request.user)
-        .select_related('event')
-        .order_by('-booked_at')
-    )
-    return render(
-        request,
-        'events/my_tickets.html',
-        {'tickets': tickets},
-    )
+    """Redirect legacy my_tickets endpoint to unified my_bookings page."""
+    return redirect('my_bookings')
 
 
 @organizer_required
