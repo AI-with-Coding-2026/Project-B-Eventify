@@ -1,5 +1,7 @@
 import os
+import base64
 from decimal import Decimal
+from pathlib import Path
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 from django.conf import settings
@@ -8,6 +10,19 @@ from django.urls import reverse
 
 BOOKING_CONFIRMATION_TEXT = 'events/booking_confirmation_email.txt'
 BOOKING_CONFIRMATION_HTML = 'events/booking_confirmation_email.html'
+LOGO_PATH = Path(settings.BASE_DIR) / 'static' / 'images' / 'eventify_no_background.png'
+
+
+def _get_logo_base64():
+    """قراءة اللوجو المحلي وتحويله إلى Base64 ليعمل مع Brevo API."""
+    try:
+        if LOGO_PATH.exists():
+            with LOGO_PATH.open('rb') as logo_file:
+                encoded = base64.b64encode(logo_file.read()).decode('utf-8')
+                return f"data:image/png;base64,{encoded}"
+    except Exception as e:
+        print(f"Failed to load logo Base64: {e}")
+    return ""
 
 
 def send_booking_confirmation_email(ticket):
@@ -28,13 +43,14 @@ def send_booking_confirmation_email(ticket):
     configuration.api_key['api-key'] = api_key
     api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
 
-    # 2. تحضير السياق والقوالب بنفس منطقك الأصلي
+    # 2. تحضير السياق والقوالب
     total_price = Decimal(ticket.event.price) * ticket.quantity
     event_url = f"{settings.SITE_URL}{reverse('event_detail', args=[ticket.event.pk])}"
     context = {
         'ticket': ticket,
         'total_price': total_price,
         'event_url': event_url,
+        'logo_src': _get_logo_base64(),  # إضافة اللوجو للسياق
     }
 
     rendered = render_to_string(BOOKING_CONFIRMATION_TEXT, context).strip()
@@ -48,11 +64,12 @@ def send_booking_confirmation_email(ticket):
 
     html_body = render_to_string(BOOKING_CONFIRMATION_HTML, context)
 
-    # 3. إعداد عناصر الرسالة وإرسالها عبر HTTP
+    # 3. إعداد عناصر الرسالة وإرسالها
     sender = {
-        "name": "Eventify",
-        "email": settings.DEFAULT_FROM_EMAIL
+        "name": "Eventify", 
+        "email": settings.DEFAULT_FROM_EMAIL  
     }
+    
     to = [{"email": attendee_email, "name": ticket.attendee.username}]
 
     send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
