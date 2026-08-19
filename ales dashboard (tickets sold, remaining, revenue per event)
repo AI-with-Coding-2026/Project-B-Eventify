@@ -1,0 +1,127 @@
+warning: in the working copy of 'authentication/templates/authentication/organizer_dashboard.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'events/urls.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'events/views.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/events/organizer_event_list.html', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/authentication/templates/authentication/organizer_dashboard.html b/authentication/templates/authentication/organizer_dashboard.html[m
+[1mindex 15253a5..34ebc0f 100644[m
+[1m--- a/authentication/templates/authentication/organizer_dashboard.html[m
+[1m+++ b/authentication/templates/authentication/organizer_dashboard.html[m
+[36m@@ -14,7 +14,10 @@[m
+             <a href="{% url 'my_events' %}" class="bg-indigo-50 text-indigo-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition">[m
+                 My Events[m
+             </a>[m
+[31m-            [m
+[32m+[m[32m            <a href="{% url 'organizer_sales_dashboard' %}" class="bg-indigo-50 text-indigo-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition">[m
+[32m+[m[32m                📊 Sales Dashboard[m
+[32m+[m[32m            </a>[m
+[32m+[m
+         </div>[m
+     </div>[m
+ [m
+[1mdiff --git a/events/urls.py b/events/urls.py[m
+[1mindex c4310d1..a44fc9b 100644[m
+[1m--- a/events/urls.py[m
+[1m+++ b/events/urls.py[m
+[36m@@ -14,6 +14,11 @@[m [murlpatterns = [[m
+         views.organizer_event_list,[m
+         name='organizer_event_list',[m
+     ),[m
+[32m+[m[32m    path([m
+[32m+[m[32m        'organizer/sales/',[m
+[32m+[m[32m        views.organizer_sales_dashboard,[m
+[32m+[m[32m        name='organizer_sales_dashboard',[m
+[32m+[m[32m    ),[m
+     path([m
+         'organizer/create/',[m
+         views.event_create,[m
+[1mdiff --git a/events/views.py b/events/views.py[m
+[1mindex c45e334..594740a 100644[m
+[1m--- a/events/views.py[m
+[1m+++ b/events/views.py[m
+[36m@@ -1,6 +1,9 @@[m
+[32m+[m[32mfrom decimal import Decimal[m
+[32m+[m
+ from django.contrib import messages[m
+ from django.core.exceptions import PermissionDenied[m
+ from django.core.paginator import Paginator[m
+[32m+[m[32mfrom django.db.models import Count, DecimalField, ExpressionWrapper, F[m
+ from django.shortcuts import get_object_or_404, redirect, render[m
+ from django.utils.http import url_has_allowed_host_and_scheme[m
+ from urllib.parse import urlparse[m
+[36m@@ -233,6 +236,54 @@[m [mdef organizer_event_list(request):[m
+     )[m
+ [m
+ [m
+[32m+[m[32m@organizer_required[m
+[32m+[m[32mdef organizer_sales_dashboard(request):[m
+[32m+[m[32m    """Ticket-sales performance for the logged-in organizer's events.[m
+[32m+[m
+[32m+[m[32m    Joins the `events` and `bookings` (EventBooking) tables to compute,[m
+[32m+[m[32m    per event: tickets sold, tickets remaining, and revenue[m
+[32m+[m[32m    (ticket_price x tickets sold) — plus an overall summary.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    events = ([m
+[32m+[m[32m        Event.objects.filter(organizer=request.user)[m
+[32m+[m[32m        .annotate(tickets_sold=Count('bookings', distinct=True))[m
+[32m+[m[32m        .annotate([m
+[32m+[m[32m            revenue=ExpressionWrapper([m
+[32m+[m[32m                F('price') * F('tickets_sold'),[m
+[32m+[m[32m                output_field=DecimalField(max_digits=12, decimal_places=2),[m
+[32m+[m[32m            )[m
+[32m+[m[32m        )[m
+[32m+[m[32m        .order_by('-date')[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    event_rows = [][m
+[32m+[m[32m    total_tickets_sold = 0[m
+[32m+[m[32m    total_revenue = Decimal('0.00')[m
+[32m+[m
+[32m+[m[32m    for event in events:[m
+[32m+[m[32m        tickets_remaining = max(event.max_tickets - event.tickets_sold, 0)[m
+[32m+[m[32m        event_rows.append({[m
+[32m+[m[32m            'event': event,[m
+[32m+[m[32m            'tickets_sold': event.tickets_sold,[m
+[32m+[m[32m            'tickets_remaining': tickets_remaining,[m
+[32m+[m[32m            'revenue': event.revenue,[m
+[32m+[m[32m        })[m
+[32m+[m[32m        total_tickets_sold += event.tickets_sold[m
+[32m+[m[32m        total_revenue += event.revenue[m
+[32m+[m
+[32m+[m[32m    context = {[m
+[32m+[m[32m        'event_rows': event_rows,[m
+[32m+[m[32m        'total_events': len(event_rows),[m
+[32m+[m[32m        'total_tickets_sold': total_tickets_sold,[m
+[32m+[m[32m        'total_revenue': total_revenue,[m
+[32m+[m[32m    }[m
+[32m+[m[32m    return render([m
+[32m+[m[32m        request,[m
+[32m+[m[32m        'events/organizer_sales_dashboard.html',[m
+[32m+[m[32m        context,[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m
+ @organizer_required[m
+ def event_create(request):[m
+     """Create an event and assign the logged-in organizer as owner."""[m
+[1mdiff --git a/templates/events/organizer_event_list.html b/templates/events/organizer_event_list.html[m
+[1mindex 689d1eb..fb176c2 100644[m
+[1m--- a/templates/events/organizer_event_list.html[m
+[1m+++ b/templates/events/organizer_event_list.html[m
+[36m@@ -14,9 +14,14 @@[m
+             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Organizer</p>[m
+             <h1 class="text-3xl font-bold text-gray-900 display">My Events</h1>[m
+         </div>[m
+[31m-        <a href="{% url 'event_create' %}" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition shrink-0">[m
+[31m-            + Create Event[m
+[31m-        </a>[m
+[32m+[m[32m        <div class="flex gap-3 shrink-0">[m
+[32m+[m[32m            <a href="{% url 'organizer_sales_dashboard' %}" class="inline-flex items-center justify-center rounded-xl bg-indigo-50 px-5 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition">[m
+[32m+[m[32m                📊 Sales Dashboard[m
+[32m+[m[32m            </a>[m
+[32m+[m[32m            <a href="{% url 'event_create' %}" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition">[m
+[32m+[m[32m                + Create Event[m
+[32m+[m[32m            </a>[m
+[32m+[m[32m        </div>[m
+     </div>[m
+ </div>[m
+ [m
