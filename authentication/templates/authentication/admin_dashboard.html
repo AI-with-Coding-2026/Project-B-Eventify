@@ -220,20 +220,24 @@
             <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300">
 
                 {% if event.image %}
-                    <img
-                        src="{{ event.image.url }}"
-                        alt="{{ event.title }}"
-                        class="w-full h-32 object-cover"
-                    >
+                    <a href="{% url 'event_detail' event.pk %}">
+                        <img
+                            src="{{ event.image.url }}"
+                            alt="{{ event.title }}"
+                            class="w-full h-32 object-cover hover:opacity-95 transition"
+                        >
+                    </a>
                 {% else %}
-                    <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">
+                    <a href="{% url 'event_detail' event.pk %}" class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm hover:bg-indigo-100 transition">
                         No image
-                    </div>
+                    </a>
                 {% endif %}
 
                 <div class="p-4 flex flex-col flex-1">
                     <h3 class="font-semibold text-gray-900 mb-1">
-                        {{ event.title }}
+                        <a href="{% url 'event_detail' event.pk %}" class="hover:text-indigo-600 transition">
+                            {{ event.title }}
+                        </a>
                     </h3>
 
                     <p class="text-xs text-gray-500 mb-3">
