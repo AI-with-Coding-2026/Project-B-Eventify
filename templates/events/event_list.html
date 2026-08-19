@@ -69,7 +69,7 @@
         </div>
     </div>
 
-    <div id="events-grid-view" class="grid gap-5 sm:grid-cols-2">
+    <div id="events-grid-view" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {% for event in events %}
             <div class="hover-lift animate-fade-slide" style="animation-delay: {{ forloop.counter0|add:0 }}00ms;">
                 {% include "events/partials/event_card_grid.html" with event=event %}

@@ -32,8 +32,11 @@ def _user_can_manage_event(user, event):
 _BACK_LABEL_MAP = [
     ('/admin/', 'Back to Admin Dashboard'),
     ('/dashboard/organizer/', 'Back to Organizer Dashboard'),
+    ('/dashboard/attendee/bookings/', 'Back to My Bookings'),
     ('/dashboard/attendee/', 'Back to Attendee Dashboard'),
+    ('/events/organizer/', 'Back to Organizer Events'),
     ('/events/mine/', 'Back to My Events'),
+    ('/events/my-tickets/', 'Back to My Tickets'),
     ('/events/', 'Back to Events'),
 ]
 
@@ -280,6 +283,9 @@ def event_create(request):
             event = form.save(commit=False)
             event.organizer = request.user
             event.save()
+            messages.success(request, 'Event created successfully.')
+            if request.user.is_admin:
+                return redirect('admin_dashboard')
             return redirect('organizer_event_list')
     else:
         form = EventForm()
@@ -305,6 +311,8 @@ def event_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, 'Event updated successfully.')
+            if request.user.is_admin:
+                return redirect('admin_dashboard')
             return redirect('organizer_event_list')
     else:
         form = EventForm(instance=event)
@@ -329,6 +337,8 @@ def event_delete(request, pk):
     if request.method == 'POST':
         event.delete()
         messages.success(request, 'Event deleted successfully.')
+        if request.user.is_admin:
+            return redirect('admin_dashboard')
         return redirect('organizer_event_list')
 
     return render(
@@ -458,6 +468,9 @@ def create_event(request):
                 request,
                 "Event created successfully.",
             )
+
+            if request.user.is_admin:
+                return redirect("admin_dashboard")
 
             return redirect("my_events")
 

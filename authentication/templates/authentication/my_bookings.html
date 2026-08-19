@@ -9,7 +9,48 @@
     </div>
     <h1 class="text-2xl font-bold mb-2 display">My Bookings</h1>
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h2 class="text-lg font-semibold text-gray-900 display mb-4">Upcoming Bookings</h2>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 display flex items-center gap-2">
+                <span>Upcoming Bookings</span>
+                <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                    {{ upcoming_bookings|length }}
+                </span>
+            </h2>
+
+            {% if upcoming_bookings %}
+            {% with next_b=next_booking|default:upcoming_bookings.0 %}
+            <!-- Real-Time Countdown Header Badge -->
+            <div id="next-event-badge" class="inline-flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 text-indigo-900 text-xs shadow-sm">
+                <div class="text-left">
+                    <div class="text-xs">
+                        <span class="font-semibold text-indigo-600">Next Event:</span>
+                        <strong id="next-event-title" class="font-bold text-gray-900 ml-1">{{ next_b.event.title }}</strong>
+                    </div>
+                    <div id="next-event-date" class="text-[11px] text-gray-500 font-normal">
+                        {{ next_b.event.date|date:"M d, Y - g:i A" }}
+                    </div>
+                </div>
+
+                <div class="shrink-0 ml-1">
+                    {% include "events/partials/flip_countdown.html" with target_date=next_b.event.date|date:'Y-m-d\TH:i:s' %}
+                </div>
+            </div>
+
+            <script id="upcoming-bookings-data" type="application/json">
+            [
+                {% for booking in upcoming_bookings %}
+                {
+                    "title": "{{ booking.event.title|escapejs }}",
+                    "target_date": "{{ booking.event.date|date:'Y-m-d\TH:i:s' }}",
+                    "formatted_date": "{{ booking.event.date|date:'M d, Y - g:i A' }}"
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ]
+            </script>
+            {% endwith %}
+            {% endif %}
+        </div>
+
         <div class="space-y-3">
             {% for booking in upcoming_bookings %}
             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 transition hover:bg-white hover:shadow-sm">
@@ -63,4 +104,73 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var rawData = document.getElementById('upcoming-bookings-data');
+    if (!rawData) return;
+    try {
+        var bookings = JSON.parse(rawData.textContent);
+        if (!bookings || bookings.length === 0) return;
+
+        var currentIndex = -1;
+        var clockEl = document.querySelector('.flip-clock-wrapper');
+        var titleEl = document.getElementById('next-event-title');
+        var dateEl = document.getElementById('next-event-date');
+        var badgeEl = document.getElementById('next-event-badge');
+
+        function getBookingTimestamp(dateStr) {
+            if (typeof parseFlipClockTargetDate === 'function') {
+                return parseFlipClockTargetDate(dateStr);
+            }
+            return new Date(dateStr).getTime();
+        }
+
+        function findNextActiveIndex() {
+            var now = new Date().getTime();
+            for (var i = 0; i < bookings.length; i++) {
+                var bTime = getBookingTimestamp(bookings[i].target_date);
+                if (bTime > now) {
+                    return i;
+                }
+            }
+            return bookings.length > 0 ? 0 : -1;
+        }
+
+        function switchToBooking(index) {
+            if (index < 0 || index >= bookings.length) {
+                return;
+            }
+            currentIndex = index;
+            var b = bookings[currentIndex];
+            if (titleEl) titleEl.textContent = b.title;
+            if (dateEl) dateEl.textContent = b.formatted_date;
+            if (clockEl) {
+                clockEl.setAttribute('data-target-date', b.target_date);
+            }
+        }
+
+        // Initialize active booking
+        var initialIndex = findNextActiveIndex();
+        if (initialIndex !== -1) {
+            switchToBooking(initialIndex);
+        }
+
+        // Check every second: if active booking reached 00:00:00, switch to the next booking in line!
+        setInterval(function () {
+            var now = new Date().getTime();
+            if (currentIndex >= 0 && currentIndex < bookings.length) {
+                var currentTarget = getBookingTimestamp(bookings[currentIndex].target_date);
+                if (now >= currentTarget) {
+                    var nextIndex = findNextActiveIndex();
+                    switchToBooking(nextIndex);
+                }
+            }
+        }, 1000);
+
+    } catch (e) {
+        console.error('Error in upcoming bookings auto-switch script:', e);
+    }
+});
+</script>
 {% endblock %}

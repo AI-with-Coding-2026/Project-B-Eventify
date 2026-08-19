@@ -1,26 +1,35 @@
-<div class="ticket-card group">
-    <!-- Left + Center: Main card link -->
-    <a href="{% url 'event_detail' event.pk %}" class="flex flex-1 items-stretch no-underline text-inherit min-w-0">
-        <!-- Left: Image strip -->
-        <div class="ticket-card-image">
+<div class="ticket-card-vert group">
+    <!-- Top: Image strip -->
+    <a href="{% url 'event_detail' event.pk %}" class="block no-underline text-inherit">
+        <div class="ticket-card-vert-image">
             {% if event.image %}
-            <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-full object-cover">
+            <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-full object-cover group-hover:scale-[1.02] transition duration-300">
             {% else %}
             <div class="w-full h-full bg-indigo-50 flex items-center justify-center text-indigo-300">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
                 </svg>
             </div>
             {% endif %}
         </div>
 
-        <!-- Center: Event info -->
-        <div class="ticket-card-body">
-            <span class="inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 mb-2 w-fit">
-                {{ event.category_label }}
-            </span>
-            <h3 class="text-base font-bold text-gray-900 mb-1.5 leading-tight group-hover:text-indigo-700 transition line-clamp-2">{{ event.title }}</h3>
-            <div class="space-y-1 text-xs text-gray-500 mt-auto">
+        <!-- Middle: Event info -->
+        <div class="ticket-card-vert-body">
+            <div class="flex items-center justify-between gap-2 mb-2">
+                <span class="inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700">
+                    {{ event.category_label }}
+                </span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                    {{ event.serial_number }}
+                </span>
+            </div>
+            <h3 class="text-base font-bold text-gray-900 mb-2 leading-tight group-hover:text-indigo-700 transition line-clamp-2">
+                {{ event.title }}
+            </h3>
+            {% if event.description %}
+            <p class="text-xs text-gray-500 mb-3 line-clamp-2">{{ event.description|truncatewords:15 }}</p>
+            {% endif %}
+            <div class="space-y-1.5 text-xs text-gray-500 mt-auto pt-1">
                 <p class="flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
@@ -41,24 +50,28 @@
     </a>
 
     <!-- Perforation line -->
-    <div class="ticket-card-perforation"></div>
+    <div class="ticket-card-vert-perforation"></div>
 
-    <!-- Right: Stub -->
-    <div class="ticket-card-stub">
-        <p class="text-xl font-extrabold text-indigo-600 mb-1">${{ event.price }}</p>
-        <span class="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2">{{ event.serial_number }}</span>
-        {% if user.is_authenticated and user.is_attendee %}
-            {% if event.is_sold_out %}
-            <span class="mt-auto inline-block text-xs font-semibold text-red-600">Sold out</span>
+    <!-- Bottom Stub -->
+    <div class="ticket-card-vert-stub">
+        <div>
+            <span class="block text-[9px] uppercase font-bold tracking-wider text-gray-400">Price</span>
+            <span class="text-lg font-extrabold text-indigo-600">${{ event.price }}</span>
+        </div>
+        <div>
+            {% if user.is_authenticated and user.is_attendee %}
+                {% if event.is_sold_out %}
+                <span class="inline-block text-xs font-semibold text-red-600 bg-red-50 px-2.5 py-1 rounded-lg">Sold out</span>
+                {% else %}
+                <a href="{% url 'book_ticket' event.pk %}" class="inline-flex items-center text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg shadow-sm transition">
+                    Book ticket
+                </a>
+                {% endif %}
             {% else %}
-            <a href="{% url 'book_ticket' event.pk %}" class="mt-auto inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline">
-                Book ticket
+            <a href="{% url 'event_detail' event.pk %}" class="inline-flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition">
+                View →
             </a>
             {% endif %}
-        {% else %}
-        <a href="{% url 'event_detail' event.pk %}" class="mt-auto inline-flex items-center text-xs font-semibold text-indigo-600 group-hover:text-indigo-800 hover:underline">
-            View →
-        </a>
-        {% endif %}
+        </div>
     </div>
 </div>
