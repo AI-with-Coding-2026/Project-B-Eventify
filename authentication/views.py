@@ -170,10 +170,13 @@ def my_bookings(request):
         reverse=True,
     )
 
+    next_booking = upcoming_bookings[0] if upcoming_bookings else None
+
     return render(request, 'authentication/my_bookings.html', {
         'upcoming_bookings': upcoming_bookings,
         'past_bookings': past_bookings,
         'total_bookings': len(upcoming_bookings) + len(past_bookings),
+        'next_booking': next_booking,
     })
 
 
