@@ -117,9 +117,12 @@ def my_bookings(request):
         event__date__lt=timezone.now()
     ).order_by('-event__date')
 
+    next_booking = upcoming_bookings.first()
+
     return render(request, 'authentication/my_bookings.html', {
         'upcoming_bookings': upcoming_bookings,
         'past_bookings': past_bookings,
+        'next_booking': next_booking,
     })
 
 @role_required(UserRole.ATTENDEE)

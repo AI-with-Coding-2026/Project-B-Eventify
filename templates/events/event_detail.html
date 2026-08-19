@@ -44,6 +44,13 @@
                 {% endif %}
             </div>
 
+            <!-- Event Start Countdown (3-Column Flip Clock) -->
+            <div class="mb-6 p-4 bg-gradient-to-r from-indigo-50 via-blue-50 to-indigo-50 rounded-xl border border-indigo-100 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <span class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Event Starts In:</span>
+                {% include "events/partials/flip_countdown.html" with target_date=event.date|date:'Y-m-d\TH:i:s' %}
+            </div>
+
+
             <section class="mb-8">
                 <h2 class="text-lg font-semibold text-gray-900 display mb-2">Description</h2>
                 {% if event.description %}
