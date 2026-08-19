@@ -242,19 +242,18 @@ def book_ticket(request, pk):
                         quantity=quantity,
                     )
                     
-                    # محاولة إرسال البريد إلكتروني مباشرة مع التقاط أي خطأ وعرضه
-                    try:
-                        send_booking_confirmation_email(ticket)
-                        messages.success(
-                            request,
-                            f'Ticket booked for "{event.title}". Confirmation email sent successfully to {request.user.email}!',
-                        )
-                    except Exception as e:
-                        # إظهار الخطأ التقني الدقيق داخل الرسالة للمستخدم
-                        messages.warning(
-                            request,
-                            f'Ticket booked for "{event.title}", BUT email failed. Reason: {type(e).__name__} - {str(e)}',
-                        )
+                    # --------------------------------------------------
+                    # التعديل هنا: تشغيل الإرسال في الخلفية دون تعليق السيرفر
+                    # --------------------------------------------------
+                    threading.Thread(
+                        target=send_booking_confirmation_email,
+                        args=(ticket,)
+                    ).start()
+
+                    messages.success(
+                        request,
+                        f'Ticket booked for "{event.title}". Confirmation email is on its way.',
+                    )
 
                     return redirect('my_bookings')
 
