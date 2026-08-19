@@ -336,7 +336,7 @@ class AttendeeTicketBookingTests(TestCase):
             organizer=self.organizer,
             title='Bookable Show',
             description='Open for booking',
-            date=timezone.now(),
+            date=timezone.now() + timedelta(days=1),
             price='25.00',
             category='arts',
             max_tickets=3,
@@ -429,6 +429,22 @@ class AttendeeTicketBookingTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Bookable Show')
+
+    def test_expired_event_shows_done_status_and_disables_booking(self):
+        expired_event = Event.objects.create(
+            organizer=self.organizer,
+            title='Past Show',
+            description='Already finished',
+            date=timezone.now() - timedelta(days=1),
+            price='20.00',
+            category='music',
+            max_tickets=5,
+        )
+        self.client.force_login(self.attendee)
+        response = self.client.get(reverse('event_detail', kwargs={'pk': expired_event.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Event Done')
+        self.assertContains(response, 'Booking Not Available')
 
     def test_organizer_cannot_book_ticket(self):
         self.client.force_login(self.organizer)

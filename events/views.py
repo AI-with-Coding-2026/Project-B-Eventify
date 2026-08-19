@@ -183,6 +183,7 @@ def event_detail(request, pk):
             and user.role == UserRole.ATTENDEE
             and not user_has_booked
             and not event.is_sold_out
+            and not event.is_expired
         ),
         'user_has_booked': user_has_booked,
         'back_url': back_url,
@@ -201,6 +202,10 @@ def book_event(request, pk):
 def book_ticket(request, pk):
     """Book tickets without allowing a request to exceed event capacity."""
     event = get_object_or_404(Event, pk=pk)
+
+    if event.is_expired:
+        messages.error(request, 'Booking is not available because this event has ended.')
+        return redirect('event_detail', pk=pk)
 
     if request.method == 'POST':
         try:
