@@ -39,21 +39,13 @@
 <div class="max-w-6xl mx-auto space-y-8">
 
     <!-- Header Section -->
-    <div class="animate-fade-in-up bg-gradient-to-r from-indigo-950 via-indigo-900 to-indigo-800 rounded-2xl p-6 sm:p-8 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+    <div class="animate-fade-in-up flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <div class="inline-flex items-center gap-2 bg-indigo-500/20 backdrop-blur-md text-indigo-200 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-3">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span id="liveStatusText">Live Dashboard</span>
-            </div>
-            <h1 class="text-3xl font-extrabold tracking-tight display">Welcome back, {{ user.username }}!</h1>
-            <p class="text-indigo-200 text-sm mt-1">Here is how your events are performing in ticket sales and overall revenue.</p>
+            <h1 class="text-3xl font-bold text-gray-900 display">Organizer Dashboard</h1>
         </div>
-        <div class="flex flex-wrap items-center gap-3">
-            <a href="{% url 'create_event' %}" class="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-5 py-3 rounded-xl shadow-lg hover:shadow-emerald-500/25 transition-all transform hover:-translate-y-0.5 text-sm">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Create New Event
-            </a>
-        </div>
+        <a href="{% url 'create_event' %}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm transition shrink-0">
+            + Create Event
+        </a>
     </div>
 
     <!-- Overview Stats Summary Cards -->
