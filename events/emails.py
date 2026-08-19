@@ -12,15 +12,18 @@ BOOKING_CONFIRMATION_TEXT = 'events/booking_confirmation_email.txt'
 BOOKING_CONFIRMATION_HTML = 'events/booking_confirmation_email.html'
 LOGO_PATH = Path(settings.BASE_DIR) / 'static' / 'images' / 'eventify_no_background.png'
 
-
 def _attach_eventify_logo(message):
-    if not LOGO_PATH.exists():
-        return
-    with LOGO_PATH.open('rb') as logo_file:
-        logo = MIMEImage(logo_file.read())
-    logo.add_header('Content-ID', '<eventify-logo>')
-    logo.add_header('Content-Disposition', 'inline', filename=LOGO_PATH.name)
-    message.attach(logo)
+    try:
+        if not LOGO_PATH.exists():
+            return
+        with LOGO_PATH.open('rb') as logo_file:
+            logo = MIMEImage(logo_file.read())
+        logo.add_header('Content-ID', '<eventify-logo>')
+        logo.add_header('Content-Disposition', 'inline', filename=LOGO_PATH.name)
+        message.attach(logo)
+    except Exception as e:
+        # حماية عملية الإرسال من الانهيار إذا لم تتوفر الصورة على Render
+        print(f"Failed to attach logo, sending email without it: {e}")
 
 
 def send_booking_confirmation_email(ticket):
