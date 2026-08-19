@@ -1,39 +1,34 @@
+import os
 from decimal import Decimal
-from email.mime.image import MIMEImage
-from email.utils import formataddr
-from pathlib import Path
-
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.urls import reverse
 
 BOOKING_CONFIRMATION_TEXT = 'events/booking_confirmation_email.txt'
 BOOKING_CONFIRMATION_HTML = 'events/booking_confirmation_email.html'
-LOGO_PATH = Path(settings.BASE_DIR) / 'static' / 'images' / 'eventify_no_background.png'
-
-def _attach_eventify_logo(message):
-    try:
-        if not LOGO_PATH.exists():
-            return
-        with LOGO_PATH.open('rb') as logo_file:
-            logo = MIMEImage(logo_file.read())
-        logo.add_header('Content-ID', '<eventify-logo>')
-        logo.add_header('Content-Disposition', 'inline', filename=LOGO_PATH.name)
-        message.attach(logo)
-    except Exception as e:
-        # حماية عملية الإرسال من الانهيار إذا لم تتوفر الصورة على Render
-        print(f"Failed to attach logo, sending email without it: {e}")
 
 
 def send_booking_confirmation_email(ticket):
-    """Send a booking confirmation email for a saved Ticket."""
+    """Send a booking confirmation email for a saved Ticket via Brevo API."""
     attendee_email = (getattr(ticket.attendee, 'email', '') or '').strip()
     if not attendee_email:
         raise ValueError(
             'Cannot send booking confirmation without an attendee email.'
         )
 
+    # 1. إعداد حساب Brevo API
+    api_key = os.environ.get('BREVO_API_KEY')
+    if not api_key:
+        print("BREVO_API_KEY is missing. Email skipped.")
+        return None
+
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = api_key
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+
+    # 2. تحضير السياق والقوالب بنفس منطقك الأصلي
     total_price = Decimal(ticket.event.price) * ticket.quantity
     event_url = f"{settings.SITE_URL}{reverse('event_detail', args=[ticket.event.pk])}"
     context = {
@@ -52,15 +47,26 @@ def send_booking_confirmation_email(ticket):
         text_body = rendered
 
     html_body = render_to_string(BOOKING_CONFIRMATION_HTML, context)
-    sender_address = settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL
 
-    message = EmailMultiAlternatives(
+    # 3. إعداد عناصر الرسالة وإرسالها عبر HTTP
+    sender = {
+        "name": "Eventify",
+        "email": settings.DEFAULT_FROM_EMAIL
+    }
+    to = [{"email": attendee_email, "name": ticket.attendee.username}]
+
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+        to=to,
+        sender=sender,
         subject=subject,
-        body=text_body,
-        from_email=formataddr(('Eventify', sender_address)),
-        to=[attendee_email],
+        text_content=text_body,
+        html_content=html_body,
     )
-    message.attach_alternative(html_body, 'text/html')
-    _attach_eventify_logo(message)
-    message.send(fail_silently=False)
-    return message
+
+    try:
+        response = api_instance.send_transac_email(send_smtp_email)
+        print("Confirmation email sent successfully via Brevo API!")
+        return response
+    except ApiException as e:
+        print(f"Failed to send email via Brevo API: {e}")
+        raise e
