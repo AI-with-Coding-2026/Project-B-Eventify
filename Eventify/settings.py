@@ -187,6 +187,8 @@ DEFAULT_FROM_EMAIL = config(
     default=EMAIL_HOST_USER or 'Eventify <noreply@eventify.com>',
 )
 
+EMAIL_TIMEOUT = 3
+
 # Use Gmail SMTP when credentials are set. Otherwise print emails in the terminal.
 if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -194,7 +196,7 @@ else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Public site URL used in email buttons (set this to the Render URL in production).
-SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000').rstrip('/')
+SITE_URL = config('SITE_URL', default='https://project-b-eventify.onrender.com/').rstrip('/')
 
 CSRF_TRUSTED_ORIGINS = [origin for origin in [SITE_URL] if origin.startswith('http')]
 render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
