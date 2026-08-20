@@ -126,7 +126,8 @@ def unauthorized(request):
 def organizer_dashboard(request):
     """Dashboard showing ticket sales performance, revenue, and charts for the organizer's events."""
     events = Event.objects.filter(organizer=request.user).order_by('-date')
-    
+    upcoming_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')[:3]
+
     total_events = events.count()
     total_tickets_sold = sum(event.tickets_sold for event in events)
     total_tickets_remaining = sum(event.tickets_remaining for event in events)
@@ -140,6 +141,7 @@ def organizer_dashboard(request):
     chart_revenue = [float(e.revenue) for e in chart_events]
 
     context = {
+        'upcoming_events': upcoming_events,
         'events': events,
         'total_events': total_events,
         'total_tickets_sold': total_tickets_sold,
@@ -157,6 +159,10 @@ def organizer_dashboard(request):
 def organizer_dashboard_stats_api(request):
     """JSON API endpoint returning live statistics and chart data for the organizer's events."""
     events = Event.objects.filter(organizer=request.user).order_by('-date')
+
+    upcoming_events = Event.objects.filter(
+    date__gte=timezone.now()
+    ).order_by('date')[:3]
 
     total_events = events.count()
     total_tickets_sold = sum(event.tickets_sold for event in events)

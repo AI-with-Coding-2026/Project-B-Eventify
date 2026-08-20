@@ -435,6 +435,7 @@ class RoleDashboardAccessTests(TestCase):
                 'authentication/organizer_dashboard.html',
                 {
                     'events': ANY,
+                    'upcoming_events': ANY,
                     'total_events': ANY,
                     'total_tickets_sold': ANY,
                     'total_tickets_remaining': ANY,
