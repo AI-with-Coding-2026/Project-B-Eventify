@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}My Events — Eventify{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>My Events</h2>
+  <a href="{% url 'events:event_create' %}" class="btn btn-success">+ New Event</a>
+</div>
+
+{% if events %}
+<div class="row row-cols-1 row-cols-md-3 g-4">
+  {% for event in events %}
+  <div class="col">
+    <div class="card h-100">
+      {% if event.poster_image %}
+        <img src="{{ event.poster_image.url }}" class="card-img-top" alt="{{ event.title }}" style="height:180px;object-fit:cover;">
+      {% endif %}
+      <div class="card-body">
+        <h5 class="card-title">{{ event.title }}</h5>
+        <p class="card-text text-muted mb-1">{{ event.location }}</p>
+        <p class="card-text text-muted mb-1">{{ event.date }}</p>
+        <p class="card-text">${{ event.ticket_price }} · {{ event.max_tickets }} max tickets</p>
+      </div>
+      <div class="card-footer d-flex justify-content-between">
+        <a href="{% url 'events:event_edit' event.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+        <a href="{% url 'events:event_delete' event.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">You haven't created any events yet.</p>
+{% endif %}
+{% endblock %}

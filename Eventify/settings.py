@@ -1,201 +1,116 @@
 """
-Django settings for Eventify project.
-Combined and configured for Render (Production) & Localhost (Team Development)
+Django settings for the Eventify Organizer Portal.
 """
-
 import os
 from pathlib import Path
-from decouple import config
-import dj_database_url
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+from dotenv import load_dotenv
+
+load_dotenv()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-!derh9#qen0ojn!dqa#@lg=$%)r_zt**o0!kw1qo92)a)oi8yv')
+# --- Core ---------------------------------------------------------------
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "insecure-dev-key-change-me")
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
-
-# السماح للـ Host الخاص بـ Render بالعمل
-ALLOWED_HOSTS = ['*']
-
-
-# Application definition
-
+# --- Applications ---------------------------------------------------------
 INSTALLED_APPS = [
-    'authentication', 
-    'events.apps.EventsConfig',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'cloudinary_storage',
-    'cloudinary',              
-    'rest_framework',
-]
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    # Local apps
+    "events",
+    "bookings",
+    'accounts',
 
+]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', 
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'Eventify.urls'
+ROOT_URLCONF = "eventify.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'authentication.context_processors.dashboard_link',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "accounts.context_processors.profile",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'Eventify.wsgi.application'
+WSGI_APPLICATION = "eventify.wsgi.application"
 
-
-# Database Configuration:
-# Dynamic setup -> Postgres on Render OR MySQL/SQLite on Localhost for your team
-if os.environ.get('DATABASE_URL'):
-    # إعدادات سيرفر Render (PostgreSQL)
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL'),
-            conn_max_age=600
-        )
+# --- Database (MySQL) ------------------------------------------------------
+# Override any of these via environment variables / .env file.
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ.get("DB_NAME", "eventify_db"),
+        "USER": os.environ.get("DB_USER", "eventify_user"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "3306"),
+        "OPTIONS": {
+            "charset": "utf8mb4",
+        },
     }
-else:
-    # إعدادات العمل المحلي مع الفريق (MySQL أو SQLite)
-    # ملاحظة: إذا أردت استخدام MySQL اكتب بياناتها هنا، أو اتركها SQLite
-    import pymysql
-    pymysql.install_as_MySQLdb()
+}
 
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+# For quick local testing without a MySQL server, set DJANGO_USE_SQLITE=True
+if os.environ.get("DJANGO_USE_SQLITE", "False") == "True":
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 
-
-# Password validation
+# --- Passwords / auth -------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+LOGIN_URL = "events:login"
+LOGIN_REDIRECT_URL = "events:event_list"
+LOGOUT_REDIRECT_URL = "events:login"
 
-# Internationalization
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+# --- Internationalization ---------------------------------------------------
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "Europe/Istanbul"
 USE_I18N = True
 USE_TZ = True
 
+# --- Static / media files ----------------------------------------------------
+STATIC_URL = "static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
-# المسار الذي ستجمع فيه مكتبة WhiteNoise الملفات المجهزة للزبون
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-
-# Uploaded event images
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-# Activate the custom user model containing the 3 required roles
-AUTH_USER_MODEL = 'authentication.User'
-
-# Admin-only views redirect unauthenticated users to the app login page.
-LOGIN_URL = 'login'
-
-# Default primary key field type
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-if os.environ.get('DATABASE_URL'):
-    STORAGES = {
-        "default": {
-            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        },
-    }
-else:
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        },
-    }
-
-# إضافة توافق خلفي لمكتبة django-cloudinary-storage التي لا تزال تفتش
-# عن STATICFILES_STORAGE كمتغير مستقل بدل قراءتها من STORAGES
-STATICFILES_STORAGE = STORAGES["staticfiles"]["BACKEND"]
-
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default='dummy_name'),
-    'API_KEY': config('CLOUDINARY_API_KEY', default='123456789'),
-    'API_SECRET': config('CLOUDINARY_API_SECRET', default='dummy_secret'),
-}
-
-
-# ==========================================
-# Email Configuration (Task 2 - Sprint 2)
-# ==========================================
-
-# Using decouple to fetch environment variables securely from .env
-EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-DEFAULT_FROM_EMAIL = config(
-    'DEFAULT_FROM_EMAIL',
-    default=EMAIL_HOST_USER or 'Eventify <noreply@eventify.com>',
-)
-
-# Use Gmail SMTP when credentials are set. Otherwise print emails in the terminal.
-if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# Public site URL used in email buttons (set this to the Render URL in production).
-SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000').rstrip('/')
-
-CSRF_TRUSTED_ORIGINS = [origin for origin in [SITE_URL] if origin.startswith('http')]
-render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if render_host:
-    CSRF_TRUSTED_ORIGINS.append(f'https://{render_host}')
+# --- Upload limits (also enforced in EventForm.clean_poster_image) ----------
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024

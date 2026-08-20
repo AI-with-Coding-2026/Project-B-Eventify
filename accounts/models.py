@@ -1,15 +1,13 @@
-from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 from django.db import models
 
 
-class CustomUser(AbstractUser):
-    class Role(models.TextChoices):
-        ADMIN = 'admin', 'Admin'
-        ORGANIZER = 'organizer', 'Organizer'
-        ATTENDEE = 'attendee', 'Attendee'
-
-    role = models.CharField(
-        max_length=20,
-        choices=Role.choices,
-        default=Role.ATTENDEE,
+class Profile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
     )
+    is_organizer = models.BooleanField(default=True)
+
+    def __str__(self):
+        role = "organizer" if self.is_organizer else "attendee"
+        return f"{self.user.username} ({role})"

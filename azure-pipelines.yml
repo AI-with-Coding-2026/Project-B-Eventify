@@ -1,0 +1,42 @@
+# Azure DevOps CI pipeline for Eventify
+# Runs on every push to main and on pull requests.
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  DJANGO_USE_SQLITE: "True"          # use sqlite in CI so no MySQL server is needed
+  DJANGO_SECRET_KEY: "ci-test-secret-key"
+  DJANGO_DEBUG: "True"
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.12"
+    displayName: "Use Python 3.12"
+
+  - script: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+    displayName: "Install dependencies"
+
+  - script: |
+      python manage.py check
+    displayName: "Django system check"
+
+  - script: |
+      python manage.py makemigrations --check --dry-run
+    displayName: "Verify no missing migrations"
+
+  - script: |
+      python manage.py test
+    displayName: "Run tests"

@@ -1,107 +1,20 @@
+from django.contrib.auth.views import LogoutView
 from django.urls import path
 
 from . import views
 
+app_name = "events"
+
 urlpatterns = [
-    path('', views.event_list, name='event_list'),
-    path(
-        'my-tickets/',
-        views.my_tickets,
-        name='my_tickets',
-    ),
-    path(
-        'organizer/',
-        views.organizer_event_list,
-        name='organizer_event_list',
-    ),
-    path(
-        'organizer/create/',
-        views.event_create,
-        name='event_create',
-    ),
-    path(
-        'organizer/<int:pk>/edit/',
-        views.event_edit,
-        name='event_edit',
-    ),
-    path(
-        'organizer/<int:pk>/delete/',
-        views.event_delete,
-        name='event_delete',
-    ),
-    path(
-        'categories/',
-        views.category_list,
-        name='category_list',
-    ),
-    path(
-        'categories/create/',
-        views.category_create,
-        name='category_create',
-    ),
-    path(
-        'mine/',
-        views.my_events,
-        name='my_events',
-    ),
-    path(
-        'create/',
-        views.create_event,
-        name='create_event',
-    ),
-    path(
-        '<int:pk>/tickets/',
-        views.book_ticket,
-        name='book_ticket',
-    ),
-    path(
-        '<int:pk>/',
-        views.event_detail,
-        name='event_detail',
-    ),
-    path(
-        '<int:pk>/book/',
-        views.book_event,
-        name='book_event',
-    ),
-    path(
-        '<int:pk>/edit/',
-        views.edit_event,
-        name='edit_event',
-    ),
-    path(
-        '<int:pk>/delete/',
-        views.delete_event,
-        name='delete_event',
-    ),
-    path(
-        'categories/<int:pk>/edit/',
-        views.category_update,
-        name='category_update',
-    ),
-    path(
-        'categories/<int:pk>/delete/',
-        views.category_delete,
-        name='category_delete',
-    ),
-    path(
-        'tickets/<int:pk>/edit/',
-        views.ticket_edit,
-        name='ticket_edit',
-    ),
-    path(
-        'tickets/<int:pk>/delete/',
-        views.ticket_delete,
-        name='ticket_delete',
-    ),
-    path(
-        'bookings/<int:pk>/edit/',
-        views.booking_edit,
-        name='booking_edit',
-    ),
-    path(
-        'bookings/<int:pk>/delete/',
-        views.booking_delete,
-        name='booking_delete',
-    ),
+    path("login/", views.OrganizerLoginView.as_view(), name="login"),
+    path("logout/", LogoutView.as_view(next_page="events:login"), name="logout"),
+    path("", views.HomeView.as_view(), name="home"),              # CHANGED
+    path("my-events/", views.EventListView.as_view(), name="event_list"),  # CHANGED
+    path("browse/", views.PublicEventBrowseView.as_view(), name="browse"),
+    path("events/<int:pk>/book/", views.BookEventView.as_view(), name="book_event"),   # ADD
+    path("my-bookings/", views.MyBookingsView.as_view(), name="my_bookings"),           # ADD
+    path("dashboard/", views.DashboardView.as_view(), name="dashboard"),
+    path("events/create/", views.EventCreateView.as_view(), name="event_create"),
+    path("events/<int:pk>/edit/", views.EventUpdateView.as_view(), name="event_edit"),
+    path("events/<int:pk>/delete/", views.EventDeleteView.as_view(), name="event_delete"),
 ]

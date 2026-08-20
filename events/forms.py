@@ -1,197 +1,74 @@
 from django import forms
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 
-from .models import Category, Event, EventBooking, Ticket
+from .models import Event
 
-
-INPUT_CLASSES = (
-    "mt-1 block w-full rounded-xl border border-[#dbeeff] bg-white px-3 py-2.5 "
-    "text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 "
-    "focus:border-[#2c7be5] focus:outline-none focus:ring-4 focus:ring-[#dbeeff]"
-)
-
-TEXTAREA_CLASSES = INPUT_CLASSES + " min-h-[120px]"
-
-
-class CategoryForm(forms.ModelForm):
-    class Meta:
-        model = Category
-        fields = ['name', 'description']
-
-        widgets = {
-            'name': forms.TextInput(attrs={
-                'class': INPUT_CLASSES,
-                'placeholder': 'Enter category name',
-            }),
-            'description': forms.Textarea(attrs={
-                'class': INPUT_CLASSES,
-                'rows': 3,
-                'placeholder': 'Optional description',
-            }),
-        }
-
-    def clean_name(self):
-        name = self.cleaned_data['name'].strip()
-
-        if not name:
-            raise forms.ValidationError(
-                'Category name cannot be empty.'
-            )
-
-        duplicates = Category.objects.filter(name__iexact=name)
-        if self.instance.pk:
-            duplicates = duplicates.exclude(pk=self.instance.pk)
-
-        if duplicates.exists():
-            raise forms.ValidationError(
-                'A category with this name already exists.'
-            )
-
-        return name
+MAX_UPLOAD_SIZE_MB = 5
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 class EventForm(forms.ModelForm):
-
-    max_tickets = forms.IntegerField(
-        required=False,
-        min_value=1,
-        initial=1,
-        widget=forms.NumberInput(
-            attrs={
-                "class": INPUT_CLASSES,
-                "min": "1",
-            }
-        ),
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Dynamically merge hardcoded + admin-created categories.
-        self.fields['category'].choices = Event.get_all_category_choices()
-
-    date = forms.DateTimeField(
-        widget=forms.DateTimeInput(
-            attrs={
-                "type": "datetime-local",
-                "class": INPUT_CLASSES,
-            },
-            format="%Y-%m-%dT%H:%M",
-        ),
-        input_formats=["%Y-%m-%dT%H:%M"],
-    )
-
     class Meta:
         model = Event
-
         fields = [
             "title",
             "description",
             "location",
             "date",
-            "price",
+            "ticket_price",
             "max_tickets",
-            "category",
-            "custom_category",
-            "image",
+            "poster_image",
         ]
-
         widgets = {
-            "title": forms.TextInput(
-                attrs={"class": INPUT_CLASSES}
+            "date": forms.DateTimeInput(
+                attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"
             ),
-            "description": forms.Textarea(
-                attrs={
-                    "class": TEXTAREA_CLASSES,
-                    "rows": 5,
-                }
-            ),
-            "location": forms.TextInput(
-                attrs={"class": INPUT_CLASSES}
-            ),
-            "price": forms.NumberInput(
-                attrs={
-                    "class": INPUT_CLASSES,
-                    "step": "0.01",
-                    "min": "0",
-                }
-            ),
-            "category": forms.Select(
-                attrs={
-                    "class": INPUT_CLASSES,
-                }
-            ),
-            "custom_category": forms.TextInput(
-                attrs={
-                    "class": INPUT_CLASSES,
-                    "placeholder": "Enter your category",
-                }
-            ),
-            "image": forms.ClearableFileInput(
-                attrs={
-                    "class": INPUT_CLASSES,
-                    "accept": "image/jpeg,image/png,image/webp",
-                }
-            ),
+            "description": forms.Textarea(attrs={"rows": 4}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if name != "poster_image":
+                field.required = field.required  # keep model-derived requiredness
+            field.widget.attrs.setdefault("class", "form-control")
+
+    def clean_title(self):
+        title = self.cleaned_data["title"].strip()
+        if not title:
+            raise ValidationError("Title is required.")
+        return title
+
+    def clean_date(self):
+        date = self.cleaned_data["date"]
+        if date < timezone.now():
+            raise ValidationError("Event date cannot be in the past.")
+        return date
+
+    def clean_ticket_price(self):
+        price = self.cleaned_data["ticket_price"]
+        if price < 0:
+            raise ValidationError("Ticket price cannot be negative.")
+        return price
 
     def clean_max_tickets(self):
-        value = self.cleaned_data.get("max_tickets")
-        return value or 1
+        max_tickets = self.cleaned_data["max_tickets"]
+        if max_tickets < 1:
+            raise ValidationError("Maximum tickets must be at least 1.")
+        return max_tickets
 
-    def clean(self):
-        cleaned_data = super().clean()
-        category = cleaned_data.get("category")
-        custom_category = (cleaned_data.get("custom_category") or "").strip()
-
-        if category == "other":
-            if not custom_category:
-                self.add_error(
-                    "custom_category",
-                    "Please enter a category name.",
+    def clean_poster_image(self):
+        image = self.cleaned_data.get("poster_image")
+        # Only validate when a *new* file was actually uploaded in this request.
+        if image and hasattr(image, "content_type"):
+            if image.content_type not in ALLOWED_IMAGE_TYPES:
+                raise ValidationError(
+                    "Unsupported file type. Please upload a JPEG, PNG, or WEBP image."
                 )
-            else:
-                cleaned_data["custom_category"] = custom_category
-        else:
-            cleaned_data["custom_category"] = ""
-
-        return cleaned_data
-
-    def clean_image(self):
-        image = self.cleaned_data.get("image")
-
-        if (
-            image
-            and hasattr(image, "content_type")
-            and image.content_type
-            not in [
-                "image/jpeg",
-                "image/png",
-                "image/webp",
-            ]
-        ):
-            raise forms.ValidationError(
-                "Only JPG, PNG, and WebP images are allowed."
-            )
-
+            if image.size > MAX_UPLOAD_SIZE_MB * 1024 * 1024:
+                raise ValidationError(
+                    f"Image file is too large (max {MAX_UPLOAD_SIZE_MB}MB)."
+                )
         return image
-
-
-class TicketForm(forms.ModelForm):
-    class Meta:
-        model = Ticket
-        fields = ['event', 'attendee', 'quantity']
-        widgets = {
-            'event': forms.Select(attrs={'class': INPUT_CLASSES}),
-            'attendee': forms.Select(attrs={'class': INPUT_CLASSES}),
-            'quantity': forms.NumberInput(attrs={'class': INPUT_CLASSES, 'min': 1}),
-        }
-
-
-class BookingForm(forms.ModelForm):
-    class Meta:
-        model = EventBooking
-        fields = ['user', 'event']
-        widgets = {
-            'user': forms.Select(attrs={'class': INPUT_CLASSES}),
-            'event': forms.Select(attrs={'class': INPUT_CLASSES}),
-        }
-

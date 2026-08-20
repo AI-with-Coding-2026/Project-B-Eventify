@@ -1,60 +1,138 @@
-# Eventify
+# Eventify — Organizer Portal (Sprint 1–3)
 
-Eventify is a Django-based event management platform that allows users to interact with events according to their roles.
+Django + MySQL backend for organizers to log in, manage their own events
+(including poster images), and track ticket sales.
 
-The project is being developed as a community project, with different contributors working on separate Git branches.
+## What's implemented
 
-## Current Project
+**Sprint 1 — auth & event creation**
+- Organizer login (`events:login`) using Django's built-in auth system.
+- Every organizer-area view requires login (`LoginRequiredMixin`).
+- `EventForm` (ModelForm) validates title, date (no past dates), ticket
+  price (>= 0), max tickets (>= 1).
+- Events belong to an organizer (`Event.organizer` FK to `User`).
 
-The current development work includes the user account and authentication system.
+**Sprint 2 — image upload, edit/delete, ownership**
+- `poster_image` upload validated for content type (jpeg/png/webp) and
+  size (5MB max) in `EventForm.clean_poster_image`.
+- Editing an event lets you replace the poster; the old file is deleted
+  from storage when replaced.
+- Deleting an event removes the DB row **and** the poster file
+  (`Event.delete()` override).
+- `EventListView` only ever queries `Event.objects.filter(organizer=request.user)`.
+- `OwnerRequiredMixin` (used by edit/delete) checks `event.organizer_id
+  == request.user.id` and redirects with an error message if another
+  organizer tries to touch it — it does not filter the queryset itself,
+  so a mismatch produces a friendly redirect rather than a raw 404.
 
-The system supports three main user roles:
+**Sprint 3 — dashboard**
+- `bookings` app holds a minimal `Booking` model (event, customer,
+  quantity) so sales can be aggregated.
+- `Event.tickets_sold`, `tickets_remaining`, `revenue` are computed
+  properties; `DashboardView` aggregates per-event and totals across
+  all of the organizer's events.
 
-- **Admin** — manages the platform.
+## Project layout
 
-- **Organizer** — creates and manages events.
+```
+eventify/
+├── eventify/          # project settings, urls, wsgi/asgi
+├── events/            # Event model, form, views, templates
+├── bookings/          # Booking model (feeds the dashboard)
+├── templates/base.html
+├── requirements.txt
+├── .env.example
+└── azure-pipelines.yml
+```
 
-- **Attendee** — participates in events.
+## Local setup
 
-## Technologies Used
+1. **Clone & environment**
+   ```bash
+   git clone <your-repo-url> eventify
+   cd eventify
+   python -m venv .venv
+   source .venv/bin/activate      # Windows: .venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
 
-- Python
+2. **MySQL** — create the database and user:
+   ```sql
+   CREATE DATABASE eventify_db CHARACTER SET utf8mb4;
+   CREATE USER 'eventify_user'@'localhost' IDENTIFIED BY 'change-me';
+   GRANT ALL PRIVILEGES ON eventify_db.* TO 'eventify_user'@'localhost';
+   ```
+   `mysqlclient` needs MySQL's dev headers installed on the OS first
+   (`libmysqlclient-dev` on Debian/Ubuntu, or use the MySQL installer's
+   dev package on Windows/macOS).
 
-- Django 6.0.7
+3. **Environment variables**
+   ```bash
+   cp .env.example .env
+   # edit .env with your DB credentials and a real SECRET_KEY
+   ```
+   For a quick spin without MySQL installed yet, set
+   `DJANGO_USE_SQLITE=True` in `.env`.
 
-- Django REST Framework
+4. **Migrate & create your first organizer**
+   ```bash
+   python manage.py migrate
+   python manage.py createsuperuser
+   ```
 
-- Pillow
+5. **Run**
+   ```bash
+   python manage.py runserver
+   ```
+   Log in at `/login/`, then use the "+ New Event" button.
 
-- PyMySQL
+## Tests
 
-- Python Decouple
+```bash
+python manage.py test
+```
+Covers: anonymous users get redirected to login; an organizer only sees
+their own events; a second organizer cannot open another organizer's
+edit/delete URLs; dashboard totals (sold/remaining/revenue) are computed
+correctly from bookings.
 
-- SQLite/MySQL depending on the development configuration
+## Git / GitHub
 
-## Project Structure
+```bash
+git init
+git add .
+git commit -m "Sprint 1-3: auth, event CRUD with images, sales dashboard"
+git branch -M main
+git remote add origin <your-github-repo-url>
+git push -u origin main
+```
+Suggested branching for the sprints as you build them out further:
+`feature/sprint1-auth-events`, `feature/sprint2-images-ownership`,
+`feature/sprint3-dashboard`, merged into `main` via PRs.
 
-```text
+## Azure DevOps
 
-Project-B-Eventify/
+`azure-pipelines.yml` is included at the repo root. In Azure DevOps:
+1. Create a new Pipeline → "Azure Repos Git" or "GitHub" → point it at
+   this repo → it will detect `azure-pipelines.yml` automatically.
+2. The pipeline installs dependencies, runs `manage.py check`, checks
+   for missing migrations, and runs the test suite — using SQLite in
+   CI so no MySQL server is required in the build agent.
+3. For deployment, add a second stage (e.g. deploy to an Azure App
+   Service) once you're ready — the current file only covers CI.
 
-│
+## Cursor
 
-├── authentication/       # Authentication and user account functionality
+Since this is a plain Django project (no special build step), Cursor
+should work out of the box — open the `eventify/` folder as the
+workspace root so its Python/Django tooling can find `manage.py` and
+`requirements.txt`.
 
-├── Eventify/             # Main Django application/project configuration
+## Notes / things to decide next
 
-├── eventPlatform/        # Project configuration
-
-├── templates/            # HTML templates
-
-├── [manage.py](http://manage.py)             # Django management script
-
-├── requirements.txt      # Python dependencies
-
-├── env.example           # Example environment variables
-
-├── .gitignore            # Files excluded from Git
-
-└── [README.md](http://README.md)             # Project documentation
-
+- `Booking` creation (the attendee-facing purchase flow) isn't part of
+  these sprints — the dashboard just reads whatever rows exist in
+  `bookings`, so you can seed them via `/admin/` for now.
+- Consider adding a `django-storages` backend (e.g. Azure Blob Storage)
+  for `MEDIA_ROOT` before deploying, so poster images survive restarts
+  on most PaaS hosts.

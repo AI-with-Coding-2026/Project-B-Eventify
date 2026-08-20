@@ -1,27 +1,27 @@
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django import forms
+from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import UserCreationForm
 
-from .models import CustomUser
+User = get_user_model()
 
-INPUT_CLASSES = (
-    'w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 '
-    'placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none '
-    'focus:ring-2 focus:ring-indigo-500/20 transition-colors'
+ROLE_CHOICES = (
+    ("guest", "Guest — browse events and book tickets"),
+    ("organizer", "Organizer — create and manage events"),
 )
 
 
-class CustomUserCreationForm(UserCreationForm):
+class RegisterForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+    role = forms.ChoiceField(
+        choices=ROLE_CHOICES, widget=forms.RadioSelect, initial="guest"
+    )
+
     class Meta:
-        model = CustomUser
-        fields = ('username', 'email', 'first_name', 'last_name', 'role')
+        model = User
+        fields = ["username", "email", "password1", "password2", "role"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.update({'class': INPUT_CLASSES})
-
-
-class StyledAuthenticationForm(AuthenticationForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.update({'class': INPUT_CLASSES})
+        for name, field in self.fields.items():
+            if name != "role":
+                field.widget.attrs.setdefault("class", "form-control")

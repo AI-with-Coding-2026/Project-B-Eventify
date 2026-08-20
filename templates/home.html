@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Eventify — Find and Manage Events{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+  <h1 class="display-5 fw-bold mb-3">Welcome to Eventify</h1>
+  <p class="lead text-muted mb-4">Organizers create and manage events. Attendees browse events and ticket prices.</p>
+  <div class="d-flex justify-content-center gap-3">
+    <a href="{% url 'events:login' %}" class="btn btn-primary btn-lg">Log in</a>
+    <a href="{% url 'accounts:register' %}" class="btn btn-outline-primary btn-lg">Sign up</a>
+  </div>
+</div>
+{% endblock %}

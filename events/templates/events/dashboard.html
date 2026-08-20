@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Eventify{% endblock %}
+{% block content %}
+<div class="p-4 mb-4 rounded-3" style="background:linear-gradient(135deg,#D97B4F,#B85C36);color:white;">
+  <div class="d-flex justify-content-between align-items-center flex-wrap">
+    <div>
+      <h2 class="mb-1">Welcome back, {{ user.username }}!</h2>
+      <p class="mb-0 opacity-75">Here's how your events are performing in ticket sales and overall revenue.</p>
+    </div>
+    <a href="{% url 'events:event_create' %}" class="btn btn-light mt-2 mt-md-0">+ Create New Event</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="text-muted small text-uppercase">Total Events</div>
+        <div class="fs-2 fw-bold">{{ total_events }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="text-muted small text-uppercase">Total Tickets Sold</div>
+        <div class="fs-2 fw-bold">{{ total_sold }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="text-muted small text-uppercase">Total Revenue Generated</div>
+        <div class="fs-2 fw-bold text-success">${{ total_revenue }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-5 mx-auto">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="card-title">Ticket Capacity Allocation</h6>
+        <p class="text-muted small">Sold vs. remaining across all events.</p>
+        <canvas id="capacityChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6 class="card-title">Event Sales &amp; Performance</h6>
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th>Event</th>
+          <th>Date</th>
+          <th>Sold</th>
+          <th>Remaining</th>
+          <th>Revenue</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>{{ row.event.title }}</td>
+          <td>{{ row.event.date }}</td>
+          <td>{{ row.sold }} / {{ row.event.max_tickets }}</td>
+          <td>{{ row.remaining }}</td>
+          <td>${{ row.revenue }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-muted">No events yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  const totalSold = {{ total_sold }};
+  const totalRemaining = {{ total_remaining }};
+
+  const centerTextPlugin = {
+    id: 'centerText',
+    afterDraw(chart) {
+      if (chart.canvas.id !== 'capacityChart') return;
+      const { ctx, chartArea: { left, right, top, bottom } } = chart;
+      const total = totalSold + totalRemaining;
+      const pct = total > 0 ? Math.round((totalSold / total) * 100) : 0;
+      ctx.save();
+      ctx.font = 'bold 28px sans-serif';
+      ctx.fillStyle = '#4A3F35';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pct + '%', (left + right) / 2, (top + bottom) / 2 - 8);
+      ctx.font = '13px sans-serif';
+      ctx.fillStyle = '#8A7F72';
+      ctx.fillText('Sold', (left + right) / 2, (top + bottom) / 2 + 16);
+      ctx.restore();
+    },
+  };
+
+  new Chart(document.getElementById('capacityChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Sold', 'Remaining'],
+      datasets: [{
+        data: [totalSold, totalRemaining],
+        backgroundColor: ['#D97B4F', '#F3E4D0'],
+      }],
+    },
+    options: {
+      responsive: true,
+      cutout: '70%',
+    },
+    plugins: [centerTextPlugin],
+  });
+</script>
+{% endblock %}
