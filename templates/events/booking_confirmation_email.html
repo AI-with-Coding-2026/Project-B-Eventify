@@ -35,9 +35,8 @@
                                         <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#4f46e5;text-transform:uppercase;letter-spacing:0.6px;">Booking details</p>
                                         <p style="margin:0 0 10px;font-size:15px;color:#111827;"><strong>Event:</strong> {{ ticket.event.title }}</p>
                                         <p style="margin:0 0 10px;font-size:15px;color:#111827;"><strong>Date:</strong> {{ ticket.booked_at|date:"F d, Y, h:i A" }}</p>
-                                        <p style="margin:0 0 10px;font-size:15px;color:#111827;"><strong>Price per ticket:</strong> ${{ unit_price|floatformat:2 }}</p>
                                         <p style="margin:0 0 10px;font-size:15px;color:#111827;"><strong>Tickets:</strong> {{ ticket.quantity }}</p>
-                                        <p style="margin:0;font-size:16px;color:#111827;"><strong>Full total:</strong> ${{ total_price|floatformat:2 }}</p>
+                                        <p style="margin:0;font-size:15px;color:#111827;"><strong>Total:</strong> ${{ total_price|floatformat:2 }}</p>
                                     </td>
                                 </tr>
                             </table>

@@ -1,5 +1,3 @@
-import base64
-import mimetypes
 import os
 from decimal import Decimal
 from pathlib import Path
@@ -9,6 +7,7 @@ from sib_api_v3_sdk.rest import ApiException
 
 from django.conf import settings
 from django.template.loader import render_to_string
+from django.templatetags.static import static
 from django.urls import reverse
 
 BOOKING_CONFIRMATION_TEXT = 'events/booking_confirmation_email.txt'
@@ -16,38 +15,32 @@ BOOKING_CONFIRMATION_HTML = 'events/booking_confirmation_email.html'
 LOGO_PATH = Path(settings.BASE_DIR) / 'static' / 'images' / 'eventify_no_background.png'
 
 
-def _get_logo_base64():
-    """Read the local logo and convert it to Base64 for the Brevo API."""
-    try:
-        if LOGO_PATH.exists():
-            with LOGO_PATH.open('rb') as logo_file:
-                encoded = base64.b64encode(logo_file.read()).decode('utf-8')
-                return f"data:image/png;base64,{encoded}"
-    except OSError:
-        return ""
+def _absolute_url(path):
+    if not path:
+        return ''
+    if path.startswith('http://') or path.startswith('https://'):
+        return path
+    return f"{settings.SITE_URL}{path}"
+
+
+def _get_logo_src():
+    if LOGO_PATH.exists():
+        return _absolute_url(static('images/eventify_no_background.png'))
     return ""
 
 
-def _get_event_image_data_uri(event):
-    """Embed the event picture so Gmail can show it in the confirmation email."""
+def _get_event_image_src(event):
+    """Public URL of the event picture so Gmail can display it."""
     image_field = getattr(event, 'image', None)
     if not image_field:
         return ''
 
     try:
-        with image_field.open('rb') as image_file:
-            content = image_file.read()
-    except (OSError, ValueError, FileNotFoundError):
+        url = image_field.url
+    except ValueError:
         return ''
 
-    if not content:
-        return ''
-
-    filename = Path(getattr(image_field, 'name', 'event.jpg')).name
-    content_type, _ = mimetypes.guess_type(filename)
-    mime = content_type if content_type and content_type.startswith('image/') else 'image/jpeg'
-    encoded = base64.b64encode(content).decode('utf-8')
-    return f'data:{mime};base64,{encoded}'
+    return _absolute_url(url)
 
 
 def send_booking_confirmation_email(ticket):
@@ -72,13 +65,13 @@ def send_booking_confirmation_email(ticket):
     unit_price = Decimal(ticket.event.price)
     total_price = unit_price * ticket.quantity
     event_url = f"{settings.SITE_URL}{reverse('event_detail', args=[ticket.event.pk])}"
-    event_image_src = _get_event_image_data_uri(ticket.event)
+    event_image_src = _get_event_image_src(ticket.event)
     context = {
         'ticket': ticket,
         'unit_price': unit_price,
         'total_price': total_price,
         'event_url': event_url,
-        'logo_src': _get_logo_base64(),
+        'logo_src': _get_logo_src(),
         'event_image_src': event_image_src,
         'has_event_image': bool(event_image_src),
     }

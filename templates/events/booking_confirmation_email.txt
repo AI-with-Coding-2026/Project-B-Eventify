@@ -8,9 +8,8 @@ Booking Details
 
 Event Name: {{ ticket.event.title }}
 Booking Date: {{ ticket.booked_at|date:"F d, Y, h:i A" }}
-Price per ticket: {{ unit_price|floatformat:2 }}
 Ticket Quantity: {{ ticket.quantity }}
-Full total: {{ total_price|floatformat:2 }}
+Total Price: {{ total_price|floatformat:2 }}
 
 See my event: {{ event_url }}
 

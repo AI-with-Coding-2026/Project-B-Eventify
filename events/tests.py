@@ -906,16 +906,15 @@ class BookingConfirmationEmailTests(TestCase):
         )
 
         self.assertIn('Email Concert', text_body)
-        self.assertIn('Price per ticket: 25.00', text_body)
         self.assertIn('Ticket Quantity: 2', text_body)
-        self.assertIn('Full total: 50.00', text_body)
+        self.assertIn('Total Price: 50.00', text_body)
         self.assertIn('$50.00', html_body)
         self.assertNotIn('cid:event-image', html_body)
 
     def test_confirmation_includes_event_image_and_full_total_for_one_ticket(self):
         from django.template.loader import render_to_string
 
-        from .emails import _get_event_image_data_uri
+        from .emails import _get_event_image_src
 
         self.event.image = SimpleUploadedFile(
             'concert.png',
@@ -933,7 +932,7 @@ class BookingConfirmationEmailTests(TestCase):
             attendee=self.attendee,
             quantity=1,
         )
-        event_image_src = _get_event_image_data_uri(self.event)
+        event_image_src = _get_event_image_src(self.event)
         context = {
             'ticket': single_ticket,
             'unit_price': Decimal('25.00'),
@@ -952,9 +951,10 @@ class BookingConfirmationEmailTests(TestCase):
             context,
         )
 
-        self.assertTrue(event_image_src.startswith('data:image/png;base64,'))
-        self.assertIn('Price per ticket: 25.00', text_body)
-        self.assertIn('Full total: 25.00', text_body)
+        self.assertTrue(event_image_src)
+        self.assertIn('/media/', event_image_src)
+        self.assertIn('Ticket Quantity: 1', text_body)
+        self.assertIn('Total Price: 25.00', text_body)
         self.assertIn(event_image_src, html_body)
 
     def test_requires_attendee_email(self):
