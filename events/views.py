@@ -177,7 +177,6 @@ def event_detail(request, pk):
             event=event,
         ).exists()
 
-    back_url, back_label = _resolve_back_navigation(request)
 
     is_past_event = event.date < timezone.now()
 
@@ -193,8 +192,6 @@ def event_detail(request, pk):
         ),
         'user_has_booked': user_has_booked,
         'is_past_event': event.is_expired,
-        'back_url': back_url,
-        'back_label': back_label,
     }
     return render(request, 'events/event_detail.html', context)
 
