@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from authentication.decorators import (
@@ -178,6 +179,8 @@ def event_detail(request, pk):
 
     back_url, back_label = _resolve_back_navigation(request)
 
+    is_past_event = event.date < timezone.now()
+
     context = {
         'event': event,
         'can_manage': user.is_authenticated and _user_can_manage_event(user, event),
@@ -189,6 +192,7 @@ def event_detail(request, pk):
             and not event.is_expired
         ),
         'user_has_booked': user_has_booked,
+        'is_past_event': event.is_expired,
         'back_url': back_url,
         'back_label': back_label,
     }

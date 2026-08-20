@@ -37,10 +37,10 @@
         <div class="p-8">
             <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
                 <div>
-                    <span class="inline-block text-xs font-semibold uppercase tracking-wide px-2 py-1 rounded bg-indigo-50 text-indigo-700 mb-3">
-                        {{ event.category_label }}
-                    </span>
-                    <div class="mb-2">
+                    <div class="flex flex-wrap items-center gap-2 mb-3">
+                        <span class="inline-block text-xs font-semibold uppercase tracking-wide px-2 py-1 rounded bg-indigo-50 text-indigo-700">
+                            {{ event.category_label }}
+                        </span>
                         <span class="inline-flex items-center rounded-full bg-[#edf8ff] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#1d6fd6]">
                             {{ event.serial_number }}
                         </span>
@@ -106,9 +106,9 @@
                     ✓ View my bookings
                 </a>
                 {% elif event.is_expired %}
-                <button disabled class="inline-flex items-center justify-center rounded-xl bg-gray-200 px-6 py-2.5 text-sm font-semibold text-gray-500 cursor-not-allowed border border-gray-300 shadow-none">
-                    Booking Not Available
-                </button>
+                <span class="inline-flex items-center justify-center rounded-xl bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-600">
+                    Event done
+                </span>
                 {% elif event.is_sold_out and user.is_authenticated and user.is_attendee %}
                 <span class="inline-flex items-center rounded-xl bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-500">
                     Sold out
@@ -145,11 +145,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (timerBanner) timerBanner.classList.add('hidden');
                 if (doneBanner) doneBanner.classList.remove('hidden');
                 if (bookBtn && bookBtn.parentNode) {
-                    var greyBtn = document.createElement('button');
-                    greyBtn.disabled = true;
-                    greyBtn.className = 'inline-flex items-center justify-center rounded-xl bg-gray-200 px-6 py-2.5 text-sm font-semibold text-gray-500 cursor-not-allowed border border-gray-300 shadow-none';
-                    greyBtn.textContent = 'Booking Not Available';
-                    bookBtn.parentNode.replaceChild(greyBtn, bookBtn);
+                    var doneSpan = document.createElement('span');
+                    doneSpan.className = 'inline-flex items-center justify-center rounded-xl bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-600';
+                    doneSpan.textContent = 'Event done';
+                    bookBtn.parentNode.replaceChild(doneSpan, bookBtn);
                 }
             }
         }

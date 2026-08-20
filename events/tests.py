@@ -452,7 +452,7 @@ class AttendeeTicketBookingTests(TestCase):
         response = self.client.get(reverse('event_detail', kwargs={'pk': expired_event.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Event Done')
-        self.assertContains(response, 'Booking Not Available')
+        self.assertContains(response, 'Event done')
     def test_organizer_cannot_book_ticket(self):
         self.client.force_login(self.organizer)
 
