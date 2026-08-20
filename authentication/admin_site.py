@@ -1,4 +1,5 @@
 from django.contrib.admin import AdminSite
+from django.shortcuts import redirect
 
 
 class EventifyAdminSite(AdminSite):
@@ -14,6 +15,19 @@ class EventifyAdminSite(AdminSite):
             and request.user.is_authenticated
             and request.user.is_admin
         )
+
+    def admin_view(self, view, cacheable=False):
+        inner = super().admin_view(view, cacheable=cacheable)
+
+        def wrapper(request, *args, **kwargs):
+            if request.user.is_authenticated and not self.has_permission(request):
+                return redirect('unauthorized')
+            return inner(request, *args, **kwargs)
+
+        return wrapper
+
+    def index(self, request, extra_context=None):
+        return redirect('admin_dashboard')
 
 
 eventify_admin_site = EventifyAdminSite(name='eventify_admin')
