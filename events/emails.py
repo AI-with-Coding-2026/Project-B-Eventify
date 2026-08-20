@@ -51,11 +51,15 @@ def send_booking_confirmation_email(ticket):
     html_body = render_to_string(BOOKING_CONFIRMATION_HTML, context)
     sender_address = settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL
 
+    import uuid
+    msg_id = f"<{uuid.uuid4()}@eventify.local>"
+
     message = EmailMultiAlternatives(
         subject=subject,
         body=text_body,
         from_email=formataddr(('Eventify', sender_address)),
         to=[attendee_email],
+        headers={'Message-ID': msg_id},
     )
     message.attach_alternative(html_body, 'text/html')
     _attach_eventify_logo(message)
