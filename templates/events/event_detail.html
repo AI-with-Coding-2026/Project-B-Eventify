@@ -27,7 +27,7 @@
 
     <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
         {% if event.image %}
-        <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full max-h-[500px] object-contain bg-gray-50">
+        <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-auto max-h-[700px] object-contain bg-gray-50">
         {% else %}
         <div class="w-full h-64 bg-indigo-50 flex items-center justify-center text-indigo-400">
             No image available
