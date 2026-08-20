@@ -30,17 +30,16 @@ def _get_logo_src():
 
 
 def _get_event_image_src(event):
-    """Public URL of the event picture so Gmail can display it."""
+    """Build the event picture URL the same way as the logo."""
     image_field = getattr(event, 'image', None)
-    if not image_field:
+    image_name = getattr(image_field, 'name', '') if image_field else ''
+    if not image_name:
         return ''
 
-    try:
-        url = image_field.url
-    except ValueError:
-        return ''
-
-    return _absolute_url(url)
+    media_path = f"{settings.MEDIA_URL}{image_name.lstrip('/')}"
+    if not media_path.startswith('/'):
+        media_path = f'/{media_path}'
+    return _absolute_url(media_path)
 
 
 def send_booking_confirmation_email(ticket):
