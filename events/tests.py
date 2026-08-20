@@ -957,6 +957,30 @@ class BookingConfirmationEmailTests(TestCase):
         self.assertIn('Total Price: 25.00', text_body)
         self.assertIn(event_image_src, html_body)
 
+    def test_event_photo_uses_cloudinary_event_image(self):
+        from .emails import _event_photo_url
+
+        event_url = (
+            'https://res.cloudinary.com/e9j2gti4/image/upload/v1/media/'
+            'event_images/SMB_Enumeration_-_Network_Diagram_twjliv'
+        )
+        email_url = _event_photo_url(event_url)
+
+        self.assertIn('res.cloudinary.com', email_url)
+        self.assertTrue(email_url.endswith('.jpg'))
+        self.assertNotIn('/static/images/', email_url)
+
+    def test_logo_url_points_at_the_real_static_logo(self):
+        from .emails import _absolute_url, _get_logo_src
+
+        logo_src = _get_logo_src()
+        joined = _absolute_url('static/images/eventify_no_background.png')
+
+        self.assertTrue(logo_src.startswith('https://'))
+        self.assertIn('/static/images/eventify_no_background.png', logo_src)
+        self.assertNotIn('comstatic/', joined)
+        self.assertTrue(joined.endswith('/static/images/eventify_no_background.png'))
+
     def test_requires_attendee_email(self):
         self.attendee.email = ''
         self.attendee.save()

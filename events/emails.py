@@ -5,9 +5,10 @@ from pathlib import Path
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 
+from urllib.parse import urlparse, urlunparse
+
 from django.conf import settings
 from django.template.loader import render_to_string
-from django.templatetags.static import static
 from django.urls import reverse
 
 BOOKING_CONFIRMATION_TEXT = 'events/booking_confirmation_email.txt'
@@ -20,26 +21,41 @@ def _absolute_url(path):
         return ''
     if path.startswith('http://') or path.startswith('https://'):
         return path
-    return f"{settings.SITE_URL}{path}"
+    return f"{settings.SITE_URL.rstrip('/')}/{path.lstrip('/')}"
 
 
 def _get_logo_src():
     if LOGO_PATH.exists():
-        return _absolute_url(static('images/eventify_no_background.png'))
+        return _absolute_url('/static/images/eventify_no_background.png')
     return ""
 
 
+def _event_photo_url(url):
+    """Use the real event photo (Cloudinary), in a size Gmail can load."""
+    if not url or 'res.cloudinary.com' not in url:
+        return url
+    parsed = urlparse(url)
+    if '/image/upload/' not in parsed.path:
+        return url
+    prefix, rest = parsed.path.split('/image/upload/', 1)
+    if Path(rest).suffix.lower() not in {'.jpg', '.jpeg', '.png', '.gif', '.webp'}:
+        rest = f'{rest}.jpg'
+    new_path = f'{prefix}/image/upload/w_800,c_limit,f_jpg,q_auto/{rest}'
+    return urlunparse(parsed._replace(scheme='https', path=new_path))
+
+
 def _get_event_image_src(event):
-    """Build the event picture URL the same way as the logo."""
+    """URL of the event's own photo, as shown on the event page."""
     image_field = getattr(event, 'image', None)
-    image_name = getattr(image_field, 'name', '') if image_field else ''
-    if not image_name:
+    if not image_field:
         return ''
 
-    media_path = f"{settings.MEDIA_URL}{image_name.lstrip('/')}"
-    if not media_path.startswith('/'):
-        media_path = f'/{media_path}'
-    return _absolute_url(media_path)
+    try:
+        url = image_field.url
+    except ValueError:
+        return ''
+
+    return _event_photo_url(_absolute_url(url))
 
 
 def send_booking_confirmation_email(ticket):
