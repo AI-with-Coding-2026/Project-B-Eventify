@@ -1,11 +1,12 @@
+import threading
 from urllib.parse import urlparse
-
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from authentication.decorators import (
@@ -142,7 +143,7 @@ def event_list(request):
         if end_date:
             events = events.filter(date__date__lte=end_date)
 
-    paginator = Paginator(events, 4)
+    paginator = Paginator(events, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -176,7 +177,8 @@ def event_detail(request, pk):
             event=event,
         ).exists()
 
-    back_url, back_label = _resolve_back_navigation(request)
+
+    is_past_event = event.date < timezone.now()
 
     context = {
         'event': event,
@@ -186,10 +188,10 @@ def event_detail(request, pk):
             and user.role == UserRole.ATTENDEE
             and not user_has_booked
             and not event.is_sold_out
+            and not event.is_expired
         ),
         'user_has_booked': user_has_booked,
-        'back_url': back_url,
-        'back_label': back_label,
+        'is_past_event': event.is_expired,
     }
     return render(request, 'events/event_detail.html', context)
 
@@ -205,6 +207,10 @@ def book_ticket(request, pk):
     """Book tickets without allowing a request to exceed event capacity."""
     event = get_object_or_404(Event, pk=pk)
 
+    if event.is_expired:
+        messages.error(request, 'Booking is not available because this event has ended.')
+        return redirect('event_detail', pk=pk)
+
     if request.method == 'POST':
         try:
             quantity = int(request.POST.get('quantity', 1))
@@ -214,8 +220,6 @@ def book_ticket(request, pk):
         if quantity < 1:
             messages.error(request, 'Choose at least one ticket.')
         else:
-            # Locking the event makes the capacity check authoritative even when
-            # two attendees submit a booking at the same time.
             with transaction.atomic():
                 event = Event.objects.select_for_update().get(pk=pk)
                 tickets_sold = Ticket.objects.filter(event=event).aggregate(
@@ -238,18 +242,20 @@ def book_ticket(request, pk):
                         attendee=request.user,
                         quantity=quantity,
                     )
-                    try:
-                        send_booking_confirmation_email(ticket)
-                    except Exception:
-                        messages.warning(
-                            request,
-                            'Ticket booked, but the confirmation email could not be sent.',
-                        )
-                    else:
-                        messages.success(
-                            request,
-                            f'Ticket booked for "{event.title}".',
-                        )
+                    
+                    # --------------------------------------------------
+                    # التعديل هنا: تشغيل الإرسال في الخلفية دون تعليق السيرفر
+                    # --------------------------------------------------
+                    threading.Thread(
+                        target=send_booking_confirmation_email,
+                        args=(ticket,)
+                    ).start()
+
+                    messages.success(
+                        request,
+                        f'Ticket booked for "{event.title}". Confirmation email is on its way.',
+                    )
+
                     return redirect('my_bookings')
 
     return render(

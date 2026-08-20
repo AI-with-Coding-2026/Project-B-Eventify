@@ -154,6 +154,12 @@ class Event(models.Model):
     def is_sold_out(self):
         return self.tickets_remaining <= 0
 
+    @property
+    def is_expired(self):
+        from django.utils import timezone
+        return self.date < timezone.now()
+
+
 
 class Ticket(models.Model):
     """A ticket booked by an attendee for a specific event."""

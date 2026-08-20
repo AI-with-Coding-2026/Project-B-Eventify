@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="{% static 'images/eventify_icon.png' %}">
+    <link rel="icon" type="image/png" href="{% static 'images/eventify_no_background.png' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -44,13 +44,36 @@
             from { opacity: 0; transform: translateX(24px); }
             to { opacity: 1; transform: translateX(0); }
         }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(28px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
         .animate-fade-slide {
-            animation: fadeSlideIn 0.5s ease-out forwards;
             opacity: 0;
+        }
+        .animate-fade-slide.is-visible {
+            animation: fadeSlideIn 0.5s ease-out forwards;
         }
         .animate-fade {
             animation: fadeIn 0.4s ease-out forwards;
             opacity: 0;
+        }
+        .animate-slide-in-right {
+            opacity: 0;
+        }
+        .animate-slide-in-right.is-visible {
+            animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .animate-fade-slide,
+            .animate-fade-slide.is-visible,
+            .animate-fade,
+            .animate-slide-in-right,
+            .animate-slide-in-right.is-visible {
+                animation: none !important;
+                opacity: 1 !important;
+                transform: none !important;
+            }
         }
         .hover-lift {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -115,9 +138,19 @@
             min-height: 160px;
         }
 
+        /* ── Full Image Display Fix ── */
+        .ticket-card-image img,
+        .event-card-styled img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Prevents cropping and keeps full image aspect ratio */
+            object-position: center;
+            background-color: #f8fafc; /* Subtle background fill for uncropped margins */
+        }
+
         .ticket-card-body {
             flex: 1;
-            padding: 16px 20px;
+            padding: 14px 12px;
             display: flex;
             flex-direction: column;
             min-width: 0;
@@ -133,7 +166,7 @@
             position: relative;
             margin: 0;
             border-left: 2px dashed transparent;
-            background-image: linear-gradient(to bottom, #c7d2fe 55%, transparent 45%);
+            background-image: linear-gradient(to bottom, #d1d5db 55%, transparent 45%);
             background-size: 2px 22px;
             background-repeat: repeat-y;
             background-position: center;
@@ -167,7 +200,7 @@
             z-index: 2;
         }
 
-        /* Darker Right-Side Stub */
+        /* Darker Right-Side Stub (Neutral Grey) */
         .ticket-card-stub {
             width: 120px;
             flex-shrink: 0;
@@ -177,9 +210,8 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            background: #f1f5f9;
+            background: #efefef;
             border-radius: 0 15px 15px 0;
-            border-left: 1px solid #e2e8f0;
         }
 
         .ticket-card--wide .ticket-card-stub {
@@ -188,6 +220,17 @@
             background: #f1f5f9;
             border-left: 1px solid #e2e8f0;
         }
+
+        /* ── Full Image Display Fix ── */
+        .ticket-card-image img,
+        .event-card-styled img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Prevents cropping and keeps full image aspect ratio */
+            object-position: center;
+            background-color: #f8fafc; /* Subtle background fill for uncropped margins */
+        }
+
 
         /* ── Ticket Card: Vertical (Grid View - Normal Tickets) ── */
         .ticket-card-vert {
@@ -222,7 +265,7 @@
             height: 2px;
             width: 100%;
             position: relative;
-            background-image: linear-gradient(to right, #c7d2fe 55%, transparent 45%);
+            background-image: linear-gradient(to right, #d1d5db 55%, transparent 45%);
             background-size: 22px 2px;
             background-repeat: repeat-x;
             background-position: center;
@@ -255,12 +298,11 @@
             border-radius: 9px 0 0 9px;
             z-index: 2;
         }
-        /* Darker Bottom Stub */
+        /* Darker Bottom Stub (Neutral Grey) */
         .ticket-card-vert-stub {
-            background: #f1f5f9;
+            background: #efefef;
             padding: 14px 16px;
             border-radius: 0 0 15px 15px;
-            border-top: 1px solid #e2e8f0;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -281,7 +323,7 @@
             .ticket-card-perforation {
                 height: 2px;
                 width: 100%;
-                background-image: linear-gradient(to right, #c7d2fe 55%, transparent 45%);
+                background-image: linear-gradient(to right, #d1d5db 55%, transparent 45%);
                 background-size: 22px 2px;
                 background-repeat: repeat-x;
             }
@@ -311,9 +353,8 @@
                 justify-content: space-between;
                 border-radius: 0 0 15px 15px;
                 border-left: none;
-                border-top: 1px solid #e2e8f0;
                 padding: 12px 16px;
-                background: #f1f5f9;
+                background: #efefef;
             }
         }
 
@@ -412,34 +453,34 @@
         });
 
         {% if messages %}
-            {% for message in messages %}
-                {% if 'booked' in message.message|lower or 'ticket' in message.message|lower %}
-                    if (typeof confetti === 'function') {
-                        confetti({
-                            particleCount: 120,
-                            spread: 90,
-                            origin: { y: 0.6 }
-                        });
-                    }
-                {% endif %}
-            {% endfor %}
+    {% for message in messages %}
+        {% if message.tags == 'success' and 'booked' in message.message|lower %}
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 90,
+                    origin: { y: 0.6 }
+                });
+            }
         {% endif %}
+    {% endfor %}
+{% endif %}
 
         var progressBar = document.getElementById('page-progress');
-if (progressBar) {
-    progressBar.style.width = '30%';
-    setTimeout(function () {
-        progressBar.style.width = '70%';
-    }, 150);
-    window.addEventListener('load', function () {
-        setTimeout(function () {
-            progressBar.style.width = '100%';
+        if (progressBar) {
+            progressBar.style.width = '30%';
             setTimeout(function () {
-                progressBar.style.opacity = '0';
-            }, 300);
-        }, 200);
-    });
-}
+                progressBar.style.width = '70%';
+            }, 150);
+            window.addEventListener('load', function () {
+                setTimeout(function () {
+                    progressBar.style.width = '100%';
+                    setTimeout(function () {
+                        progressBar.style.opacity = '0';
+                    }, 300);
+                }, 200);
+            });
+        }
 
         // Global Split-Flap 3D Flip Clock Controller
         function updateFlipCard(cardEl, newValue) {
@@ -533,11 +574,46 @@ if (progressBar) {
             document.querySelectorAll('.flip-clock-wrapper').forEach(initFlipClock);
         }
 
+        // IntersectionObserver for scroll-triggered slide and fade animations
+        function initScrollAnimations() {
+            var elements = document.querySelectorAll('.animate-slide-in-right:not(.is-visible), .animate-fade-slide:not(.is-visible)');
+            if (!elements.length) return;
+
+            if (!('IntersectionObserver' in window)) {
+                elements.forEach(function (el) {
+                    el.classList.add('is-visible');
+                });
+                return;
+            }
+
+            var observer = new IntersectionObserver(function (entries, obs) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        obs.unobserve(entry.target);
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -20px 0px'
+            });
+
+            elements.forEach(function (el) {
+                observer.observe(el);
+            });
+        }
+
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', setupAllFlipClocks);
+            document.addEventListener('DOMContentLoaded', function () {
+                setupAllFlipClocks();
+                initScrollAnimations();
+            });
         } else {
             setupAllFlipClocks();
+            initScrollAnimations();
         }
+
+        window.addEventListener('pageshow', initScrollAnimations);
     </script>
 </body>
 </html>

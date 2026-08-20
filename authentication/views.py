@@ -265,7 +265,29 @@ def cancel_booking(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk, attendee=request.user)
 
     if request.method == 'POST':
-        ticket.delete()
-        messages.success(request, 'Booking cancelled successfully.')
+        try:
+            cancel_quantity = int(request.POST.get('cancel_quantity', ticket.quantity))
+        except (TypeError, ValueError):
+            cancel_quantity = ticket.quantity
 
-    return redirect('my_bookings')
+        if cancel_quantity < 1 or cancel_quantity > ticket.quantity:
+            messages.error(request, 'Invalid ticket quantity to cancel.')
+            return redirect('cancel_booking', pk=pk)
+
+        if cancel_quantity >= ticket.quantity:
+            ticket.delete()
+            messages.success(request, 'Booking cancelled successfully.')
+        else:
+            ticket.quantity -= cancel_quantity
+            ticket.save()
+            messages.success(
+                request,
+                f'Cancelled {cancel_quantity} ticket(s). {ticket.quantity} remaining.',
+            )
+
+        return redirect('my_bookings')
+
+    return render(request, 'authentication/booking_confirm_cancel.html', {
+        'ticket': ticket,
+        'quantity_range': range(1, ticket.quantity + 1),
+    })

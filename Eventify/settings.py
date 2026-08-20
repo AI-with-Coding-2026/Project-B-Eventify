@@ -8,6 +8,15 @@ from pathlib import Path
 from decouple import config
 import dj_database_url
 
+import socket
+
+# إجبار Python على استخدام IPv4 لمنع خطأ Network is unreachable على Render
+old_getaddrinfo = socket.getaddrinfo
+def new_getaddrinfo(*args, **kwargs):
+    responses = old_getaddrinfo(*args, **kwargs)
+    return [response for response in responses if response[0] == socket.AF_INET]
+socket.getaddrinfo = new_getaddrinfo
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -141,13 +150,14 @@ LOGIN_URL = 'login'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
 if os.environ.get('DATABASE_URL'):
     STORAGES = {
         "default": {
             "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },
     }
 else:
@@ -156,7 +166,7 @@ else:
             "BACKEND": "django.core.files.storage.FileSystemStorage",
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },
     }
 
@@ -171,6 +181,7 @@ CLOUDINARY_STORAGE = {
 }
 
 
+
 # ==========================================
 # Email Configuration (Task 2 - Sprint 2)
 # ==========================================
@@ -180,11 +191,22 @@ EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+
+
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@eventify.com')
+
+# In development (DEBUG=True), redirect all outgoing emails to the console
+# to prevent spamming and allow easy testing in the terminal.
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-DEFAULT_FROM_EMAIL = config(
-    'DEFAULT_FROM_EMAIL',
-    default=EMAIL_HOST_USER or 'Eventify <noreply@eventify.com>',
-)
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+EMAIL_TIMEOUT = 10
 
 # Use Gmail SMTP when credentials are set. Otherwise print emails in the terminal.
 if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
@@ -193,9 +215,10 @@ else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Public site URL used in email buttons (set this to the Render URL in production).
-SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000').rstrip('/')
+SITE_URL = config('SITE_URL', default='https://project-b-eventify.onrender.com/').rstrip('/')
 
 CSRF_TRUSTED_ORIGINS = [origin for origin in [SITE_URL] if origin.startswith('http')]
 render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if render_host:
     CSRF_TRUSTED_ORIGINS.append(f'https://{render_host}')
+

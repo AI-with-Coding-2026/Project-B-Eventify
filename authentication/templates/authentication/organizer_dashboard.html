@@ -46,13 +46,13 @@
 
     <div class="flex flex-col sm:flex-row gap-3">
         <a href="{% url 'my_events' %}"
-           class="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-indigo-200 px-5 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 shadow-sm transition shrink-0">
+           class="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-indigo-200 px-5 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 shadow-sm shadow-sm transition">
             My Events
         </a>
 
         <a href="{% url 'create_event' %}"
-           class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm transition shrink-0">
-            + Create Event
+           class="inline-block bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition hover:text-indigo-600 shadow-sm transition">
+            Create Event
         </a>
     </div>
 </div>
@@ -177,9 +177,9 @@
                                         {{ event.title }}
                                     </a>
                                     <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                                        <span>📅 {{ event.date|date:"M d, Y @ H:i" }}</span>
+                                        <span> {{ event.date|date:"M d, Y @ H:i" }}</span>
                                         {% if event.location %}
-                                        <span>• 📍 {{ event.location }}</span>
+                                        <span> {{ event.location }}</span>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -273,11 +273,9 @@
         {% if upcoming_events %}
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {% for event in upcoming_events %}
-            <a
-                href="{% url 'event_detail' event.pk %}"
-                class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit"
-            >
-
+            <a href="{% url 'event_detail' event.pk %}"
+               class="animate-slide-in-right bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit"
+               style="animation-delay: calc({{ forloop.counter0 }} * 100ms);">
                 {% if event.image %}
                     <img
                         src="{{ event.image.url }}"
