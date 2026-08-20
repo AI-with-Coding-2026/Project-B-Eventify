@@ -23,7 +23,8 @@
 }
 
 .animate-fade-in-up {
-    animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animation-delay-100 { animation-delay: 100ms; }
@@ -203,7 +204,7 @@
                         <td id="eventRemainingCell-{{ event.pk }}" class="py-4 px-6">
                             {% if event.is_sold_out %}
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                                    Sold Out (0 remaining)
+                                    Sold Out
                                 </span>
                             {% elif event.tickets_remaining <= 5 %}
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
@@ -323,7 +324,7 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+(function() {
     // Stat counter animation function
     function animateValue(element, start, end, duration, isCurrency = false) {
         if (start === end) return;
@@ -373,9 +374,16 @@ document.addEventListener('DOMContentLoaded', function() {
     let totalSold = {{ total_tickets_sold }};
     let totalRemaining = {{ total_tickets_remaining }};
 
+    let comboChart, doughnutChart;
+
+    // Wait one frame so the fade-in/layout of the parent cards settles first;
+    // creating the chart mid-layout-shift can trigger an internal Chart.js
+    // "resize" pass, which redraws instantly with no animation.
+    requestAnimationFrame(function() {
+
     // 1. Column-Line Combo Chart
     const comboCtx = document.getElementById('salesComboChart').getContext('2d');
-    const comboChart = new Chart(comboCtx, {
+    comboChart = new Chart(comboCtx, {
         type: 'bar',
         data: {
             labels: labels,
@@ -409,6 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            resizeDelay: 200,
             animation: {
                 duration: 1200,
                 easing: 'easeOutQuart'
@@ -478,7 +487,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 2. Capacity Doughnut Chart
     const doughnutCtx = document.getElementById('capacityDoughnutChart').getContext('2d');
-    const doughnutChart = new Chart(doughnutCtx, {
+    doughnutChart = new Chart(doughnutCtx, {
         type: 'doughnut',
         data: {
             labels: ['Tickets Sold', 'Tickets Remaining'],
@@ -495,6 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            resizeDelay: 200,
             cutout: '70%',
             animation: {
                 animateScale: true,
@@ -515,6 +525,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    }); // end requestAnimationFrame
 
     // --- Live Auto-Updating Background Polling (Every 5 seconds) ---
     const API_URL = "{% url 'organizer_dashboard_stats_api' %}";
@@ -584,7 +596,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if (remainingCellEl) {
                         if (ev.is_sold_out) {
-                            remainingCellEl.innerHTML = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Sold Out (0 remaining)</span>`;
+                            remainingCellEl.innerHTML = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Sold Out</span>`;
                         } else if (ev.tickets_remaining <= 5) {
                             remainingCellEl.innerHTML = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Only ${ev.tickets_remaining} left!</span>`;
                         } else {
@@ -603,6 +615,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(pollLiveStats, 5000);
 
     {% endif %}
-});
+})();
 </script>
 {% endblock %}
