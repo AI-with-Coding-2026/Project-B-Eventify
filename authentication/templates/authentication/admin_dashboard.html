@@ -35,191 +35,199 @@
 
         <!-- Users block -->
         <div id="users" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 class="text-lg font-semibold mb-4 display">Users</h2>
+            <div class="animate-fade-slide">
+                <h2 class="text-lg font-semibold mb-4 display">Users</h2>
 
-            <div class="mb-4">
-                <p class="text-sm font-semibold text-gray-700 mb-2">Organizers</p>
+                <div class="mb-4">
+                    <p class="text-sm font-semibold text-gray-700 mb-2">Organizers</p>
 
-                {% if organizers %}
-                <ul class="divide-y divide-gray-100 max-h-40 overflow-y-auto">
-                    {% for organizer in organizers %}
-                    <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
-                        <span>
-                            <strong>{{ organizer.username }}</strong>
-                            <span class="text-gray-500">
-                                ({{ organizer.email|default:"No email" }})
+                    {% if organizers %}
+                    <ul class="divide-y divide-gray-100 max-h-40 overflow-y-auto">
+                        {% for organizer in organizers %}
+                        <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                            <span>
+                                <strong>{{ organizer.username }}</strong>
+                                <span class="text-gray-500">
+                                    ({{ organizer.email|default:"No email" }})
+                                </span>
                             </span>
-                        </span>
-                        <a
-                            href="{% url 'user_delete' organizer.pk %}"
-                            class="text-xs font-semibold text-red-600 hover:underline shrink-0"
-                        >
-                            Delete
-                        </a>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="text-gray-400 text-sm">No organizers found.</p>
-                {% endif %}
-            </div>
+                            <a
+                                href="{% url 'user_delete' organizer.pk %}"
+                                class="text-xs font-semibold text-red-600 hover:underline shrink-0"
+                            >
+                                Delete
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-gray-400 text-sm">No organizers found.</p>
+                    {% endif %}
+                </div>
 
-            <div>
-                <p class="text-sm font-semibold text-gray-700 mb-2">Attendees</p>
+                <div>
+                    <p class="text-sm font-semibold text-gray-700 mb-2">Attendees</p>
 
-                {% if attendees %}
-                <ul class="divide-y divide-gray-100 max-h-40 overflow-y-auto">
-                    {% for attendee in attendees %}
-                    <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
-                        <span>
-                            <strong>{{ attendee.username }}</strong>
-                            <span class="text-gray-500">
-                                ({{ attendee.email|default:"No email" }})
+                    {% if attendees %}
+                    <ul class="divide-y divide-gray-100 max-h-40 overflow-y-auto">
+                        {% for attendee in attendees %}
+                        <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                            <span>
+                                <strong>{{ attendee.username }}</strong>
+                                <span class="text-gray-500">
+                                    ({{ attendee.email|default:"No email" }})
+                                </span>
                             </span>
-                        </span>
-                        <a
-                            href="{% url 'user_delete' attendee.pk %}"
-                            class="text-xs font-semibold text-red-600 hover:underline shrink-0"
-                        >
-                            Delete
-                        </a>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="text-gray-400 text-sm">No attendees found.</p>
-                {% endif %}
+                            <a
+                                href="{% url 'user_delete' attendee.pk %}"
+                                class="text-xs font-semibold text-red-600 hover:underline shrink-0"
+                            >
+                                Delete
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-gray-400 text-sm">No attendees found.</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
         <!-- Categories block -->
         <div id="categories" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold display">Manage Categories</h2>
+            <div class="animate-fade-slide" style="animation-delay: 80ms;">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold display">Manage Categories</h2>
 
-                <a
-                    href="{% url 'category_create' %}"
-                    class="inline-block bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-indigo-100"
-                >
-                    + Add
-                </a>
-            </div>
+                    <a
+                        href="{% url 'category_create' %}"
+                        class="inline-block bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-indigo-100"
+                    >
+                        + Add
+                    </a>
+                </div>
 
-            {% if categories %}
-            <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
-                {% for category in categories %}
-                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
-                    <span>
-                        <strong>{{ category.name }}</strong>
-                        <span class="text-gray-500">
-                            — {{ category.description|default:"No description" }}
+                {% if categories %}
+                <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                    {% for category in categories %}
+                    <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                        <span>
+                            <strong>{{ category.name }}</strong>
+                            <span class="text-gray-500">
+                                — {{ category.description|default:"No description" }}
+                            </span>
                         </span>
-                    </span>
 
-                    <div class="flex gap-2 shrink-0">
-                        <a
-                            href="{% url 'category_update' category.pk %}"
-                            class="text-xs font-semibold text-indigo-600 hover:underline"
-                        >
-                            Edit
-                        </a>
+                        <div class="flex gap-2 shrink-0">
+                            <a
+                                href="{% url 'category_update' category.pk %}"
+                                class="text-xs font-semibold text-indigo-600 hover:underline"
+                            >
+                                Edit
+                            </a>
 
-                        <a
-                            href="{% url 'category_delete' category.pk %}"
-                            class="text-xs font-semibold text-red-600 hover:underline"
-                        >
-                            Delete
-                        </a>
-                    </div>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="text-gray-400 text-sm">No categories found.</p>
-            {% endif %}
+                            <a
+                                href="{% url 'category_delete' category.pk %}"
+                                class="text-xs font-semibold text-red-600 hover:underline"
+                            >
+                                Delete
+                            </a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-gray-400 text-sm">No categories found.</p>
+                {% endif %}
+            </div>
         </div>
 
         <!-- Tickets block -->
         <div id="tickets" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 class="text-lg font-semibold mb-4 display">Tickets</h2>
+            <div class="animate-fade-slide">
+                <h2 class="text-lg font-semibold mb-4 display">Tickets</h2>
 
-            {% if tickets %}
-            <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
-                {% for ticket in tickets %}
-                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
-                    <span>
-                        <strong>{{ ticket.attendee.username }}</strong>
-                        <span class="text-gray-500">
-                            → {{ ticket.event.title }} ({{ ticket.quantity }})
+                {% if tickets %}
+                <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                    {% for ticket in tickets %}
+                    <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                        <span>
+                            <strong>{{ ticket.attendee.username }}</strong>
+                            <span class="text-gray-500">
+                                → {{ ticket.event.title }} ({{ ticket.quantity }})
+                            </span>
                         </span>
-                    </span>
 
-                    <div class="flex gap-2 shrink-0">
-                        <a
-                            href="{% url 'ticket_edit' ticket.pk %}"
-                            class="text-xs font-semibold text-indigo-600 hover:underline"
-                        >
-                            Edit
-                        </a>
+                        <div class="flex gap-2 shrink-0">
+                            <a
+                                href="{% url 'ticket_edit' ticket.pk %}"
+                                class="text-xs font-semibold text-indigo-600 hover:underline"
+                            >
+                                Edit
+                            </a>
 
-                        <a
-                            href="{% url 'ticket_delete' ticket.pk %}"
-                            class="text-xs font-semibold text-red-600 hover:underline"
-                        >
-                            Delete
-                        </a>
-                    </div>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="text-gray-400 text-sm">No tickets found.</p>
-            {% endif %}
+                            <a
+                                href="{% url 'ticket_delete' ticket.pk %}"
+                                class="text-xs font-semibold text-red-600 hover:underline"
+                            >
+                                Delete
+                            </a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-gray-400 text-sm">No tickets found.</p>
+                {% endif %}
+            </div>
         </div>
 
         <!-- Bookings block -->
         <div id="bookings" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 class="text-lg font-semibold mb-4 display">Bookings</h2>
+            <div class="animate-fade-slide" style="animation-delay: 80ms;">
+                <h2 class="text-lg font-semibold mb-4 display">Bookings</h2>
 
-            {% if bookings %}
-            <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
-                {% for booking in bookings %}
-                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
-                    <span>
-                        <strong>{{ booking.user.username }}</strong>
-                        <span class="text-gray-500">
-                            → {{ booking.event.title }}
+                {% if bookings %}
+                <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                    {% for booking in bookings %}
+                    <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
+                        <span>
+                            <strong>{{ booking.user.username }}</strong>
+                            <span class="text-gray-500">
+                                → {{ booking.event.title }}
+                            </span>
                         </span>
-                    </span>
 
-                    <div class="flex gap-2 shrink-0">
-                        <a
-                            href="{% url 'booking_edit' booking.pk %}"
-                            class="text-xs font-semibold text-indigo-600 hover:underline"
-                        >
-                            Edit
-                        </a>
+                        <div class="flex gap-2 shrink-0">
+                            <a
+                                href="{% url 'booking_edit' booking.pk %}"
+                                class="text-xs font-semibold text-indigo-600 hover:underline"
+                            >
+                                Edit
+                            </a>
 
-                        <a
-                            href="{% url 'booking_delete' booking.pk %}"
-                            class="text-xs font-semibold text-red-600 hover:underline"
-                        >
-                            Delete
-                        </a>
-                    </div>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="text-gray-400 text-sm">No bookings found.</p>
-            {% endif %}
+                            <a
+                                href="{% url 'booking_delete' booking.pk %}"
+                                class="text-xs font-semibold text-red-600 hover:underline"
+                            >
+                                Delete
+                            </a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-gray-400 text-sm">No bookings found.</p>
+                {% endif %}
+            </div>
         </div>
 
     </div>
 
     <!-- Events block - grid view -->
     <div id="events" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <div class="flex items-center justify-between mb-4">
+        <div class="animate-fade-slide flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold display">Events</h2>
 
             <a
@@ -233,7 +241,8 @@
         {% if events %}
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {% for event in events %}
-            <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300">
+            <div class="animate-fade-slide bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300"
+                 style="animation-delay: calc({{ forloop.counter0 }} * 80ms);">
 
                 {% if event.image %}
                     <a href="{% url 'event_detail' event.pk %}">
@@ -306,7 +315,8 @@
             {% for event in upcoming_events %}
             <a
                 href="{% url 'event_detail' event.pk %}"
-                class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit"
+                class="animate-slide-in-right bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit"
+                style="animation-delay: calc({{ forloop.counter0 }} * 100ms);"
             >
 
                 {% if event.image %}

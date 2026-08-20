@@ -389,6 +389,29 @@ class AttendeeTicketBookingTests(TestCase):
         )
         self.assertEqual(ticket.quantity, 2)
 
+    def test_booking_page_shows_event_image_and_full_total(self):
+        self.event.image = SimpleUploadedFile(
+            'show.png',
+            (
+                b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01'
+                b'\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00'
+                b'\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05'
+                b'\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82'
+            ),
+            content_type='image/png',
+        )
+        self.event.save()
+        self.client.force_login(self.attendee)
+
+        response = self.client.get(reverse('book_ticket', kwargs={'pk': self.event.pk}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.event.image.url)
+        self.assertContains(response, 'alt="Bookable Show"')
+        self.assertContains(response, 'Total:')
+        self.assertContains(response, 'id="booking-total"')
+        self.assertContains(response, 'data-unit-price="25.00"')
+
     def test_card_and_detail_use_the_same_ticket_page(self):
         self.client.force_login(self.attendee)
         ticket_url = reverse('book_ticket', kwargs={'pk': self.event.pk})
@@ -893,8 +916,6 @@ class BookingConfirmationEmailTests(TestCase):
             'total_price': Decimal('50.00'),
             'event_url': 'https://example.com/events/1/',
             'logo_src': '',
-            'event_image_src': '',
-            'has_event_image': False,
         }
         text_body = render_to_string(
             'events/booking_confirmation_email.txt',
@@ -911,36 +932,20 @@ class BookingConfirmationEmailTests(TestCase):
         self.assertIn('$50.00', html_body)
         self.assertNotIn('cid:event-image', html_body)
 
-    def test_confirmation_includes_event_image_and_full_total_for_one_ticket(self):
+    def test_confirmation_includes_full_total_for_one_ticket(self):
         from django.template.loader import render_to_string
 
-        from .emails import _get_event_image_src
-
-        self.event.image = SimpleUploadedFile(
-            'concert.png',
-            (
-                b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01'
-                b'\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00'
-                b'\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05'
-                b'\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82'
-            ),
-            content_type='image/png',
-        )
-        self.event.save()
         single_ticket = Ticket.objects.create(
             event=self.event,
             attendee=self.attendee,
             quantity=1,
         )
-        event_image_src = _get_event_image_src(self.event)
         context = {
             'ticket': single_ticket,
             'unit_price': Decimal('25.00'),
             'total_price': Decimal('25.00'),
             'event_url': 'https://example.com/events/1/',
             'logo_src': '',
-            'event_image_src': event_image_src,
-            'has_event_image': True,
         }
         text_body = render_to_string(
             'events/booking_confirmation_email.txt',
@@ -951,24 +956,10 @@ class BookingConfirmationEmailTests(TestCase):
             context,
         )
 
-        self.assertTrue(event_image_src)
-        self.assertIn('/media/', event_image_src)
         self.assertIn('Ticket Quantity: 1', text_body)
         self.assertIn('Total Price: 25.00', text_body)
-        self.assertIn(event_image_src, html_body)
-
-    def test_event_photo_uses_cloudinary_event_image(self):
-        from .emails import _event_photo_url
-
-        event_url = (
-            'https://res.cloudinary.com/e9j2gti4/image/upload/v1/media/'
-            'event_images/SMB_Enumeration_-_Network_Diagram_twjliv'
-        )
-        email_url = _event_photo_url(event_url)
-
-        self.assertIn('res.cloudinary.com', email_url)
-        self.assertTrue(email_url.endswith('.jpg'))
-        self.assertNotIn('/static/images/', email_url)
+        self.assertIn('$25.00', html_body)
+        self.assertNotIn('event_image_src', html_body)
 
     def test_logo_url_points_at_the_real_static_logo(self):
         from .emails import _absolute_url, _get_logo_src
