@@ -1,9 +1,12 @@
-import os
 import base64
+import mimetypes
+import os
 from decimal import Decimal
 from pathlib import Path
+
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
+
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -14,15 +17,37 @@ LOGO_PATH = Path(settings.BASE_DIR) / 'static' / 'images' / 'eventify_no_backgro
 
 
 def _get_logo_base64():
-    """قراءة اللوجو المحلي وتحويله إلى Base64 ليعمل مع Brevo API."""
+    """Read the local logo and convert it to Base64 for the Brevo API."""
     try:
         if LOGO_PATH.exists():
             with LOGO_PATH.open('rb') as logo_file:
                 encoded = base64.b64encode(logo_file.read()).decode('utf-8')
                 return f"data:image/png;base64,{encoded}"
-    except Exception as e:
-        print(f"Failed to load logo Base64: {e}")
+    except OSError:
+        return ""
     return ""
+
+
+def _get_event_image_data_uri(event):
+    """Embed the event picture so Gmail can show it in the confirmation email."""
+    image_field = getattr(event, 'image', None)
+    if not image_field:
+        return ''
+
+    try:
+        with image_field.open('rb') as image_file:
+            content = image_file.read()
+    except (OSError, ValueError, FileNotFoundError):
+        return ''
+
+    if not content:
+        return ''
+
+    filename = Path(getattr(image_field, 'name', 'event.jpg')).name
+    content_type, _ = mimetypes.guess_type(filename)
+    mime = content_type if content_type and content_type.startswith('image/') else 'image/jpeg'
+    encoded = base64.b64encode(content).decode('utf-8')
+    return f'data:{mime};base64,{encoded}'
 
 
 def send_booking_confirmation_email(ticket):
@@ -33,7 +58,6 @@ def send_booking_confirmation_email(ticket):
             'Cannot send booking confirmation without an attendee email.'
         )
 
-    # 1. إعداد حساب Brevo API
     api_key = os.environ.get('BREVO_API_KEY')
     if not api_key:
         print("BREVO_API_KEY is missing. Email skipped.")
@@ -41,16 +65,22 @@ def send_booking_confirmation_email(ticket):
 
     configuration = sib_api_v3_sdk.Configuration()
     configuration.api_key['api-key'] = api_key
-    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+        sib_api_v3_sdk.ApiClient(configuration)
+    )
 
-    # 2. تحضير السياق والقوالب
-    total_price = Decimal(ticket.event.price) * ticket.quantity
+    unit_price = Decimal(ticket.event.price)
+    total_price = unit_price * ticket.quantity
     event_url = f"{settings.SITE_URL}{reverse('event_detail', args=[ticket.event.pk])}"
+    event_image_src = _get_event_image_data_uri(ticket.event)
     context = {
         'ticket': ticket,
+        'unit_price': unit_price,
         'total_price': total_price,
         'event_url': event_url,
-        'logo_src': _get_logo_base64(),  # إضافة اللوجو للسياق
+        'logo_src': _get_logo_base64(),
+        'event_image_src': event_image_src,
+        'has_event_image': bool(event_image_src),
     }
 
     rendered = render_to_string(BOOKING_CONFIRMATION_TEXT, context).strip()
@@ -64,14 +94,11 @@ def send_booking_confirmation_email(ticket):
 
     html_body = render_to_string(BOOKING_CONFIRMATION_HTML, context)
 
-    # 3. إعداد عناصر الرسالة وإرسالها
     sender = {
-        "name": "Eventify", 
-        "email": settings.DEFAULT_FROM_EMAIL  
+        "name": "Eventify",
+        "email": settings.DEFAULT_FROM_EMAIL,
     }
-    
     to = [{"email": attendee_email, "name": ticket.attendee.username}]
-
     send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
         to=to,
         sender=sender,
