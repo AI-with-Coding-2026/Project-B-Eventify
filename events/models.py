@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Sum
 from django.utils.text import slugify
 
 
@@ -87,8 +88,7 @@ class Event(models.Model):
     )
 
     category = models.CharField(
-        max_length=20,
-        choices=CATEGORY_CHOICES,
+        max_length=120,
         default="other",
     )
 
@@ -101,12 +101,35 @@ class Event(models.Model):
     def __str__(self):
         return self.title
 
+    @classmethod
+    def get_all_category_choices(cls):
+        """Return merged category choices: hardcoded defaults + admin-created.
+
+        Admin-created Category entries are appended after the built-in
+        choices, de-duplicated by slug so the list stays clean.
+        """
+        seen = {slug for slug, _ in cls.CATEGORY_CHOICES}
+        merged = list(cls.CATEGORY_CHOICES)
+        for cat in Category.objects.all():
+            if cat.slug not in seen:
+                merged.insert(-1, (cat.slug, cat.name))  # before "Other"
+                seen.add(cat.slug)
+        return merged
+
     @property
     def category_label(self):
         custom = (self.custom_category or "").strip()
         if self.category == "other" and custom:
             return custom
-        return self.get_category_display()
+        # Check hardcoded choices first.
+        for slug, label in self.CATEGORY_CHOICES:
+            if slug == self.category:
+                return label
+        # Then check admin-created categories.
+        try:
+            return Category.objects.get(slug=self.category).name
+        except Category.DoesNotExist:
+            return self.category.replace("-", " ").title() if self.category else "Other"
 
     @property
     def serial_number(self):
@@ -114,6 +137,7 @@ class Event(models.Model):
 
     @property
     def tickets_sold(self):
+        """Return tickets sold, including legacy one-ticket EventBooking rows."""
         from django.db.models import Sum
         bookings_count = self.bookings.count()
         tickets_count = self.tickets.aggregate(total=Sum('quantity'))['total'] or 0
@@ -134,6 +158,12 @@ class Event(models.Model):
 
 class Ticket(models.Model):
     """A ticket booked by an attendee for a specific event."""
+
+    STATUS_CHOICES = [
+        ('confirmed', 'Confirmed'),
+        ('pending', 'Pending'),
+        ('cancelled', 'Cancelled'),
+    ]
 
     event = models.ForeignKey(
         Event,

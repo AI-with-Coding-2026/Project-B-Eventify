@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from events.models import Category, Event, EventBooking, Ticket
@@ -14,40 +14,33 @@ from .decorators import admin_required, organizer_required, role_required
 from .forms import UserRegistrationForm
 from .models import User, UserRole
 
-
 @login_not_required
 def register(request):
     if request.user.is_authenticated:
         if request.user.is_admin:
             return redirect('admin_dashboard')
         return redirect('home')
-
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
-
         if form.is_valid():
             user = form.save()
             login(request, user)
             return redirect('register_success')
     else:
         form = UserRegistrationForm()
-
     return render(
         request,
         'authentication/register.html',
         {'form': form}
     )
 
-
 @login_not_required
 def register_success(request):
     return render(request, 'authentication/register_success.html')
 
-
 @login_not_required
 def home(request):
     return render(request, 'authentication/home.html')
-
 
 @admin_required
 def admin_dashboard(request):
@@ -73,6 +66,32 @@ def admin_dashboard(request):
     return render(request, 'authentication/admin_dashboard.html', context)
 
 
+@admin_required
+def user_delete(request, pk):
+    """Allow admins to delete organizers and attendees after confirmation."""
+    target = get_object_or_404(User, pk=pk)
+
+    if target.pk == request.user.pk:
+        messages.error(request, 'You cannot delete your own account.')
+        return redirect('admin_dashboard')
+
+    if target.role == UserRole.ADMIN:
+        messages.error(request, 'Admin accounts cannot be deleted from the dashboard.')
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        username = target.username
+        target.delete()
+        messages.success(request, f'User "{username}" deleted successfully.')
+        return redirect('admin_dashboard')
+
+    return render(
+        request,
+        'authentication/user_confirm_delete.html',
+        {'target_user': target},
+    )
+
+
 @login_not_required
 def login_view(request):
     if request.method == 'POST':
@@ -90,23 +109,22 @@ def login_view(request):
             if user.is_organizer:
                 return redirect('organizer_dashboard')
             return redirect('attendee_dashboard')
-
     return render(request, 'authentication/login.html')
-
 
 def logout_view(request):
     logout(request)
     return redirect('login')
 
-
 def unauthorized(request):
     return render(request, 'authentication/unauthorized.html', status=403)
 
-
-@organizer_required
+@role_required(UserRole.ORGANIZER)
 def organizer_dashboard(request):
-    """Dashboard showing ticket sales performance, revenue, and charts for the organizer's events."""
+    """Dashboard showing ticket sales performance, revenue, charts, and upcoming events."""
     events = Event.objects.filter(organizer=request.user).order_by('-date')
+    upcoming_events = Event.objects.filter(
+        date__gte=timezone.now()
+    ).order_by('date')[:3]
     
     total_events = events.count()
     total_tickets_sold = sum(event.tickets_sold for event in events)
@@ -122,6 +140,7 @@ def organizer_dashboard(request):
 
     context = {
         'events': events,
+        'upcoming_events': upcoming_events,
         'total_events': total_events,
         'total_tickets_sold': total_tickets_sold,
         'total_tickets_remaining': total_tickets_remaining,
@@ -176,8 +195,7 @@ def organizer_dashboard_stats_api(request):
         'events': events_data,
     })
 
-
-@role_required(UserRole.ADMIN, UserRole.ATTENDEE)
+@role_required(UserRole.ATTENDEE)
 def attendee_dashboard(request):
     upcoming_events = Event.objects.filter(
         date__gte=timezone.now()
@@ -185,3 +203,63 @@ def attendee_dashboard(request):
     return render(request, 'authentication/attendee_dashboard.html', {
         'upcoming_events': upcoming_events,
     })
+
+@role_required(UserRole.ATTENDEE)
+def my_bookings(request):
+    now = timezone.now()
+    tickets = (
+        Ticket.objects.filter(attendee=request.user)
+        .select_related('event')
+    )
+    legacy_bookings = (
+        EventBooking.objects.filter(user=request.user)
+        .select_related('event')
+    )
+
+    upcoming_tickets = list(
+        tickets.filter(event__date__gte=now).order_by('event__date')
+    )
+    past_tickets = list(
+        tickets.filter(event__date__lt=now).order_by('-event__date')
+    )
+
+    upcoming_legacy = [
+        b for b in legacy_bookings.filter(event__date__gte=now).order_by('event__date')
+        if not any(t.event_id == b.event_id for t in upcoming_tickets)
+    ]
+    past_legacy = [
+        b for b in legacy_bookings.filter(event__date__lt=now).order_by('-event__date')
+        if not any(t.event_id == b.event_id for t in past_tickets)
+    ]
+
+
+    upcoming_bookings = sorted(
+        upcoming_tickets + upcoming_legacy,
+        key=lambda x: x.event.date,
+    )
+    past_bookings = sorted(
+        past_tickets + past_legacy,
+        key=lambda x: x.event.date,
+        reverse=True,
+    )
+
+    next_booking = upcoming_bookings[0] if upcoming_bookings else None
+
+    return render(request, 'authentication/my_bookings.html', {
+        'upcoming_bookings': upcoming_bookings,
+        'past_bookings': past_bookings,
+        'total_bookings': len(upcoming_bookings) + len(past_bookings),
+        'next_booking': next_booking,
+    })
+
+
+# 2. دالة إغلاق/إلغاء الحجز (دالة مستقلة تبدأ من بداية السطر)
+@role_required(UserRole.ATTENDEE)
+def cancel_booking(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk, attendee=request.user)
+
+    if request.method == 'POST':
+        ticket.delete()
+        messages.success(request, 'Booking cancelled successfully.')
+
+    return redirect('my_bookings')
