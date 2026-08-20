@@ -11,7 +11,7 @@
                 class="inline-block bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 shadow-sm transition">
                 Browse Events
             </a>
-            <a href="{% url 'my_bookings' %}"
+                <a href="{% url 'my_bookings' %}"
                 class="inline-block bg-indigo-50 text-indigo-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition">
                 My Bookings
             </a>
@@ -27,7 +27,8 @@
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {% for event in upcoming_events %}
             <a href="{% url 'event_detail' event.pk %}"
-                class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit">
+                class="animate-slide-in-right bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit"
+                style="animation-delay: calc({{ forloop.counter0 }} * 100ms);">
                 {% if event.image %}
                 <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-32 object-cover">
                 {% else %}

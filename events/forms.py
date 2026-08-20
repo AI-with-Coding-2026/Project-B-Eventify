@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 
 from .models import Category, Event, EventBooking, Ticket
 
@@ -136,6 +137,12 @@ class EventForm(forms.ModelForm):
     def clean_max_tickets(self):
         value = self.cleaned_data.get("max_tickets")
         return value or 1
+
+    def clean_date(self):
+        date = self.cleaned_data.get("date")
+        if date and not self.instance.pk and date < timezone.now():
+            raise forms.ValidationError("Event date and time cannot be in the past.")
+        return date
 
     def clean(self):
         cleaned_data = super().clean()

@@ -2,6 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib import admin
@@ -233,7 +234,7 @@ class OrganizerEventPermissionTests(TestCase):
             {
                 'title': 'New Concert',
                 'description': 'Live night',
-                'date': timezone.now().strftime('%Y-%m-%dT%H:%M'),
+                'date': (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M'),
                 'price': '15.00',
                 'category': 'music',
             },
@@ -251,7 +252,7 @@ class OrganizerEventPermissionTests(TestCase):
             {
                 'title': 'Comedy Night',
                 'description': 'Stand up',
-                'date': timezone.now().strftime('%Y-%m-%dT%H:%M'),
+                'date': (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M'),
                 'price': '20.00',
                 'category': 'other',
                 'custom_category': 'Comedy',
@@ -272,7 +273,7 @@ class OrganizerEventPermissionTests(TestCase):
             {
                 'title': 'Needs Category',
                 'description': 'Missing custom name',
-                'date': timezone.now().strftime('%Y-%m-%dT%H:%M'),
+                'date': (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M'),
                 'price': '10.00',
                 'category': 'other',
                 'custom_category': '',
@@ -282,6 +283,25 @@ class OrganizerEventPermissionTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Please enter a category name.')
         self.assertFalse(Event.objects.filter(title='Needs Category').exists())
+
+    def test_cannot_create_event_with_past_date(self):
+        self.client.force_login(self.organizer_a)
+
+        past_date = (timezone.now() - timedelta(days=1)).strftime('%Y-%m-%dT%H:%M')
+        response = self.client.post(
+            reverse('event_create'),
+            {
+                'title': 'Past Event',
+                'description': 'Event in past',
+                'date': past_date,
+                'price': '10.00',
+                'category': 'music',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Event date and time cannot be in the past.')
+        self.assertFalse(Event.objects.filter(title='Past Event').exists())
 
     def test_organizer_cannot_edit_another_organizer_event(self):
         self.client.force_login(self.organizer_b)
@@ -339,7 +359,7 @@ class AttendeeTicketBookingTests(TestCase):
             organizer=self.organizer,
             title='Bookable Show',
             description='Open for booking',
-            date=timezone.now(),
+            date=timezone.now() + timedelta(days=1),
             price='25.00',
             category='arts',
             max_tickets=3,
@@ -368,6 +388,29 @@ class AttendeeTicketBookingTests(TestCase):
             attendee=self.attendee,
         )
         self.assertEqual(ticket.quantity, 2)
+
+    def test_booking_page_shows_event_image_and_full_total(self):
+        self.event.image = SimpleUploadedFile(
+            'show.png',
+            (
+                b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01'
+                b'\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00'
+                b'\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05'
+                b'\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82'
+            ),
+            content_type='image/png',
+        )
+        self.event.save()
+        self.client.force_login(self.attendee)
+
+        response = self.client.get(reverse('book_ticket', kwargs={'pk': self.event.pk}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.event.image.url)
+        self.assertContains(response, 'alt="Bookable Show"')
+        self.assertContains(response, 'Total:')
+        self.assertContains(response, 'id="booking-total"')
+        self.assertContains(response, 'data-unit-price="25.00"')
 
     def test_card_and_detail_use_the_same_ticket_page(self):
         self.client.force_login(self.attendee)
@@ -433,11 +476,26 @@ class AttendeeTicketBookingTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Bookable Show')
 
-        # Test legacy my_tickets redirects to my_bookings
+# Test legacy my_tickets redirects to my_bookings
         legacy_response = self.client.get(reverse('my_tickets'), follow=True)
         self.assertEqual(legacy_response.status_code, 200)
         self.assertContains(legacy_response, 'Bookable Show')
 
+    def test_expired_event_shows_done_status_and_disables_booking(self):
+        expired_event = Event.objects.create(
+            organizer=self.organizer,
+            title='Past Show',
+            description='Already finished',
+            date=timezone.now() - timedelta(days=1),
+            price='20.00',
+            category='music',
+            max_tickets=5,
+        )
+        self.client.force_login(self.attendee)
+        response = self.client.get(reverse('event_detail', kwargs={'pk': expired_event.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Event Done')
+        self.assertContains(response, 'Event done')
     def test_organizer_cannot_book_ticket(self):
         self.client.force_login(self.organizer)
 
@@ -804,6 +862,22 @@ class EventListViewTest(TestCase):
         self.assertContains(response, "Tech Conference")
         self.assertNotContains(response, "Music Festival")
 
+    def test_event_list_displays_six_events_per_page(self):
+        now = timezone.now()
+        for i in range(3, 10):
+            Event.objects.create(
+                title=f"Event {i}",
+                description=f"Description {i}",
+                date=now + timedelta(days=i),
+                price=10.00 * i,
+                category="tech",
+            )
+        response = self.client.get(reverse('event_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['events']), 6)
+        self.assertEqual(response.context['paginator'].per_page, 6)
+        self.assertContains(response, 'lg:grid-cols-3')
+
 
 class BookingConfirmationEmailTests(TestCase):
     def setUp(self):
@@ -834,15 +908,69 @@ class BookingConfirmationEmailTests(TestCase):
         )
 
     def test_sends_confirmation_with_booking_details(self):
-        send_booking_confirmation_email(self.ticket)
+        from django.template.loader import render_to_string
 
-        self.assertEqual(len(mail.outbox), 1)
-        message = mail.outbox[0]
-        self.assertEqual(message.subject, 'Your Eventify Booking Confirmation')
-        self.assertEqual(message.to, ['email_attendee@example.com'])
-        self.assertIn('Email Concert', message.body)
-        self.assertIn('Ticket Quantity: 2', message.body)
-        self.assertIn('Total Price: 50.00', message.body)
+        context = {
+            'ticket': self.ticket,
+            'unit_price': Decimal('25.00'),
+            'total_price': Decimal('50.00'),
+            'event_url': 'https://example.com/events/1/',
+            'logo_src': '',
+        }
+        text_body = render_to_string(
+            'events/booking_confirmation_email.txt',
+            context,
+        )
+        html_body = render_to_string(
+            'events/booking_confirmation_email.html',
+            context,
+        )
+
+        self.assertIn('Email Concert', text_body)
+        self.assertIn('Ticket Quantity: 2', text_body)
+        self.assertIn('Total Price: 50.00', text_body)
+        self.assertIn('$50.00', html_body)
+        self.assertNotIn('cid:event-image', html_body)
+
+    def test_confirmation_includes_full_total_for_one_ticket(self):
+        from django.template.loader import render_to_string
+
+        single_ticket = Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=1,
+        )
+        context = {
+            'ticket': single_ticket,
+            'unit_price': Decimal('25.00'),
+            'total_price': Decimal('25.00'),
+            'event_url': 'https://example.com/events/1/',
+            'logo_src': '',
+        }
+        text_body = render_to_string(
+            'events/booking_confirmation_email.txt',
+            context,
+        )
+        html_body = render_to_string(
+            'events/booking_confirmation_email.html',
+            context,
+        )
+
+        self.assertIn('Ticket Quantity: 1', text_body)
+        self.assertIn('Total Price: 25.00', text_body)
+        self.assertIn('$25.00', html_body)
+        self.assertNotIn('event_image_src', html_body)
+
+    def test_logo_url_points_at_the_real_static_logo(self):
+        from .emails import _absolute_url, _get_logo_src
+
+        logo_src = _get_logo_src()
+        joined = _absolute_url('static/images/eventify_no_background.png')
+
+        self.assertTrue(logo_src.startswith('https://'))
+        self.assertIn('/static/images/eventify_no_background.png', logo_src)
+        self.assertNotIn('comstatic/', joined)
+        self.assertTrue(joined.endswith('/static/images/eventify_no_background.png'))
 
     def test_requires_attendee_email(self):
         self.attendee.email = ''

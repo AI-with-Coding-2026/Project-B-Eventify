@@ -5,8 +5,7 @@
 {% block content %}
 <div class="mb-4">
     <a href="{% if user.is_authenticated %}{% if user.is_admin %}{% url 'admin_dashboard' %}{% elif user.is_organizer %}{% url 'organizer_dashboard' %}{% else %}{% url 'attendee_dashboard' %}{% endif %}{% else %}/{% endif %}"
-       onclick="if (document.referrer && document.referrer.indexOf(window.location.host) !== -1) { event.preventDefault(); history.back(); }"
-       class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
+              class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
         ← Back
     </a>
 </div>
@@ -17,8 +16,7 @@
 </div>
 
 <div class="pb-12">
-    <form method="get" class="bg-white rounded-xl shadow-sm border border-indigo-100 p-5 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+    <form method="get" class="hover-lift animate-fade-slide bg-white rounded-xl shadow-sm border border-indigo-100 p-5 mb-6">        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
             <div>
                 <label for="search" class="block text-xs text-gray-600 mb-1 font-medium">Search</label>
                 <input type="text" id="search" name="search" value="{{ search_query }}" placeholder="Search an event"
@@ -76,7 +74,11 @@
             </div>
         {% empty %}
         <div class="col-span-full text-center py-12 animate-fade-slide">
-            <div class="empty-state-icon mb-3">🔍</div>
+            <div class="empty-state-icon mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+            </div>
             <p class="text-gray-400 display">No events found matching your filters.</p>
         </div>
         {% endfor %}
@@ -89,7 +91,11 @@
             </div>
         {% empty %}
         <div class="text-center py-12 animate-fade-slide">
-            <div class="empty-state-icon mb-3">🔍</div>
+            <div class="empty-state-icon mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+            </div>
             <p class="text-gray-400 display">No events found matching your filters.</p>
         </div>
         {% endfor %}
