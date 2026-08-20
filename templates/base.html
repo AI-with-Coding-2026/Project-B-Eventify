@@ -44,13 +44,36 @@
             from { opacity: 0; transform: translateX(24px); }
             to { opacity: 1; transform: translateX(0); }
         }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(28px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
         .animate-fade-slide {
-            animation: fadeSlideIn 0.5s ease-out forwards;
             opacity: 0;
+        }
+        .animate-fade-slide.is-visible {
+            animation: fadeSlideIn 0.5s ease-out forwards;
         }
         .animate-fade {
             animation: fadeIn 0.4s ease-out forwards;
             opacity: 0;
+        }
+        .animate-slide-in-right {
+            opacity: 0;
+        }
+        .animate-slide-in-right.is-visible {
+            animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .animate-fade-slide,
+            .animate-fade-slide.is-visible,
+            .animate-fade,
+            .animate-slide-in-right,
+            .animate-slide-in-right.is-visible {
+                animation: none !important;
+                opacity: 1 !important;
+                transform: none !important;
+            }
         }
         .hover-lift {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -551,11 +574,46 @@
             document.querySelectorAll('.flip-clock-wrapper').forEach(initFlipClock);
         }
 
+        // IntersectionObserver for scroll-triggered slide and fade animations
+        function initScrollAnimations() {
+            var elements = document.querySelectorAll('.animate-slide-in-right:not(.is-visible), .animate-fade-slide:not(.is-visible)');
+            if (!elements.length) return;
+
+            if (!('IntersectionObserver' in window)) {
+                elements.forEach(function (el) {
+                    el.classList.add('is-visible');
+                });
+                return;
+            }
+
+            var observer = new IntersectionObserver(function (entries, obs) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        obs.unobserve(entry.target);
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -20px 0px'
+            });
+
+            elements.forEach(function (el) {
+                observer.observe(el);
+            });
+        }
+
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', setupAllFlipClocks);
+            document.addEventListener('DOMContentLoaded', function () {
+                setupAllFlipClocks();
+                initScrollAnimations();
+            });
         } else {
             setupAllFlipClocks();
+            initScrollAnimations();
         }
+
+        window.addEventListener('pageshow', initScrollAnimations);
     </script>
 </body>
 </html>
