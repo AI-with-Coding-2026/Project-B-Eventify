@@ -15,28 +15,34 @@
 </div>
 
 <div class="pb-12">
-    <div class="mx-auto max-w-2xl px-4">
+    <div class="mx-auto max-w-3xl px-4">
         <div class="rounded-2xl border border-indigo-100 bg-white shadow-sm overflow-hidden mb-6">
-            {% if event.image %}
-            <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full max-h-72 object-cover bg-gray-50">
-            {% else %}
-            <div class="w-full h-48 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">
-                No image available
-            </div>
-            {% endif %}
             <div class="bg-indigo-50 px-6 py-8 sm:px-8">
-                <h2 class="text-2xl font-bold text-gray-900 display mb-3">{{ event.title }}</h2>
-                <div class="grid sm:grid-cols-2 gap-4 text-sm text-gray-600">
-                    <p><strong class="text-gray-900">Date:</strong> {{ event.date|date:"M d, Y — g:i A" }}</p>
-                    <p><strong class="text-gray-900">Price per ticket:</strong> ${{ event.price }}</p>
-                    <p><strong class="text-gray-900">Category:</strong> {{ event.category_label }}</p>
-                    <p><strong class="text-gray-900">Tickets available:</strong> {{ event.tickets_remaining }} / {{ event.max_tickets }}</p>
+                <div class="grid gap-6 sm:grid-cols-2 sm:items-start">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900 display mb-3">{{ event.title }}</h2>
+                        <div class="grid sm:grid-cols-2 gap-4 text-sm text-gray-600">
+                            <p><strong class="text-gray-900">Date:</strong> {{ event.date|date:"M d, Y — g:i A" }}</p>
+                            <p><strong class="text-gray-900">Price per ticket:</strong> ${{ event.price }}</p>
+                            <p><strong class="text-gray-900">Category:</strong> {{ event.category_label }}</p>
+                            <p><strong class="text-gray-900">Tickets available:</strong> {{ event.tickets_remaining }} / {{ event.max_tickets }}</p>
+                        </div>
+                        {% if event.description %}
+                        <div class="mt-4 p-4 bg-white rounded-lg border border-indigo-100">
+                            <p class="text-gray-700 whitespace-pre-line">{{ event.description }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="sm:justify-self-end w-full">
+                        {% if event.image %}
+                        <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-56 sm:h-64 object-cover rounded-xl bg-gray-50">
+                        {% else %}
+                        <div class="w-full h-56 sm:h-64 rounded-xl bg-white/70 flex items-center justify-center text-indigo-400 text-sm">
+                            No image available
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
-                {% if event.description %}
-                <div class="mt-4 p-4 bg-white rounded-lg border border-indigo-100">
-                    <p class="text-gray-700 whitespace-pre-line">{{ event.description }}</p>
-                </div>
-                {% endif %}
             </div>
 
             {% if event.is_sold_out %}
