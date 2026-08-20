@@ -233,7 +233,7 @@ class OrganizerEventPermissionTests(TestCase):
             {
                 'title': 'New Concert',
                 'description': 'Live night',
-                'date': timezone.now().strftime('%Y-%m-%dT%H:%M'),
+                'date': (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M'),
                 'price': '15.00',
                 'category': 'music',
             },
@@ -251,7 +251,7 @@ class OrganizerEventPermissionTests(TestCase):
             {
                 'title': 'Comedy Night',
                 'description': 'Stand up',
-                'date': timezone.now().strftime('%Y-%m-%dT%H:%M'),
+                'date': (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M'),
                 'price': '20.00',
                 'category': 'other',
                 'custom_category': 'Comedy',
@@ -272,7 +272,7 @@ class OrganizerEventPermissionTests(TestCase):
             {
                 'title': 'Needs Category',
                 'description': 'Missing custom name',
-                'date': timezone.now().strftime('%Y-%m-%dT%H:%M'),
+                'date': (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M'),
                 'price': '10.00',
                 'category': 'other',
                 'custom_category': '',
@@ -282,6 +282,25 @@ class OrganizerEventPermissionTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Please enter a category name.')
         self.assertFalse(Event.objects.filter(title='Needs Category').exists())
+
+    def test_cannot_create_event_with_past_date(self):
+        self.client.force_login(self.organizer_a)
+
+        past_date = (timezone.now() - timedelta(days=1)).strftime('%Y-%m-%dT%H:%M')
+        response = self.client.post(
+            reverse('event_create'),
+            {
+                'title': 'Past Event',
+                'description': 'Event in past',
+                'date': past_date,
+                'price': '10.00',
+                'category': 'music',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Event date and time cannot be in the past.')
+        self.assertFalse(Event.objects.filter(title='Past Event').exists())
 
     def test_organizer_cannot_edit_another_organizer_event(self):
         self.client.force_login(self.organizer_b)
@@ -818,6 +837,22 @@ class EventListViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Tech Conference")
         self.assertNotContains(response, "Music Festival")
+
+    def test_event_list_displays_six_events_per_page(self):
+        now = timezone.now()
+        for i in range(3, 10):
+            Event.objects.create(
+                title=f"Event {i}",
+                description=f"Description {i}",
+                date=now + timedelta(days=i),
+                price=10.00 * i,
+                category="tech",
+            )
+        response = self.client.get(reverse('event_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['events']), 6)
+        self.assertEqual(response.context['paginator'].per_page, 6)
+        self.assertContains(response, 'lg:grid-cols-3')
 
 
 class BookingConfirmationEmailTests(TestCase):

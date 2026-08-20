@@ -1,7 +1,23 @@
 {% extends 'base.html' %}
 {% block title %}Attendee Dashboard — Eventify{% endblock %}
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-8">
+<style>
+    @keyframes slideInFromRight {
+        0% {
+            opacity: 0;
+            transform: translateX(40px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    .upcoming-events-entrance {
+        animation: slideInFromRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+</style>
+
+<div class="max-w-4xl mx-auto space-y-8 overflow-hidden">
 
     <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
         <h1 class="text-2xl font-bold text-gray-900 display mb-2">Attendee Dashboard</h1>
@@ -18,7 +34,7 @@
         </div>
     </div>
 
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 upcoming-events-entrance">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-900 display">Upcoming Events</h2>
             <a href="{% url 'event_list' %}" class="text-sm text-indigo-600 font-medium hover:underline">View all events →</a>

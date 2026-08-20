@@ -143,7 +143,7 @@ def event_list(request):
         if end_date:
             events = events.filter(date__date__lte=end_date)
 
-    paginator = Paginator(events, 4)
+    paginator = Paginator(events, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
