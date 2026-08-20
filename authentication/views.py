@@ -3,9 +3,16 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.shortcuts import redirect, render, get_object_or_404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from events.models import Category, Event, EventBooking, Ticket
 from .decorators import admin_required, role_required
+
+from decimal import Decimal
+import json
+
+from .decorators import admin_required, organizer_required, role_required
 from .forms import UserRegistrationForm
 from .models import User, UserRole
 
@@ -114,12 +121,84 @@ def unauthorized(request):
     return render(request, 'authentication/unauthorized.html', status=403)
 
 @role_required(UserRole.ORGANIZER)
+
+@organizer_required
 def organizer_dashboard(request):
-    upcoming_events = Event.objects.filter(
-        date__gte=timezone.now()
-    ).order_by('date')[:3]
-    return render(request, 'authentication/organizer_dashboard.html', {
+    """Dashboard showing ticket sales performance, revenue, and charts for the organizer's events."""
+    events = Event.objects.filter(organizer=request.user).order_by('-date')
+    upcoming_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')[:3]
+
+    total_events = events.count()
+    total_tickets_sold = sum(event.tickets_sold for event in events)
+    total_tickets_remaining = sum(event.tickets_remaining for event in events)
+    total_revenue = sum((event.revenue for event in events), Decimal('0.00'))
+
+    # Chronological order for chart rendering (oldest to newest)
+    chart_events = list(reversed(list(events)))
+    chart_labels = [e.title for e in chart_events]
+    chart_tickets_sold = [e.tickets_sold for e in chart_events]
+    chart_tickets_remaining = [e.tickets_remaining for e in chart_events]
+    chart_revenue = [float(e.revenue) for e in chart_events]
+
+    context = {
         'upcoming_events': upcoming_events,
+        'events': events,
+        'total_events': total_events,
+        'total_tickets_sold': total_tickets_sold,
+        'total_tickets_remaining': total_tickets_remaining,
+        'total_revenue': total_revenue,
+        'chart_labels_json': json.dumps(chart_labels),
+        'chart_tickets_sold_json': json.dumps(chart_tickets_sold),
+        'chart_tickets_remaining_json': json.dumps(chart_tickets_remaining),
+        'chart_revenue_json': json.dumps(chart_revenue),
+    }
+    return render(request, 'authentication/organizer_dashboard.html', context)
+
+
+@organizer_required
+def organizer_dashboard_stats_api(request):
+    """JSON API endpoint returning live statistics and chart data for the organizer's events."""
+    events = Event.objects.filter(organizer=request.user).order_by('-date')
+
+    upcoming_events = Event.objects.filter(
+    date__gte=timezone.now()
+    ).order_by('date')[:3]
+
+    total_events = events.count()
+    total_tickets_sold = sum(event.tickets_sold for event in events)
+    total_tickets_remaining = sum(event.tickets_remaining for event in events)
+    total_revenue = float(sum((event.revenue for event in events), Decimal('0.00')))
+
+    chart_events = list(reversed(list(events)))
+    chart_labels = [e.title for e in chart_events]
+    chart_tickets_sold = [e.tickets_sold for e in chart_events]
+    chart_tickets_remaining = [e.tickets_remaining for e in chart_events]
+    chart_revenue = [float(e.revenue) for e in chart_events]
+
+    events_data = [
+        {
+            'pk': e.pk,
+            'title': e.title,
+            'price': str(e.price),
+            'tickets_sold': e.tickets_sold,
+            'tickets_remaining': e.tickets_remaining,
+            'max_tickets': e.max_tickets,
+            'revenue': float(e.revenue),
+            'is_sold_out': e.is_sold_out,
+        }
+        for e in events
+    ]
+
+    return JsonResponse({
+        'total_events': total_events,
+        'total_tickets_sold': total_tickets_sold,
+        'total_tickets_remaining': total_tickets_remaining,
+        'total_revenue': total_revenue,
+        'chart_labels': chart_labels,
+        'chart_tickets_sold': chart_tickets_sold,
+        'chart_tickets_remaining': chart_tickets_remaining,
+        'chart_revenue': chart_revenue,
+        'events': events_data,
     })
 
 @role_required(UserRole.ATTENDEE)

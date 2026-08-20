@@ -8,11 +8,11 @@
         <p class="text-gray-600 mb-6">Welcome, {{ user.username }}. You are logged in as an Attendee.</p>
         <div class="flex flex-wrap justify-center gap-4">
             <a href="{% url 'event_list' %}"
-                class="inline-block bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 shadow-sm transition">
+                class="inline-block bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition hover:text-indigo-600 shadow-sm transition">
                 Browse Events
             </a>
                 <a href="{% url 'my_bookings' %}"
-                class="inline-block bg-indigo-50 text-indigo-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition">
+                class="inline-block bg-indigo-50 text-indigo-700 px-5 py-2.5 rounded-xl font-semibold  hover:bg-indigo-600 hover:text-white px-5 py-2.5 rounded-xl font-semibold shadow-sm transition">
                 My Bookings
             </a>
         </div>
