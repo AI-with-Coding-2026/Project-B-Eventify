@@ -17,6 +17,13 @@
 <div class="pb-12">
     <div class="mx-auto max-w-2xl px-4">
         <div class="rounded-2xl border border-indigo-100 bg-white shadow-sm overflow-hidden mb-6">
+            {% if event.image %}
+            <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full max-h-72 object-cover bg-gray-50">
+            {% else %}
+            <div class="w-full h-48 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">
+                No image available
+            </div>
+            {% endif %}
             <div class="bg-indigo-50 px-6 py-8 sm:px-8">
                 <h2 class="text-2xl font-bold text-gray-900 display mb-3">{{ event.title }}</h2>
                 <div class="grid sm:grid-cols-2 gap-4 text-sm text-gray-600">
@@ -50,10 +57,18 @@
                         value="1"
                         min="1"
                         max="{{ event.tickets_remaining }}"
+                        data-unit-price="{{ event.price }}"
                         required
                         class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
                     >
                     <p class="mt-2 text-xs text-gray-500">Maximum: {{ event.tickets_remaining }} ticket{{ event.tickets_remaining|pluralize }}</p>
+                </div>
+
+                <div class="mb-6 rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3">
+                    <p class="text-sm text-gray-700">
+                        <strong class="text-gray-900">Total:</strong>
+                        $<span id="booking-total">{{ event.price }}</span>
+                    </p>
                 </div>
 
                 <div class="flex flex-col gap-3 sm:flex-row">
@@ -75,4 +90,24 @@
         </div>
     </div>
 </div>
+<script>
+    (function () {
+        var quantityInput = document.getElementById('quantity');
+        var totalEl = document.getElementById('booking-total');
+        if (!quantityInput || !totalEl) {
+            return;
+        }
+        var unitPrice = parseFloat(quantityInput.getAttribute('data-unit-price')) || 0;
+        function updateTotal() {
+            var quantity = parseInt(quantityInput.value, 10);
+            if (isNaN(quantity) || quantity < 1) {
+                quantity = 0;
+            }
+            totalEl.textContent = (unitPrice * quantity).toFixed(2);
+        }
+        quantityInput.addEventListener('input', updateTotal);
+        quantityInput.addEventListener('change', updateTotal);
+        updateTotal();
+    })();
+</script>
 {% endblock %}
