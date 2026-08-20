@@ -33,3 +33,7 @@ htmlcov/
 # Media files
 media/
 .DS_Store
+
+# Claude
+.claude/
+CLAUDE.md

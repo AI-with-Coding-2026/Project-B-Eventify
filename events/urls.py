@@ -45,6 +45,11 @@ urlpatterns = [
         name='my_events',
     ),
     path(
+        'sales-dashboard/',
+        views.sales_dashboard,
+        name='sales_dashboard',
+    ),
+    path(
         'create/',
         views.create_event,
         name='create_event',

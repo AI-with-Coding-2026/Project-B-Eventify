@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.db.models import Count, DecimalField, ExpressionWrapper, F, IntegerField, Sum
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from urllib.parse import urlparse
@@ -400,6 +402,40 @@ def my_events(request):
         "events/my_events.html",
         {
             "events": events,
+        },
+    )
+
+
+@role_required(UserRole.ORGANIZER)
+def sales_dashboard(request):
+    events = (
+        Event.objects.filter(organizer=request.user)
+        .annotate(sold=Count('bookings'))
+        .annotate(
+            revenue=ExpressionWrapper(
+                F('price') * F('sold'),
+                output_field=DecimalField(max_digits=10, decimal_places=2),
+            )
+        )
+        .order_by('-date')
+    )
+
+    totals = events.aggregate(
+        total_sold=Sum('sold'),
+        total_revenue=Sum('revenue'),
+    )
+
+    events = list(events)
+    for event in events:
+        event.remaining = max(event.max_tickets - event.sold, 0)
+
+    return render(
+        request,
+        'events/sales_dashboard.html',
+        {
+            'events': events,
+            'total_sold': totals['total_sold'] or 0,
+            'total_revenue': totals['total_revenue'] or 0,
         },
     )
 

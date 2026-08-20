@@ -452,6 +452,117 @@ class CategoryListTests(TestCase):
         self.assertContains(response, 'Cat 2')
 
 
+class SalesDashboardTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.organizer = User.objects.create_user(
+            'sales_organizer',
+            'sales_organizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            'sales_attendee',
+            'sales_attendee@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+        self.event = Event.objects.create(
+            organizer=self.organizer,
+            title='Sales Test Show',
+            description='Has real bookings',
+            date=timezone.now(),
+            price='20.00',
+            max_tickets=10,
+            category='arts',
+        )
+
+    def test_sold_remaining_and_revenue_reflect_real_ticket_bookings(self):
+        # Tickets, not EventBooking, is the model the "Book Now" flow
+        # actually writes to (event_detail.html -> book_ticket).
+        Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=4,
+        )
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(reverse('sales_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Sales Test Show')
+        events = list(response.context['events'])
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].sold, 4)
+        self.assertEqual(events[0].remaining, 6)
+        self.assertEqual(events[0].revenue, 80)
+        self.assertEqual(response.context['total_sold'], 4)
+        self.assertEqual(response.context['total_revenue'], 80)
+
+    def test_event_with_no_bookings_shows_zero_sold(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(reverse('sales_dashboard'))
+
+        events = list(response.context['events'])
+        self.assertEqual(events[0].sold, 0)
+        self.assertEqual(events[0].remaining, 10)
+        self.assertEqual(events[0].revenue, 0)
+
+    def test_attendee_cannot_access_sales_dashboard(self):
+        self.client.force_login(self.attendee)
+
+        response = self.client.get(reverse('sales_dashboard'))
+
+        self.assertRedirects(
+            response,
+            reverse('unauthorized'),
+            target_status_code=403,
+        )
+
+
+class EventTicketsRemainingTests(TestCase):
+    def setUp(self):
+        self.organizer = User.objects.create_user(
+            'remaining_organizer',
+            'remaining_organizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            'remaining_attendee',
+            'remaining_attendee@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+        self.event = Event.objects.create(
+            organizer=self.organizer,
+            title='Remaining Test Show',
+            date=timezone.now(),
+            price='10.00',
+            max_tickets=5,
+            category='arts',
+        )
+
+    def test_remaining_decreases_with_real_ticket_bookings(self):
+        Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=3,
+        )
+        self.assertEqual(self.event.tickets_remaining, 2)
+        self.assertFalse(self.event.is_sold_out)
+
+    def test_event_is_sold_out_once_ticket_quantity_meets_capacity(self):
+        Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=5,
+        )
+        self.assertEqual(self.event.tickets_remaining, 0)
+        self.assertTrue(self.event.is_sold_out)
+
+
 class EventListViewTest(TestCase):
     def setUp(self):
         now = timezone.now()
