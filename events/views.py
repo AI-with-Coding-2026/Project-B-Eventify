@@ -143,6 +143,11 @@ def event_list(request):
         if end_date:
             events = events.filter(date__date__lte=end_date)
 
+    today = timezone.now().date()
+    past_events = events.filter(date__date__lt=today).order_by('-date')
+    events = events.filter(date__date__gte=today)
+    selling_fast_threshold = 10  # tweak this number as needed
+
     paginator = Paginator(events, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -162,9 +167,10 @@ def event_list(request):
         'start_date': start_date,
         'end_date': end_date,
         'filter_query_string': filter_query_string,
+        'past_events': past_events,
+        'selling_fast_threshold': selling_fast_threshold,
     }
     return render(request, 'events/event_list.html', context)
-
 
 def event_detail(request, pk):
     event = get_object_or_404(Event, pk=pk)
