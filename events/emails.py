@@ -8,6 +8,7 @@ from sib_api_v3_sdk.rest import ApiException
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.urls import reverse
+from decouple import config
 
 BOOKING_CONFIRMATION_TEXT = 'events/booking_confirmation_email.txt'
 BOOKING_CONFIRMATION_HTML = 'events/booking_confirmation_email.html'
@@ -36,7 +37,7 @@ def send_booking_confirmation_email(ticket):
             'Cannot send booking confirmation without an attendee email.'
         )
 
-    api_key = os.environ.get('BREVO_API_KEY')
+    api_key = config('BREVO_API_KEY', default='') or os.environ.get('BREVO_API_KEY', '')
     if not api_key:
         print("BREVO_API_KEY is missing. Email skipped.")
         return None
