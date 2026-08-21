@@ -364,6 +364,29 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
+
+        /* Remove only the half-circle ticket-edge cutouts */
+        .ticket-card-perforation::before,
+        .ticket-card-perforation::after,
+        .ticket-card-vert-perforation::before,
+        .ticket-card-vert-perforation::after {
+            display: none !important;
+        }
+
+
+        /* Keep any empty space around the ticket stub grey only */
+        .ticket-card,
+        .ticket-card-vert {
+            background: #efefef;
+        }
+
+        .ticket-card-image,
+        .ticket-card-body,
+        .ticket-card-vert-image,
+        .ticket-card-vert-body {
+            background: #fff;
+        }
+
     </style>
 </head>
 <body class="min-h-screen bg-gray-100 antialiased flex flex-col">
