@@ -1,12 +1,9 @@
 <div class="ticket-card ticket-card--wide group">
-    <div class="ticket-card ticket-card--wide group">
-        {% if not event.is_expired and not event.is_sold_out and event.tickets_remaining <= selling_fast_threshold %}
+    {% if not event.is_expired and not event.is_sold_out and event.tickets_remaining <= selling_fast_threshold %}
     <span class="absolute top-2 right-2 z-10 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow pointer-events-none">
         Hurry Up! 🔥
     </span>
 {% endif %}
-        <!-- Left + Center: Main card link -->
-        <a href="{% url 'event_detail' event.pk %}" class="flex flex-1 flex-col sm:flex-row items-stret...
     <!-- Left + Center: Main card link -->
     <a href="{% url 'event_detail' event.pk %}" class="flex flex-1 flex-col sm:flex-row items-stretch no-underline text-inherit min-w-0">
         <!-- Left: Image strip -->

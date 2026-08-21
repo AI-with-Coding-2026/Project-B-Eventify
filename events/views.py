@@ -30,6 +30,16 @@ def _user_can_manage_event(user, event):
     )
 
 
+def _user_has_booked_event(user, event):
+    return Ticket.objects.filter(
+        attendee=user,
+        event=event,
+    ).exists() or EventBooking.objects.filter(
+        user=user,
+        event=event,
+    ).exists()
+
+
 # Map URL path prefixes to human-readable back-button labels.
 _BACK_LABEL_MAP = [
     ('/admin/', 'Back to Admin Dashboard'),
@@ -178,10 +188,7 @@ def event_detail(request, pk):
     user_has_booked = False
 
     if user.is_authenticated:
-        user_has_booked = Ticket.objects.filter(
-            attendee=user,
-            event=event,
-        ).exists()
+        user_has_booked = _user_has_booked_event(user, event)
 
     back_url, back_label = _resolve_back_navigation(request)
 
@@ -220,6 +227,10 @@ def book_ticket(request, pk):
         messages.error(request, 'Booking is not available because this event has ended.')
         return redirect('event_detail', pk=pk)
 
+    if _user_has_booked_event(request.user, event):
+        messages.info(request, 'You have already booked this event.')
+        return redirect('event_detail', pk=pk)
+
     if request.method == 'POST':
         try:
             quantity = int(request.POST.get('quantity', 1))
@@ -245,6 +256,8 @@ def book_ticket(request, pk):
                             request,
                             f'Only {remaining} ticket(s) remain for this event.',
                         )
+                elif _user_has_booked_event(request.user, event):
+                    messages.info(request, 'You have already booked this event.')
                 else:
                     ticket = Ticket.objects.create(
                         event=event,
