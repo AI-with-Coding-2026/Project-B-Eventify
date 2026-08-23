@@ -10,7 +10,7 @@ from django.urls import reverse
 
 from authentication.models import User, UserRole
 from .forms import EventForm
-from .models import Event
+from .models import Booking, Event
 
 # Create a temporary directory for MEDIA_ROOT during tests
 TEMP_MEDIA_ROOT = tempfile.mkdtemp()
@@ -318,4 +318,283 @@ class EventViewsAuthorizationTests(TestCase):
         response = self.client.get(dashboard_url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Organizer A&#x27;s Concert")
+
+
+class BookingModelTests(TestCase):
+    """Tests for the Booking model."""
+
+    def setUp(self):
+        self.organizer = User.objects.create_user(
+            username='org_booking',
+            email='org_booking@example.com',
+            password='Password123!',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            username='att_booking',
+            email='att_booking@example.com',
+            password='Password123!',
+            role=UserRole.ATTENDEE,
+        )
+        self.event = Event.objects.create(
+            organizer=self.organizer,
+            title='Booking Test Event',
+            description='Test event for bookings',
+            location='Test Venue',
+            date=timezone.now() + timezone.timedelta(days=7),
+            ticket_price=Decimal('50.00'),
+            max_tickets=100,
+        )
+
+    def test_create_booking(self):
+        booking = Booking.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=3,
+        )
+        self.assertEqual(booking.event, self.event)
+        self.assertEqual(booking.attendee, self.attendee)
+        self.assertEqual(booking.quantity, 3)
+        self.assertIsNotNone(booking.booked_at)
+
+    def test_booking_str(self):
+        booking = Booking.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=2,
+        )
+        self.assertEqual(
+            str(booking),
+            'att_booking \u00d7 2 for Booking Test Event',
+        )
+
+    def test_booking_default_quantity(self):
+        booking = Booking.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+        )
+        self.assertEqual(booking.quantity, 1)
+
+    def test_bookings_cascade_on_event_delete(self):
+        Booking.objects.create(event=self.event, attendee=self.attendee, quantity=2)
+        self.assertEqual(Booking.objects.count(), 1)
+        self.event.delete()
+        self.assertEqual(Booking.objects.count(), 0)
+
+    def test_bookings_cascade_on_attendee_delete(self):
+        Booking.objects.create(event=self.event, attendee=self.attendee, quantity=2)
+        self.assertEqual(Booking.objects.count(), 1)
+        self.attendee.delete()
+        self.assertEqual(Booking.objects.count(), 0)
+
+
+class BookingViewTests(TestCase):
+    """Tests for the book_event view."""
+
+    def setUp(self):
+        self.client = Client()
+        self.organizer = User.objects.create_user(
+            username='org_view',
+            email='org_view@example.com',
+            password='Password123!',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            username='att_view',
+            email='att_view@example.com',
+            password='Password123!',
+            role=UserRole.ATTENDEE,
+        )
+        self.event = Event.objects.create(
+            organizer=self.organizer,
+            title='Bookable Event',
+            description='Test event',
+            location='Test Venue',
+            date=timezone.now() + timezone.timedelta(days=7),
+            ticket_price=Decimal('25.00'),
+            max_tickets=10,
+        )
+
+    def test_attendee_can_book_tickets(self):
+        self.client.force_login(self.attendee)
+        response = self.client.post(
+            reverse('book_event', kwargs={'pk': self.event.pk}),
+            {'quantity': 3},
+        )
+        self.assertRedirects(response, reverse('event_detail', kwargs={'pk': self.event.pk}))
+        self.assertEqual(Booking.objects.count(), 1)
+        booking = Booking.objects.first()
+        self.assertEqual(booking.quantity, 3)
+        self.assertEqual(booking.attendee, self.attendee)
+
+    def test_overbooking_rejected(self):
+        """Cannot book more tickets than remaining."""
+        # Book 8 of 10
+        Booking.objects.create(event=self.event, attendee=self.attendee, quantity=8)
+
+        self.client.force_login(self.attendee)
+        response = self.client.post(
+            reverse('book_event', kwargs={'pk': self.event.pk}),
+            {'quantity': 5},
+        )
+        self.assertRedirects(response, reverse('event_detail', kwargs={'pk': self.event.pk}))
+        # Should still be only the original booking
+        self.assertEqual(Booking.objects.count(), 1)
+
+    def test_sold_out_rejected(self):
+        """Cannot book when event is sold out."""
+        Booking.objects.create(event=self.event, attendee=self.attendee, quantity=10)
+
+        self.client.force_login(self.attendee)
+        response = self.client.post(
+            reverse('book_event', kwargs={'pk': self.event.pk}),
+            {'quantity': 1},
+        )
+        self.assertRedirects(response, reverse('event_detail', kwargs={'pk': self.event.pk}))
+        # Should still be only the original booking
+        self.assertEqual(Booking.objects.count(), 1)
+
+    def test_organizer_cannot_book(self):
+        """Organizers should be redirected (unauthorized) when trying to book."""
+        self.client.force_login(self.organizer)
+        response = self.client.post(
+            reverse('book_event', kwargs={'pk': self.event.pk}),
+            {'quantity': 1},
+        )
+        self.assertRedirects(response, reverse('unauthorized'))
+
+    def test_get_request_redirects_to_detail(self):
+        """GET requests to book_event should redirect to event detail."""
+        self.client.force_login(self.attendee)
+        response = self.client.get(
+            reverse('book_event', kwargs={'pk': self.event.pk}),
+        )
+        self.assertRedirects(response, reverse('event_detail', kwargs={'pk': self.event.pk}))
+
+
+class OrganizerDashboardAnalyticsTests(TestCase):
+    """Tests for the organizer dashboard analytics view."""
+
+    def setUp(self):
+        self.client = Client()
+        self.organizer = User.objects.create_user(
+            username='org_dashboard',
+            email='org_dash@example.com',
+            password='Password123!',
+            role=UserRole.ORGANIZER,
+        )
+        self.other_organizer = User.objects.create_user(
+            username='org_other',
+            email='org_other@example.com',
+            password='Password123!',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            username='att_dashboard',
+            email='att_dash@example.com',
+            password='Password123!',
+            role=UserRole.ATTENDEE,
+        )
+        self.event1 = Event.objects.create(
+            organizer=self.organizer,
+            title='Dashboard Event 1',
+            description='Test event 1',
+            location='Venue 1',
+            date=timezone.now() + timezone.timedelta(days=7),
+            ticket_price=Decimal('10.00'),
+            max_tickets=100,
+        )
+        self.event2 = Event.objects.create(
+            organizer=self.organizer,
+            title='Dashboard Event 2',
+            description='Test event 2',
+            location='Venue 2',
+            date=timezone.now() + timezone.timedelta(days=14),
+            ticket_price=Decimal('20.00'),
+            max_tickets=50,
+        )
+        self.other_event = Event.objects.create(
+            organizer=self.other_organizer,
+            title='Other Organizer Event',
+            description='Should not appear',
+            location='Venue 3',
+            date=timezone.now() + timezone.timedelta(days=21),
+            ticket_price=Decimal('30.00'),
+            max_tickets=200,
+        )
+
+    def test_dashboard_shows_correct_totals(self):
+        """Dashboard should show accurate ticket and revenue totals."""
+        Booking.objects.create(event=self.event1, attendee=self.attendee, quantity=5)
+        Booking.objects.create(event=self.event2, attendee=self.attendee, quantity=3)
+
+        self.client.force_login(self.organizer)
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+        context = response.context
+        self.assertEqual(context['total_events'], 2)
+        self.assertEqual(context['total_tickets_sold'], 8)
+        # event1: 5 * 10 = 50, event2: 3 * 20 = 60 → total 110
+        self.assertEqual(context['total_revenue'], Decimal('110.00'))
+
+    def test_dashboard_does_not_show_other_organizer_events(self):
+        """Organizer should only see their own events."""
+        self.client.force_login(self.organizer)
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+        event_titles = [stat['event'].title for stat in response.context['event_stats']]
+        self.assertIn('Dashboard Event 1', event_titles)
+        self.assertIn('Dashboard Event 2', event_titles)
+        self.assertNotIn('Other Organizer Event', event_titles)
+
+    def test_dashboard_with_no_bookings(self):
+        """Dashboard should show zero totals when there are no bookings."""
+        self.client.force_login(self.organizer)
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+        context = response.context
+        self.assertEqual(context['total_tickets_sold'], 0)
+        self.assertEqual(context['total_revenue'], Decimal('0.00'))
+
+    def test_per_event_stats(self):
+        """Each event should have correct sold/remaining/revenue stats."""
+        Booking.objects.create(event=self.event1, attendee=self.attendee, quantity=10)
+
+        self.client.force_login(self.organizer)
+        response = self.client.get(reverse('organizer_dashboard'))
+
+        event_stats = {
+            stat['event'].pk: stat for stat in response.context['event_stats']
+        }
+
+        stat1 = event_stats[self.event1.pk]
+        self.assertEqual(stat1['tickets_sold'], 10)
+        self.assertEqual(stat1['tickets_remaining'], 90)
+        self.assertEqual(stat1['revenue'], Decimal('100.00'))
+
+        stat2 = event_stats[self.event2.pk]
+        self.assertEqual(stat2['tickets_sold'], 0)
+        self.assertEqual(stat2['tickets_remaining'], 50)
+        self.assertEqual(stat2['revenue'], Decimal('0.00'))
+
+    def test_attendee_cannot_access_organizer_dashboard(self):
+        """Attendees should be redirected from the organizer dashboard."""
+        self.client.force_login(self.attendee)
+        response = self.client.get(reverse('organizer_dashboard'))
+        self.assertRedirects(response, reverse('unauthorized'))
+
+    def test_event_detail_shows_tickets_remaining(self):
+        """Event detail should show accurate remaining ticket count."""
+        Booking.objects.create(event=self.event1, attendee=self.attendee, quantity=7)
+
+        self.client.force_login(self.attendee)
+        response = self.client.get(
+            reverse('event_detail', kwargs={'pk': self.event1.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['tickets_remaining'], 93)
+        self.assertEqual(response.context['tickets_sold'], 7)
 

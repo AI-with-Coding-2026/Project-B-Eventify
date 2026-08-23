@@ -47,3 +47,25 @@ class Event(models.Model):
             except Event.DoesNotExist:
                 pass
         super().save(*args, **kwargs)
+
+
+class Booking(models.Model):
+    """Records a ticket purchase by an attendee for a specific event."""
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name='bookings',
+    )
+    attendee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='bookings',
+    )
+    quantity = models.PositiveIntegerField(default=1)
+    booked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-booked_at']
+
+    def __str__(self):
+        return f"{self.attendee.username} \u00d7 {self.quantity} for {self.event.title}"

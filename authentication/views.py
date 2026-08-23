@@ -1,8 +1,11 @@
 from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Sum
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
+
+from decimal import Decimal
 
 from .decorators import admin_required, role_required
 from .forms import StudentEditForm, UserRegistrationForm
@@ -112,7 +115,43 @@ def unauthorized(request):
 
 @role_required(UserRole.ADMIN, UserRole.ORGANIZER)
 def organizer_dashboard(request):
-    return render(request, 'authentication/organizer_dashboard.html')
+    """Analytics dashboard showing ticket sales performance for organizer's events."""
+    if request.user.is_admin:
+        events = Event.objects.all()
+    else:
+        events = Event.objects.filter(organizer=request.user)
+
+    events = events.annotate(
+        tickets_sold=Coalesce(Sum('bookings__quantity'), 0),
+    )
+
+    # Build per-event stats
+    event_stats = []
+    total_tickets_sold = 0
+    total_revenue = Decimal('0.00')
+
+    for event in events:
+        sold = event.tickets_sold
+        remaining = event.max_tickets - sold
+        revenue = event.ticket_price * sold
+        sell_percentage = int((sold / event.max_tickets) * 100) if event.max_tickets > 0 else 0
+        total_tickets_sold += sold
+        total_revenue += revenue
+        event_stats.append({
+            'event': event,
+            'tickets_sold': sold,
+            'tickets_remaining': remaining,
+            'revenue': revenue,
+            'sell_percentage': sell_percentage,
+        })
+
+    context = {
+        'event_stats': event_stats,
+        'total_tickets_sold': total_tickets_sold,
+        'total_revenue': total_revenue,
+        'total_events': len(event_stats),
+    }
+    return render(request, 'authentication/organizer_dashboard.html', context)
 
 
 @role_required(UserRole.ADMIN, UserRole.ATTENDEE)

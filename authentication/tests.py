@@ -324,6 +324,7 @@ class RoleDashboardAccessTests(TestCase):
             render.assert_called_once_with(
                 request,
                 'authentication/organizer_dashboard.html',
+                ANY,
             )
 
         request = self.factory.get('/dashboard/attendee/')

@@ -1,21 +1,34 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 
 from authentication.decorators import role_required
 from authentication.models import UserRole
 from .forms import EventForm
-from .models import Event
+from .models import Booking, Event
 
 
 @login_required
 def event_detail(request, pk):
     """View details for a single event."""
     event = get_object_or_404(Event, pk=pk)
+
+    # Calculate tickets remaining for the booking form
+    tickets_sold = event.bookings.aggregate(
+        total=Coalesce(Sum('quantity'), 0)
+    )['total']
+    tickets_remaining = event.max_tickets - tickets_sold
+
     return render(
         request,
         'events/event_detail.html',
-        {'event': event},
+        {
+            'event': event,
+            'tickets_sold': tickets_sold,
+            'tickets_remaining': tickets_remaining,
+        },
     )
 
 
@@ -113,3 +126,54 @@ def event_delete(request, pk):
         'events/event_confirm_delete.html',
         {'event': event},
     )
+
+
+@role_required(UserRole.ATTENDEE, UserRole.ADMIN)
+def book_event(request, pk):
+    """Book tickets for an event (attendees only)."""
+    event = get_object_or_404(Event, pk=pk)
+
+    if request.method != 'POST':
+        return redirect('event_detail', pk=pk)
+
+    # Parse quantity
+    try:
+        quantity = int(request.POST.get('quantity', 1))
+    except (TypeError, ValueError):
+        quantity = 1
+
+    if quantity < 1:
+        messages.error(request, 'Ticket quantity must be at least 1.')
+        return redirect('event_detail', pk=pk)
+
+    # Calculate remaining tickets
+    tickets_sold = event.bookings.aggregate(
+        total=Coalesce(Sum('quantity'), 0)
+    )['total']
+    tickets_remaining = event.max_tickets - tickets_sold
+
+    if quantity > tickets_remaining:
+        if tickets_remaining == 0:
+            messages.error(request, 'Sorry, this event is sold out!')
+        else:
+            messages.error(
+                request,
+                f'Only {tickets_remaining} ticket(s) remaining. '
+                f'You requested {quantity}.',
+            )
+        return redirect('event_detail', pk=pk)
+
+    # Create booking
+    Booking.objects.create(
+        event=event,
+        attendee=request.user,
+        quantity=quantity,
+    )
+
+    total_cost = event.ticket_price * quantity
+    messages.success(
+        request,
+        f'Successfully booked {quantity} ticket(s) for "{event.title}"! '
+        f'Total: ${total_cost:.2f}',
+    )
+    return redirect('event_detail', pk=pk)

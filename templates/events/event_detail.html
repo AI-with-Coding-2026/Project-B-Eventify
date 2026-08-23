@@ -20,7 +20,7 @@
 
     <div class="account-details">
         <div class="detail-row">
-            <span>Date & Time</span>
+            <span>Date &amp; Time</span>
             <strong>{{ event.date|date:"F j, Y @ g:i A" }}</strong>
         </div>
 
@@ -35,8 +35,8 @@
         </div>
 
         <div class="detail-row">
-            <span>Max Tickets</span>
-            <strong>{{ event.max_tickets }}</strong>
+            <span>Tickets Remaining</span>
+            <strong>{{ tickets_remaining }} / {{ event.max_tickets }}</strong>
         </div>
 
         <div class="detail-row">
@@ -49,6 +49,41 @@
             <div style="color: var(--text); line-height: 1.6; white-space: pre-wrap;">{{ event.description }}</div>
         </div>
     </div>
+
+    {# ── Booking Section (Attendees Only) ── #}
+    {% if user.role == 'attendee' or user.is_admin %}
+        <div class="booking-section">
+            {% if tickets_remaining > 0 %}
+                <h3 class="booking-title">🎟️ Book Tickets</h3>
+                <form method="post" action="{% url 'book_event' event.pk %}" class="booking-form">
+                    {% csrf_token %}
+                    <div class="booking-controls">
+                        <label for="quantity">Quantity:</label>
+                        <input
+                            type="number"
+                            id="quantity"
+                            name="quantity"
+                            value="1"
+                            min="1"
+                            max="{{ tickets_remaining }}"
+                            class="booking-quantity"
+                        >
+                        <button type="submit" class="btn-create">
+                            Book Now
+                        </button>
+                    </div>
+                    <p class="booking-hint">
+                        {{ tickets_remaining }} ticket{{ tickets_remaining|pluralize }} available
+                        · ${{ event.ticket_price }} each
+                    </p>
+                </form>
+            {% else %}
+                <div class="sold-out-badge">
+                    Sold Out
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
 
     <div style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
         {% if user == event.organizer or user.is_admin %}

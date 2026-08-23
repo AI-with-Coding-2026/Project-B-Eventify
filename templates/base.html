@@ -4,27 +4,32 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>
         {% block title %}Eventify{% endblock %}
     </title>
 
-    <link
-        rel="stylesheet"
-        href="{% static 'css/style.css' %}"
-    >
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <script>
+        (function() {
+            try {
+                var savedTheme = localStorage.getItem('eventify-theme');
+                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var theme = savedTheme ? savedTheme : (prefersDark ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {}
+        })();
+    </script>
 </head>
 
 <body>
     <header class="site-header">
         <nav class="navigation">
             <a class="brand" href="{% url 'home' %}">
-                Eventify
+                <span class="brand-icon">🎟️</span>
+                <span class="brand-text">Eventify</span>
             </a>
 
             <div class="navigation-links">
@@ -65,6 +70,11 @@
                         Register
                     </a>
                 {% endif %}
+
+                <button id="theme-toggle" class="theme-toggle-btn" type="button" aria-label="Toggle Night Mode" title="Toggle Night / Light Mode">
+                    <span class="theme-icon theme-icon-light" aria-hidden="true">🌙</span>
+                    <span class="theme-icon theme-icon-dark" aria-hidden="true">☀️</span>
+                </button>
             </div>
         </nav>
     </header>
@@ -83,5 +93,21 @@
         {% block content %}
         {% endblock %}
     </main>
+
+    <script>
+        (function() {
+            var toggleBtn = document.getElementById('theme-toggle');
+            if (!toggleBtn) return;
+
+            toggleBtn.addEventListener('click', function() {
+                var currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                var newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                try {
+                    localStorage.setItem('eventify-theme', newTheme);
+                } catch (e) {}
+            });
+        })();
+    </script>
 </body>
 </html>
