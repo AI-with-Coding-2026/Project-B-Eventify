@@ -1,3 +1,5 @@
+from django.db.models import Sum, F, DecimalField
+from django.db.models.functions import Coalesce
 from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -230,3 +232,40 @@ def cancel_booking(request, pk):
         'ticket': ticket,
         'quantity_range': range(1, ticket.quantity + 1),
     })
+
+@admin_required
+def analytics_dashboard(request):
+    organizer_id = request.GET.get('organizer')
+
+    tickets = Ticket.objects.select_related('event', 'event__organizer')
+
+    if organizer_id:
+        tickets = tickets.filter(event__organizer_id=organizer_id)
+
+    total_revenue = tickets.aggregate(
+        total=Coalesce(
+            Sum(F('quantity') * F('event__price'), output_field=DecimalField()),
+            0,
+            output_field=DecimalField(),
+        )
+    )['total']
+
+    total_bookings = tickets.count()
+    total_tickets_sold = tickets.aggregate(total=Coalesce(Sum('quantity'), 0))['total']
+
+    events_qs = Event.objects.all()
+    if organizer_id:
+        events_qs = events_qs.filter(organizer_id=organizer_id)
+    total_events = events_qs.count()
+
+    organizers = User.objects.filter(role=UserRole.ORGANIZER).order_by('username')
+
+    context = {
+        'total_revenue': total_revenue,
+        'total_bookings': total_bookings,
+        'total_tickets_sold': total_tickets_sold,
+        'total_events': total_events,
+        'organizers': organizers,
+        'selected_organizer': organizer_id,
+    }
+    return render(request, 'authentication/analytics_dashboard.html', context)

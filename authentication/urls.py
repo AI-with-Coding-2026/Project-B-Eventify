@@ -34,6 +34,11 @@ urlpatterns = [
         name='admin_user_list',
     ),
     path(
+        'admin/analytics/',
+        views.analytics_dashboard,
+        name='analytics_dashboard',
+    ),
+    path(
         'admin/users/<int:pk>/delete/',
         views.user_delete,
         name='user_delete',

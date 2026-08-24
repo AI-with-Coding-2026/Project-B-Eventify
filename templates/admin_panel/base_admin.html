@@ -16,6 +16,10 @@
    class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'admin_user_list' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
     Users
 </a>
+<a href="{% url 'analytics_dashboard' %}"
+   class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'analytics_dashboard' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+    Analytics
+</a>
             <span class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-300 cursor-not-allowed">
                 Bookings (coming soon)
             </span>
