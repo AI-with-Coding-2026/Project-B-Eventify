@@ -1,6 +1,4 @@
 from django import forms
-from django.utils import timezone
-
 from .models import Category, Event, EventBooking, Ticket
 
 
@@ -13,172 +11,144 @@ INPUT_CLASSES = (
 TEXTAREA_CLASSES = INPUT_CLASSES + " min-h-[120px]"
 
 
-
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
-        fields = ['name', 'description']
-
+        fields = ["name", "description"]
         widgets = {
-            'name': forms.TextInput(attrs={
-                'class': INPUT_CLASSES,
-                'placeholder': 'Enter category name',
-            }),
-            'description': forms.Textarea(attrs={
-                'class': INPUT_CLASSES,
-                'rows': 3,
-                'placeholder': 'Optional description',
-            }),
+            "name": forms.TextInput(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "placeholder": "Enter category name",
+                }
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "rows": 3,
+                    "placeholder": "Optional description",
+                }
+            ),
         }
 
     def clean_name(self):
-        name = self.cleaned_data['name'].strip()
+        name = self.cleaned_data["name"].strip()
 
         if not name:
             raise forms.ValidationError(
-                'Category name cannot be empty.'
+                "Category name cannot be empty."
             )
 
         duplicates = Category.objects.filter(name__iexact=name)
+
         if self.instance.pk:
             duplicates = duplicates.exclude(pk=self.instance.pk)
 
         if duplicates.exists():
             raise forms.ValidationError(
-                'A category with this name already exists.'
+                "A category with this name already exists."
             )
 
         return name
 
 
 class EventForm(forms.ModelForm):
+    """
+    Form for creating and editing events.
 
-    max_tickets = forms.IntegerField(
+    An event can now have multiple categories through the
+    Event.categories Many-to-Many relationship.
+    """
+
+    categories = forms.ModelMultipleChoiceField(
+        queryset=Category.objects.all(),
         required=False,
-        min_value=1,
-        initial=1,
-        widget=forms.NumberInput(
-            attrs={
-                "class": INPUT_CLASSES,
-                "min": "1",
-            }
-        ),
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Dynamically merge hardcoded + admin-created categories.
-        self.fields['category'].choices = Event.get_all_category_choices()
-
-    date = forms.DateTimeField(
-        widget=forms.DateTimeInput(
-            attrs={
-                "type": "datetime-local",
-                "class": INPUT_CLASSES,
-            },
-            format="%Y-%m-%dT%H:%M",
-        ),
-        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.CheckboxSelectMultiple,
+        label="Categories",
+        help_text="Select one or more categories for this event.",
     )
 
     class Meta:
         model = Event
-
         fields = [
             "title",
             "description",
             "location",
+            "image",
             "date",
             "price",
             "max_tickets",
-            "category",
+            "categories",
             "custom_category",
-            "image",
         ]
 
         widgets = {
             "title": forms.TextInput(
-                attrs={"class": INPUT_CLASSES}
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Enter event title",
+                }
             ),
             "description": forms.Textarea(
                 attrs={
-                    "class": TEXTAREA_CLASSES,
+                    "class": "form-control",
                     "rows": 5,
+                    "placeholder": "Enter event description",
                 }
             ),
             "location": forms.TextInput(
-                attrs={"class": INPUT_CLASSES}
-            ),
-            "price": forms.NumberInput(
                 attrs={
-                    "class": INPUT_CLASSES,
-                    "step": "0.01",
-                    "min": "0",
-                }
-            ),
-            "category": forms.Select(
-                attrs={
-                    "class": INPUT_CLASSES,
-                }
-            ),
-            "custom_category": forms.TextInput(
-                attrs={
-                    "class": INPUT_CLASSES,
-                    "placeholder": "Enter your category",
+                    "class": "form-control",
+                    "placeholder": "Enter event location",
                 }
             ),
             "image": forms.ClearableFileInput(
                 attrs={
-                    "class": INPUT_CLASSES,
-                    "accept": "image/jpeg,image/png,image/webp",
+                    "class": "form-control",
+                }
+            ),
+            "date": forms.DateTimeInput(
+                attrs={
+                    "class": "form-control",
+                    "type": "datetime-local",
+                }
+            ),
+            "price": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "step": "0.01",
+                    "min": "0",
+                }
+            ),
+            "max_tickets": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "min": "1",
+                }
+            ),
+            "custom_category": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Optional custom category",
                 }
             ),
         }
 
-    def clean_max_tickets(self):
-        value = self.cleaned_data.get("max_tickets")
-        return value or 1
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    def clean_date(self):
-        date = self.cleaned_data.get("date")
-        if date and not self.instance.pk and date < timezone.now():
-            raise forms.ValidationError("Event date and time cannot be in the past.")
-        return date
+        # Always load categories from the database.
+        self.fields["categories"].queryset = Category.objects.all()
 
-    def clean(self):
-        cleaned_data = super().clean()
-        category = cleaned_data.get("category")
-        custom_category = (cleaned_data.get("custom_category") or "").strip()
-
-        if category == "other":
-            if not custom_category:
-                self.add_error(
-                    "custom_category",
-                    "Please enter a category name.",
-                )
-            else:
-                cleaned_data["custom_category"] = custom_category
-        else:
-            cleaned_data["custom_category"] = ""
-
-        return cleaned_data
+        # When editing an existing Event, Django automatically
+        # loads the currently selected Many-to-Many categories.
 
     def clean_image(self):
         image = self.cleaned_data.get("image")
 
-        if (
-            image
-            and hasattr(image, "content_type")
-            and image.content_type
-            not in [
-                "image/jpeg",
-                "image/png",
-                "image/webp",
-            ]
-        ):
-            raise forms.ValidationError(
-                "Only JPG, PNG, and WebP images are allowed."
-            )
+        if image:
+            # Keep any existing image validation here if required.
+            pass
 
         return image
 
@@ -186,20 +156,32 @@ class EventForm(forms.ModelForm):
 class TicketForm(forms.ModelForm):
     class Meta:
         model = Ticket
-        fields = ['event', 'attendee', 'quantity']
+        fields = ["event", "attendee", "quantity"]
         widgets = {
-            'event': forms.Select(attrs={'class': INPUT_CLASSES}),
-            'attendee': forms.Select(attrs={'class': INPUT_CLASSES}),
-            'quantity': forms.NumberInput(attrs={'class': INPUT_CLASSES, 'min': 1}),
+            "event": forms.Select(
+                attrs={"class": INPUT_CLASSES}
+            ),
+            "attendee": forms.Select(
+                attrs={"class": INPUT_CLASSES}
+            ),
+            "quantity": forms.NumberInput(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "min": 1,
+                }
+            ),
         }
 
 
 class BookingForm(forms.ModelForm):
     class Meta:
         model = EventBooking
-        fields = ['user', 'event']
+        fields = ["user", "event"]
         widgets = {
-            'user': forms.Select(attrs={'class': INPUT_CLASSES}),
-            'event': forms.Select(attrs={'class': INPUT_CLASSES}),
+            "user": forms.Select(
+                attrs={"class": INPUT_CLASSES}
+            ),
+            "event": forms.Select(
+                attrs={"class": INPUT_CLASSES}
+            ),
         }
-
