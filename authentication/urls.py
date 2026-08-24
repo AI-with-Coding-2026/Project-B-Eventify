@@ -28,6 +28,16 @@ urlpatterns = [
         views.cancel_booking,
         name='cancel_booking',
     ),
+        path(
+        'admin/users/',
+        views.admin_user_list,
+        name='admin_user_list',
+    ),
+    path(
+        'admin/analytics/',
+        views.analytics_dashboard,
+        name='analytics_dashboard',
+    ),
     path(
         'admin/users/<int:pk>/delete/',
         views.user_delete,

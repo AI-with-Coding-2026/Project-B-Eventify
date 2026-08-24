@@ -42,8 +42,9 @@
 
             {% for event in upcoming_events %} 
 
-            <a href="{% url 'event_detail' event.pk %}" 
-                class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit"> 
+            <a href="{% url 'event_detail' event.pk %}"
+                style="animation-delay: {{ forloop.counter0|add:0 }}00ms;"
+                class="animate-fade-slide bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit"> 
 
                 {% if event.image %} 
 
