@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Register — Eventify{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto mt-8 bg-white p-8 rounded-xl shadow">
+    <h1 class="text-2xl font-bold mb-6">Create an account</h1>
+    <style>
+        input[type="text"], input[type="email"], input[type="password"], select {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99,102,241,0.2);
+        }
+    </style>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% for field in form %}
+        <div>
+            <label for="{{ field.id_for_label }}" class="block font-medium mb-1">
+                {{ field.label }}
+            </label>
+            {{ field }}
+            {% if field.help_text %}
+                <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
+            {% endif %}
+            {% for error in field.errors %}
+                <p class="text-xs text-red-600 mt-1">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700">
+            Register
+        </button>
+    </form>
+</div>
+{% endblock %}

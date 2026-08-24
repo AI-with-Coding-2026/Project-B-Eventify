@@ -1,43 +1,42 @@
-from django.contrib import messages
-from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.contrib.auth.views import LoginView, LogoutView
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.views.generic import CreateView
 
-from .forms import RegistrationForm
+from events.models import Event
+
+from .forms import CustomUserCreationForm, StyledAuthenticationForm
 
 
-def register_view(request):
-    if request.user.is_authenticated:
-        return redirect("dashboard")
-
-    if request.method == "POST":
-        form = RegistrationForm(request.POST)
-
-        if form.is_valid():
-            user = form.save()
-
-            # Log the user in immediately after registration.
-            login(request, user)
-
-            messages.success(
-                request,
-                "Your account was created successfully.",
-            )
-
-            return redirect("dashboard")
-    else:
-        form = RegistrationForm()
-
-    return render(
-        request,
-        "accounts/register.html",
-        {"form": form},
-    )
+class SignUpView(CreateView):
+    form_class = CustomUserCreationForm
+    template_name = 'accounts/register.html'
+    success_url = reverse_lazy('login')
 
 
 @login_required
-def dashboard_view(request):
+def dashboard(request):
+    user_events = Event.objects.filter(
+        organizer=request.user,
+    ).order_by('date')
+
+    upcoming_events = user_events.filter(
+        date__gte=timezone.now(),
+    )[:3]
+
     return render(
         request,
-        "accounts/dashboard.html",
+        'accounts/dashboard.html',
+        {
+            'user_events': user_events,
+            'upcoming_events': upcoming_events,
+        },
     )
+
+
+login_view = LoginView.as_view(
+    template_name='accounts/login.html',
+    form_class=StyledAuthenticationForm,
+)
+logout_view = LogoutView.as_view(next_page=reverse_lazy('login'))

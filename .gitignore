@@ -1,0 +1,39 @@
+# Virtual environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Django development database
+db.sqlite3
+*.sqlite3
+
+# Environment variables
+.env
+
+# macOS
+.DS_Store
+
+# Cursor / VS Code
+.cursor/
+.vscode/
+
+# Static collection
+staticfiles/
+
+# Test and coverage files
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Media files
+media/
+.DS_Store
+
+# Claude
+.claude/
+CLAUDE.md
