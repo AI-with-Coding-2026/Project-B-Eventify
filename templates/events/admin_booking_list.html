@@ -1,0 +1,37 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}Manage Bookings — Eventify{% endblock %}
+
+{% block admin_content %}
+<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+    <h1 class="text-2xl font-bold mb-6 display">Bookings</h1>
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="text-left text-gray-500 border-b border-gray-100">
+                <th class="py-2 pr-4">User</th>
+                <th class="py-2 pr-4">Event</th>
+                <th class="py-2 pr-4">Booked At</th>
+                <th class="py-2 pr-4">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+            <tr class="border-b border-gray-50 hover:bg-gray-50">
+                <td class="py-2 pr-4 font-medium text-gray-900">{{ booking.user.username }}</td>
+                <td class="py-2 pr-4 text-gray-600">{{ booking.event.title }}</td>
+                <td class="py-2 pr-4 text-gray-600">{{ booking.booked_at|date:"M d, Y" }}</td>
+                <td class="py-2 pr-4 space-x-2">
+                    <a href="{% url 'booking_edit' booking.pk %}"
+                        class="inline-flex items-center justify-center rounded-lg bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition">Edit</a>
+                    <a href="{% url 'booking_delete' booking.pk %}"
+                        class="inline-flex items-center justify-center rounded-lg bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition">Delete</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="py-4 text-gray-400 text-center">No bookings found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

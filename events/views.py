@@ -14,6 +14,7 @@ from authentication.decorators import (
     attendee_required,
     organizer_required,
     role_required,
+    organizer_or_admin_required,
 )
 from authentication.models import UserRole
 from .emails import send_booking_confirmation_email
@@ -190,7 +191,6 @@ def event_detail(request, pk):
     if user.is_authenticated:
         user_has_booked = _user_has_booked_event(user, event)
 
-    back_url, back_label = _resolve_back_navigation(request)
 
     is_past_event = event.date < timezone.now()
 
@@ -206,8 +206,6 @@ def event_detail(request, pk):
         ),
         'user_has_booked': user_has_booked,
         'is_past_event': event.is_expired,
-        'back_url': back_url,
-        'back_label': back_label,
     }
     return render(request, 'events/event_detail.html', context)
 
@@ -264,10 +262,12 @@ def book_ticket(request, pk):
                         attendee=request.user,
                         quantity=quantity,
                     )
+                    EventBooking.objects.get_or_create(
+                        user=request.user,
+                        event=event,
+                    )
                     
-                    # --------------------------------------------------
-                    # التعديل هنا: تشغيل الإرسال في الخلفية دون تعليق السيرفر
-                    # --------------------------------------------------
+                   
                     threading.Thread(
                         target=send_booking_confirmation_email,
                         args=(ticket,)
@@ -304,7 +304,7 @@ def organizer_event_list(request):
     )
 
 
-@organizer_required
+@organizer_or_admin_required
 def event_create(request):
     """Create an event and assign the logged-in organizer as owner."""
     if request.method == 'POST':
@@ -316,7 +316,7 @@ def event_create(request):
             messages.success(request, 'Event created successfully.')
             if request.user.is_admin:
                 return redirect('admin_dashboard')
-            return redirect('organizer_event_list')
+            return redirect('my_events') # التعديل هنا لتوجهه لصفحة My Events
     else:
         form = EventForm()
 
@@ -331,19 +331,23 @@ def event_create(request):
     )
 
 
-@organizer_required
+@organizer_or_admin_required
 def event_edit(request, pk):
-    """Edit an event only if it belongs to the logged-in organizer."""
-    event = get_object_or_404(Event, pk=pk, organizer=request.user)
+    """Edit an event. Admins can edit any event, organizers only their own."""
+    if request.user.is_admin:
+        event = get_object_or_404(Event, pk=pk)
+    else:
+        event = get_object_or_404(Event, pk=pk, organizer=request.user)
 
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES, instance=event)
         if form.is_valid():
             form.save()
             messages.success(request, 'Event updated successfully.')
+            
             if request.user.is_admin:
                 return redirect('admin_dashboard')
-            return redirect('organizer_event_list')
+            return redirect('my_events') # التعديل هنا أيضاً ليأخذه لصفحة My Events
     else:
         form = EventForm(instance=event)
 
@@ -359,7 +363,7 @@ def event_edit(request, pk):
     )
 
 
-@organizer_required
+@organizer_or_admin_required
 def event_delete(request, pk):
     """Delete an event only if it belongs to the logged-in organizer."""
     event = get_object_or_404(Event, pk=pk, organizer=request.user)
@@ -369,14 +373,13 @@ def event_delete(request, pk):
         messages.success(request, 'Event deleted successfully.')
         if request.user.is_admin:
             return redirect('admin_dashboard')
-        return redirect('organizer_event_list')
+        return redirect('my_events') # التعديل هنا ليعود لصفحة My Events بعد الحذف
 
     return render(
         request,
         'events/event_confirm_delete.html',
         {'event': event},
     )
-
 
 @admin_required
 def category_list(request):
@@ -397,7 +400,7 @@ def category_create(request):
                 'Category created successfully.',
             )
 
-            return redirect('admin_dashboard')
+            return redirect('category_list')
 
     else:
         form = CategoryForm()
@@ -429,7 +432,7 @@ def category_update(request, pk):
                 'Category updated successfully.'
             )
 
-            return redirect('category_update', pk=category.pk)
+            return redirect('category_list')
 
     else:
         form = CategoryForm(instance=category)
@@ -481,116 +484,6 @@ def my_events(request):
     )
 
 
-@role_required(UserRole.ORGANIZER)
-def create_event(request):
-    if request.method == "POST":
-        form = EventForm(
-            request.POST,
-            request.FILES,
-        )
-
-        if form.is_valid():
-            event = form.save(commit=False)
-            event.organizer = request.user
-            event.save()
-
-            messages.success(
-                request,
-                "Event created successfully.",
-            )
-
-            if request.user.is_admin:
-                return redirect("admin_dashboard")
-
-            return redirect("my_events")
-
-    else:
-        form = EventForm()
-
-    return render(
-        request,
-        "events/event_form.html",
-        {
-            "form": form,
-            "page_title": "Create Event",
-            "submit_label": "Create Event",
-        },
-    )
-
-
-@role_required(UserRole.ORGANIZER)
-def edit_event(request, pk):
-    event = get_object_or_404(Event, pk=pk)
-
-    if not _user_can_manage_event(request.user, event):
-        raise PermissionDenied
-
-    if request.method == "POST":
-        form = EventForm(
-            request.POST,
-            request.FILES,
-            instance=event,
-        )
-
-        if form.is_valid():
-            form.save()
-
-            messages.success(
-                request,
-                "Event updated successfully.",
-            )
-
-            return redirect(
-                "event_detail",
-                pk=event.pk,
-            )
-
-    else:
-        form = EventForm(
-            instance=event
-        )
-
-    return render(
-        request,
-        "events/event_form.html",
-        {
-            "form": form,
-            "event": event,
-            "page_title": "Edit Event",
-            "submit_label": "Update Event",
-        },
-    )
-
-
-@role_required(UserRole.ORGANIZER)
-def delete_event(request, pk):
-    event = get_object_or_404(Event, pk=pk)
-
-    if not _user_can_manage_event(request.user, event):
-        raise PermissionDenied
-
-    if request.method == "POST":
-        event.delete()
-
-        messages.success(
-            request,
-            "Event deleted successfully.",
-        )
-
-        if request.user.is_admin:
-            return redirect(request.POST.get("next") or "admin_dashboard")
-
-        return redirect("my_events")
-
-    return render(
-        request,
-        "events/event_confirm_delete.html",
-        {
-            "event": event,
-        },
-    )
-
-
 @admin_required
 def ticket_edit(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
@@ -600,7 +493,7 @@ def ticket_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, "Ticket updated successfully.")
-            return redirect("admin_dashboard")
+            return redirect("admin_booking_list")
     else:
         form = TicketForm(instance=ticket)
 
@@ -621,9 +514,10 @@ def ticket_delete(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
 
     if request.method == "POST":
+        EventBooking.objects.filter(user=ticket.attendee, event=ticket.event).delete()
         ticket.delete()
         messages.success(request, "Ticket deleted successfully.")
-        return redirect("admin_dashboard")
+        return redirect("admin_booking_list")
 
     return render(
         request,
@@ -643,7 +537,7 @@ def booking_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, "Booking updated successfully.")
-            return redirect("admin_dashboard")
+            return redirect("admin_booking_list")
     else:
         form = BookingForm(instance=booking)
 
@@ -664,9 +558,10 @@ def booking_delete(request, pk):
     booking = get_object_or_404(EventBooking, pk=pk)
 
     if request.method == "POST":
+        Ticket.objects.filter(attendee=booking.user, event=booking.event).delete()
         booking.delete()
         messages.success(request, "Booking deleted successfully.")
-        return redirect("admin_dashboard")
+        return redirect("admin_booking_list")
 
     return render(
         request,
@@ -675,3 +570,18 @@ def booking_delete(request, pk):
             "booking": booking,
         },
     )
+
+@admin_required
+def admin_booking_list(request):
+    for ticket in Ticket.objects.select_related('attendee', 'event').all():
+        EventBooking.objects.get_or_create(
+            user=ticket.attendee,
+            event=ticket.event,
+            defaults={'booked_at': ticket.booked_at}
+        )
+    bookings = EventBooking.objects.select_related('user', 'event').order_by('-booked_at')
+    return render(request, 'events/admin_booking_list.html', {'bookings': bookings})
+
+create_event = event_create
+edit_event = event_edit
+delete_event = event_delete

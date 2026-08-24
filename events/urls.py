@@ -104,4 +104,9 @@ urlpatterns = [
         views.booking_delete,
         name='booking_delete',
     ),
+    path(
+        'admin/bookings/',
+        views.admin_booking_list,
+        name='admin_booking_list'
+    ),
 ]

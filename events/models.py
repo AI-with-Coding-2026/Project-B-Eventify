@@ -137,13 +137,18 @@ class Event(models.Model):
 
     @property
     def tickets_sold(self):
-        """Return tickets sold, including legacy one-ticket EventBooking rows."""
-        ticket_quantity = self.tickets.aggregate(total=Sum('quantity'))['total'] or 0
-        return ticket_quantity + self.bookings.count()
+        from django.db.models import Sum
+        bookings_count = self.bookings.count()
+        tickets_count = self.tickets.aggregate(total=Sum('quantity'))['total'] or 0
+        return bookings_count + tickets_count
 
     @property
     def tickets_remaining(self):
         return max(self.max_tickets - self.tickets_sold, 0)
+
+    @property
+    def revenue(self):
+        return self.price * self.tickets_sold
 
     @property
     def is_sold_out(self):
@@ -185,6 +190,10 @@ class Ticket(models.Model):
 
     def __str__(self):
         return f'{self.attendee} → {self.event} ({self.quantity})'
+
+    @property
+    def user(self):
+        return self.attendee
 
 
 class EventBooking(models.Model):

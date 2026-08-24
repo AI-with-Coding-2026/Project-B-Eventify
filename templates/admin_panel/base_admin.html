@@ -5,27 +5,25 @@
     <aside class="w-56 shrink-0">
         <nav class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-1 sticky top-4">
             <a href="{% url 'admin_dashboard' %}"
-               class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'admin_dashboard' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'admin_dashboard' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
                 Dashboard
             </a>
             <a href="{% url 'category_list' %}"
-               class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'category_list' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'category_list' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
                 Categories
             </a>
             <a href="{% url 'admin_user_list' %}"
-   class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'admin_user_list' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
-    Users
-</a>
-<a href="{% url 'analytics_dashboard' %}"
-   class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'analytics_dashboard' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
-    Analytics
-</a>
-            <span class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-300 cursor-not-allowed">
-                Bookings (coming soon)
-            </span>
-            <span class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-300 cursor-not-allowed">
-                Tickets (coming soon)
-            </span>
+                class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'admin_user_list' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                Users
+            </a>
+            <a href="{% url 'analytics_dashboard' %}"
+                class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'analytics_dashboard' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                Analytics
+            </a>
+            <a href="{% url 'admin_booking_list' %}"
+                class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'admin_booking_list' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                Bookings
+            </a>
         </nav>
     </aside>
 
