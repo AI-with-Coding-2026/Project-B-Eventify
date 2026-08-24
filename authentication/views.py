@@ -86,17 +86,17 @@ def user_delete(request, pk):
 
     if target.pk == request.user.pk:
         messages.error(request, 'You cannot delete your own account.')
-        return redirect('admin_user_list')
+        return redirect('admin_dashboard')
 
     if target.role == UserRole.ADMIN:
         messages.error(request, 'Admin accounts cannot be deleted from the dashboard.')
-        return redirect('admin_user_list')
+        return redirect('admin_dashboard')
 
     if request.method == 'POST':
         username = target.username
         target.delete()
         messages.success(request, f'User "{username}" deleted successfully.')
-        return redirect('admin_user_list')
+        return redirect('admin_dashboard')
 
     return render(
         request,

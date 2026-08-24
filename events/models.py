@@ -138,9 +138,11 @@ class Event(models.Model):
     @property
     def tickets_sold(self):
         from django.db.models import Sum
-        bookings_count = self.bookings.count()
+        legacy_bookings = self.bookings.exclude(
+            user__in=self.tickets.values_list('attendee_id', flat=True)
+        ).count()
         tickets_count = self.tickets.aggregate(total=Sum('quantity'))['total'] or 0
-        return bookings_count + tickets_count
+        return legacy_bookings + tickets_count
 
     @property
     def tickets_remaining(self):

@@ -239,11 +239,7 @@ def book_ticket(request, pk):
             messages.error(request, 'Choose at least one ticket.')
         else:
             with transaction.atomic():
-                event = Event.objects.select_for_update().get(pk=pk)
-                tickets_sold = Ticket.objects.filter(event=event).aggregate(
-                    total=Sum('quantity')
-                )['total'] or 0
-                tickets_sold += event.bookings.count()
+                tickets_sold = event.tickets_sold
                 remaining = event.max_tickets - tickets_sold
 
                 if quantity > remaining:
@@ -316,7 +312,7 @@ def event_create(request):
             messages.success(request, 'Event created successfully.')
             if request.user.is_admin:
                 return redirect('admin_dashboard')
-            return redirect('my_events') # التعديل هنا لتوجهه لصفحة My Events
+            return redirect('organizer_event_list')
     else:
         form = EventForm()
 
@@ -400,7 +396,7 @@ def category_create(request):
                 'Category created successfully.',
             )
 
-            return redirect('category_list')
+            return redirect('admin_dashboard')
 
     else:
         form = CategoryForm()
@@ -432,7 +428,7 @@ def category_update(request, pk):
                 'Category updated successfully.'
             )
 
-            return redirect('category_list')
+            return redirect('category_update', pk=category.pk)
 
     else:
         form = CategoryForm(instance=category)
