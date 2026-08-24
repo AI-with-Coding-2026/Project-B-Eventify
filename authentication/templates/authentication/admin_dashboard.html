@@ -42,7 +42,7 @@
                     <p class="text-sm font-semibold text-gray-700 mb-2">Organizers</p>
 
                     {% if organizers %}
-                    <ul class="divide-y divide-gray-100 max-h-40 overflow-y-auto">
+                    <ul class="divide-y divide-gray-100 max-h-48 overflow-y-auto pr-3 custom-scrollbar">
                         {% for organizer in organizers %}
                         <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
                             <span>
@@ -67,7 +67,7 @@
                     <p class="text-sm font-semibold text-gray-700 mb-2">Attendees</p>
 
                     {% if attendees %}
-                    <ul class="divide-y divide-gray-100 max-h-40 overflow-y-auto">
+                    <ul class="divide-y divide-gray-100 max-h-48 overflow-y-auto pr-3 custom-scrollbar">
                         {% for attendee in attendees %}
                         <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
                             <span>
@@ -96,16 +96,14 @@
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold display">Manage Categories</h2>
 
-                    <a
-                        href="{% url 'category_create' %}"
-                        class="inline-block bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-indigo-100"
-                    >
+                    <a href="{% url 'category_create' %}"
+                        class="inline-block bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-indigo-100">
                         + Add
                     </a>
                 </div>
 
                 {% if categories %}
-                <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto pr-3 custom-scrollbar">
                     {% for category in categories %}
                     <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
                         <span>
@@ -140,7 +138,7 @@
                 <h2 class="text-lg font-semibold mb-4 display">Tickets</h2>
 
                 {% if tickets %}
-                <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto pr-3 custom-scrollbar">
                     {% for ticket in tickets %}
                     <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
                         <span>
@@ -175,7 +173,7 @@
                 <h2 class="text-lg font-semibold mb-4 display">Bookings</h2>
 
                 {% if bookings %}
-                <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto pr-3 custom-scrollbar">
                     {% for booking in bookings %}
                     <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
                         <span>
@@ -211,10 +209,8 @@
         <div class="animate-fade-slide flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold display">Events</h2>
 
-            <a
-                href="{% url 'create_event' %}"
-                class="inline-block bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-indigo-100"
-            >
+            <a href="{% url 'create_event' %}"
+                class="inline-block bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-indigo-100">
                 + Add event
             </a>
         </div>
@@ -223,20 +219,18 @@
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {% for event in events %}
             <div class="animate-fade-slide bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300"
-                 style="animation-delay: calc({{ forloop.counter0 }} * 80ms);">
+                style="animation-delay: calc({{ forloop.counter0 }} * 80ms);">
 
                 {% if event.image %}
-                    <a href="{% url 'event_detail' event.pk %}">
-                        <img
-                            src="{{ event.image.url }}"
-                            alt="{{ event.title }}"
-                            class="w-full h-32 object-cover hover:opacity-95 transition"
-                        >
-                    </a>
+                <a href="{% url 'event_detail' event.pk %}">
+                    <img src="{{ event.image.url }}" alt="{{ event.title }}"
+                        class="w-full h-32 object-cover hover:opacity-95 transition">
+                </a>
                 {% else %}
-                    <a href="{% url 'event_detail' event.pk %}" class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm hover:bg-indigo-100 transition">
-                        No image
-                    </a>
+                <a href="{% url 'event_detail' event.pk %}"
+                    class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm hover:bg-indigo-100 transition">
+                    No image
+                </a>
                 {% endif %}
 
                 <div class="p-4 flex flex-col flex-1">
@@ -252,17 +246,13 @@
                     </p>
 
                     <div class="flex gap-3 mt-auto pt-2 border-t border-gray-100">
-                        <a
-                            href="{% url 'edit_event' event.pk %}"
-                            class="text-xs font-semibold text-indigo-600 hover:underline"
-                        >
+                        <a href="{% url 'edit_event' event.pk %}"
+                            class="text-xs font-semibold text-indigo-600 hover:underline">
                             Edit
                         </a>
 
-                        <a
-                            href="{% url 'delete_event' event.pk %}"
-                            class="text-xs font-semibold text-red-600 hover:underline"
-                        >
+                        <a href="{% url 'delete_event' event.pk %}"
+                            class="text-xs font-semibold text-red-600 hover:underline">
                             Delete
                         </a>
                     </div>
@@ -283,10 +273,7 @@
                 Upcoming Events
             </h2>
 
-            <a
-                href="{% url 'event_list' %}"
-                class="text-sm text-indigo-600 font-medium hover:underline"
-            >
+            <a href="{% url 'event_list' %}" class="text-sm text-indigo-600 font-medium hover:underline">
                 View all events →
             </a>
         </div>
@@ -294,22 +281,16 @@
         {% if upcoming_events %}
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {% for event in upcoming_events %}
-            <a
-                href="{% url 'event_detail' event.pk %}"
+            <a href="{% url 'event_detail' event.pk %}"
                 class="animate-slide-in-right bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit"
-                style="animation-delay: calc({{ forloop.counter0 }} * 100ms);"
-            >
+                style="animation-delay: calc({{ forloop.counter0 }} * 100ms);">
 
                 {% if event.image %}
-                    <img
-                        src="{{ event.image.url }}"
-                        alt="{{ event.title }}"
-                        class="w-full h-32 object-cover"
-                    >
+                <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-32 object-cover">
                 {% else %}
-                    <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">
-                        No image
-                    </div>
+                <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">
+                    No image
+                </div>
                 {% endif %}
 
                 <div class="p-4 flex flex-col flex-1">
@@ -407,13 +388,32 @@
             );
         } else {
             runCountUpAnimation();
-        }
-
         // Trigger on every pageshow (including back-forward navigation & bfcache)
         window.addEventListener('pageshow', function () {
             runCountUpAnimation();
         });
     })();
 </script>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 #f1f5f9;
+    }
+</style>
 
 {% endblock %}
