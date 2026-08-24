@@ -1,0 +1,19 @@
+Subject: Your Eventify Booking Cancellation Confirmation
+
+Hello {{ ticket.attendee.username }},
+
+Your booking has been successfully cancelled.
+
+Event: {{ ticket.event.title }}
+Date: {{ ticket.event.date|date:"M d, Y — g:i A" }}
+Tickets cancelled: {{ ticket.quantity }}
+Price per ticket: ${{ unit_price }}
+Total amount: ${{ total_price }}
+
+Your Eventify ticket is now marked as cancelled.
+
+You can view the event here:
+{{ event_url }}
+
+Thank you,
+Eventify Team
