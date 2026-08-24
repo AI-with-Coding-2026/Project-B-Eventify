@@ -1,0 +1,42 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<h2>{{ title }}</h2>
+<p>Are you sure you want to delete this event?</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Event title</th>
+            <th>Organizer</th>
+            <th>Date</th>
+            <th>Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for obj in queryset %}
+        <tr>
+            <td>{{ obj.title }}</td>
+            <td>{{ obj.organizer.username }}</td>
+            <td>{{ obj.date }}</td>
+            <td>${{ obj.price }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<form action="" method="post">
+    {% csrf_token %}
+    {% for obj in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}" />
+    {% endfor %}
+    <input type="hidden" name="action" value="{{ action }}" />
+    <input type="hidden" name="post" value="yes" />
+    
+    <div>
+        <input type="submit" value="{% translate "Confirm Delete" %}" class="button" />
+        <a href="#" onclick="window.history.back(); return false;" class="button cancel-link">{% translate "Cancel" %}</a>
+    </div>
+</form>
+{% endblock %}

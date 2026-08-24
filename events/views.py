@@ -1,19 +1,24 @@
+import threading
+from urllib.parse import urlparse
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, IntegerField, Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
-from urllib.parse import urlparse
 
 from authentication.decorators import (
     admin_required,
     attendee_required,
     organizer_required,
     role_required,
+    organizer_or_admin_required,
 )
 from authentication.models import UserRole
+from .emails import send_booking_confirmation_email
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
 from .models import Category, Event, EventBooking, Ticket
 
@@ -31,11 +36,50 @@ def _user_can_manage_event(user, event):
 _BACK_LABEL_MAP = [
     ('/admin/', 'Back to Admin Dashboard'),
     ('/dashboard/organizer/', 'Back to Organizer Dashboard'),
+    ('/dashboard/attendee/bookings/', 'Back to My Bookings'),
     ('/dashboard/attendee/', 'Back to Attendee Dashboard'),
+    ('/events/organizer/', 'Back to Organizer Events'),
+    ('/my-bookings/', 'Back to My Bookings'),
+    ('/bookings/', 'Back to My Bookings'),
     ('/events/mine/', 'Back to My Events'),
+    ('/events/my-tickets/', 'Back to My Tickets'),
     ('/events/', 'Back to Events'),
 ]
 
+def get_user_bookings(user_id):
+    """
+    Fetch all bookings for a given user ID, combining current Ticket
+    records and legacy EventBooking records into one list.
+    """
+    tickets = Ticket.objects.filter(
+        attendee_id=user_id
+    ).select_related('event').order_by('-booked_at')
+
+    legacy_bookings = EventBooking.objects.filter(
+        user_id=user_id
+    ).select_related('event').order_by('-booked_at')
+
+    bookings = []
+
+    for ticket in tickets:
+        bookings.append({
+            'event': ticket.event,
+            'quantity': ticket.quantity,
+            'booked_at': ticket.booked_at,
+            'source': 'ticket',
+        })
+
+    for booking in legacy_bookings:
+        bookings.append({
+            'event': booking.event,
+            'quantity': 1,
+           'booked_at': booking.booked_at,
+            'source': 'legacy',
+        })
+
+    bookings.sort(key=lambda b: b['booked_at'], reverse=True)
+
+    return bookings
 
 def _resolve_back_navigation(request):
     """Return (back_url, back_label) from the HTTP Referer header.
@@ -101,7 +145,7 @@ def event_list(request):
         if end_date:
             events = events.filter(date__date__lte=end_date)
 
-    paginator = Paginator(events, 4)
+    paginator = Paginator(events, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -113,7 +157,7 @@ def event_list(request):
         'events': page_obj,
         'page_obj': page_obj,
         'paginator': paginator,
-        'categories': Event.CATEGORY_CHOICES,
+        'categories': Event.get_all_category_choices(),
         'search_query': search_query,
         'selected_category': selected_category,
         'max_price': max_price,
@@ -135,7 +179,8 @@ def event_detail(request, pk):
             event=event,
         ).exists()
 
-    back_url, back_label = _resolve_back_navigation(request)
+
+    is_past_event = event.date < timezone.now()
 
     context = {
         'event': event,
@@ -145,62 +190,75 @@ def event_detail(request, pk):
             and user.role == UserRole.ATTENDEE
             and not user_has_booked
             and not event.is_sold_out
+            and not event.is_expired
         ),
         'user_has_booked': user_has_booked,
-        'back_url': back_url,
-        'back_label': back_label,
+        'is_past_event': event.is_expired,
     }
     return render(request, 'events/event_detail.html', context)
 
 
 @role_required(UserRole.ATTENDEE)
 def book_event(request, pk):
-    if request.method != 'POST':
-        return redirect('event_detail', pk=pk)
-
-    event = get_object_or_404(Event, pk=pk)
-
-    if EventBooking.objects.filter(user=request.user, event=event).exists():
-        messages.info(request, f'You have already booked "{event.title}".')
-        return redirect('event_detail', pk=pk)
-
-    if event.is_sold_out:
-        messages.error(request, 'This event is fully booked.')
-        return redirect('event_detail', pk=pk)
-
-    EventBooking.objects.create(user=request.user, event=event)
-    messages.success(request, f'Successfully booked "{event.title}".')
-    return redirect('event_detail', pk=pk)
+    """Keep the legacy endpoint from bypassing the ticket-capacity flow."""
+    return redirect('book_ticket', pk=pk)
 
 
 @attendee_required
 def book_ticket(request, pk):
-    """Allow attendees to book a ticket for an event."""
+    """Book tickets without allowing a request to exceed event capacity."""
     event = get_object_or_404(Event, pk=pk)
 
-    # Check if user already has a ticket for this event
-    if Ticket.objects.filter(attendee=request.user, event=event).exists():
-        messages.info(request, f'You have already booked a ticket for "{event.title}".')
+    if event.is_expired:
+        messages.error(request, 'Booking is not available because this event has ended.')
         return redirect('event_detail', pk=pk)
 
     if request.method == 'POST':
         try:
             quantity = int(request.POST.get('quantity', 1))
         except (TypeError, ValueError):
-            quantity = 1
-        if quantity < 1:
-            quantity = 1
+            quantity = 0
 
-        Ticket.objects.create(
-            event=event,
-            attendee=request.user,
-            quantity=quantity,
-        )
-        messages.success(
-            request,
-            f'Ticket booked for "{event.title}".',
-        )
-        return redirect('my_tickets')
+        if quantity < 1:
+            messages.error(request, 'Choose at least one ticket.')
+        else:
+            with transaction.atomic():
+                event = Event.objects.select_for_update().get(pk=pk)
+                tickets_sold = Ticket.objects.filter(event=event).aggregate(
+                    total=Sum('quantity')
+                )['total'] or 0
+                tickets_sold += event.bookings.count()
+                remaining = event.max_tickets - tickets_sold
+
+                if quantity > remaining:
+                    if remaining <= 0:
+                        messages.error(request, 'This event is sold out.')
+                    else:
+                        messages.error(
+                            request,
+                            f'Only {remaining} ticket(s) remain for this event.',
+                        )
+                else:
+                    ticket = Ticket.objects.create(
+                        event=event,
+                        attendee=request.user,
+                        quantity=quantity,
+                    )
+                    
+                    # --------------------------------------------------
+                    # التعديل هنا: تشغيل الإرسال في الخلفية دون تعليق السيرفر
+                    # --------------------------------------------------
+                    threading.Thread(
+                        target=send_booking_confirmation_email,
+                        args=(ticket,)
+                    ).start()
+
+                    messages.success(
+                        request,
+                        f'Ticket booked for "{event.title}". Confirmation email is on its way.',
+                    )
+
+                    return redirect('my_bookings')
 
     return render(
         request,
@@ -211,17 +269,8 @@ def book_ticket(request, pk):
 
 @attendee_required
 def my_tickets(request):
-    """Show tickets booked by the logged-in attendee."""
-    tickets = (
-        Ticket.objects.filter(attendee=request.user)
-        .select_related('event')
-        .order_by('-booked_at')
-    )
-    return render(
-        request,
-        'events/my_tickets.html',
-        {'tickets': tickets},
-    )
+    """Redirect legacy my_tickets endpoint to unified my_bookings page."""
+    return redirect('my_bookings')
 
 
 @organizer_required
@@ -235,7 +284,7 @@ def organizer_event_list(request):
     )
 
 
-@organizer_required
+@organizer_or_admin_required
 def event_create(request):
     """Create an event and assign the logged-in organizer as owner."""
     if request.method == 'POST':
@@ -245,7 +294,9 @@ def event_create(request):
             event.organizer = request.user
             event.save()
             messages.success(request, 'Event created successfully.')
-            return redirect('organizer_event_list')
+            if request.user.is_admin:
+                return redirect('admin_dashboard')
+            return redirect('my_events') # التعديل هنا لتوجهه لصفحة My Events
     else:
         form = EventForm()
 
@@ -260,17 +311,23 @@ def event_create(request):
     )
 
 
-@organizer_required
+@organizer_or_admin_required
 def event_edit(request, pk):
-    """Edit an event only if it belongs to the logged-in organizer."""
-    event = get_object_or_404(Event, pk=pk, organizer=request.user)
+    """Edit an event. Admins can edit any event, organizers only their own."""
+    if request.user.is_admin:
+        event = get_object_or_404(Event, pk=pk)
+    else:
+        event = get_object_or_404(Event, pk=pk, organizer=request.user)
 
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES, instance=event)
         if form.is_valid():
             form.save()
             messages.success(request, 'Event updated successfully.')
-            return redirect('organizer_event_list')
+            
+            if request.user.is_admin:
+                return redirect('admin_dashboard')
+            return redirect('my_events') # التعديل هنا أيضاً ليأخذه لصفحة My Events
     else:
         form = EventForm(instance=event)
 
@@ -286,7 +343,7 @@ def event_edit(request, pk):
     )
 
 
-@organizer_required
+@organizer_or_admin_required
 def event_delete(request, pk):
     """Delete an event only if it belongs to the logged-in organizer."""
     event = get_object_or_404(Event, pk=pk, organizer=request.user)
@@ -294,14 +351,15 @@ def event_delete(request, pk):
     if request.method == 'POST':
         event.delete()
         messages.success(request, 'Event deleted successfully.')
-        return redirect('organizer_event_list')
+        if request.user.is_admin:
+            return redirect('admin_dashboard')
+        return redirect('my_events') # التعديل هنا ليعود لصفحة My Events بعد الحذف
 
     return render(
         request,
         'events/event_confirm_delete.html',
         {'event': event},
     )
-
 
 @admin_required
 def category_list(request):
@@ -322,7 +380,7 @@ def category_create(request):
                 'Category created successfully.',
             )
 
-            return redirect('category_create')
+            return redirect('admin_dashboard')
 
     else:
         form = CategoryForm()
@@ -631,3 +689,9 @@ def booking_delete(request, pk):
             "booking": booking,
         },
     )
+
+    
+    # ربط الأسماء القديمة بالدوال الجديدة لمنع أخطاء الـ URLs
+create_event = event_create
+edit_event = event_edit
+delete_event = event_delete

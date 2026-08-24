@@ -2,8 +2,10 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
+from django.utils import timezone
 from unittest.mock import ANY, patch
 
+from events.models import Event
 from .forms import UserRegistrationForm
 from .models import User, UserRole
 from . import views
@@ -193,6 +195,16 @@ class RoleBasedAccessControlTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_my_bookings_route_exists_for_attendee_dashboard(self):
+        self.client.login(
+            username='attendee_rbac',
+            password='pass123',
+        )
+
+        response = self.client.get(reverse('my_bookings'))
+
+        self.assertEqual(response.status_code, 200)
+
     def test_organizer_cannot_access_attendee_dashboard(self):
         """Organizer → attendee dashboard uses the shared unauthorized page."""
         self.client.login(
@@ -293,6 +305,9 @@ class AdminAccessTests(TestCase):
         self.assertContains(response, 'Bookings')
         self.assertContains(response, 'Manage Categories')
         self.assertNotContains(response, 'Open Django Admin Panel')
+        self.assertContains(response, reverse('user_delete', args=[self.organizer.pk]))
+        self.assertContains(response, reverse('user_delete', args=[self.attendee.pk]))
+        self.assertNotContains(response, reverse('user_delete', args=[self.admin_user.pk]))
 
     def test_login_redirects_admin_to_dashboard(self):
         response = self.client.post(
@@ -428,7 +443,18 @@ class RoleDashboardAccessTests(TestCase):
             render.assert_called_once_with(
                 request,
                 'authentication/organizer_dashboard.html',
-                {'upcoming_events': ANY},
+                {
+                    'events': ANY,
+                    'upcoming_events': ANY,
+                    'total_events': ANY,
+                    'total_tickets_sold': ANY,
+                    'total_tickets_remaining': ANY,
+                    'total_revenue': ANY,
+                    'chart_labels_json': ANY,
+                    'chart_tickets_sold_json': ANY,
+                    'chart_tickets_remaining_json': ANY,
+                    'chart_revenue_json': ANY,
+                },
             )
 
         request = self.factory.get('/dashboard/attendee/')
@@ -463,3 +489,104 @@ class RoleDashboardAccessTests(TestCase):
         response = views.organizer_dashboard(request)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('unauthorized'))
+
+
+class AdminUserDeleteTests(TestCase):
+    def setUp(self):
+        self.admin_user = User.objects.create_user(
+            'deleteadmin',
+            'deleteadmin@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.other_admin = User.objects.create_user(
+            'otheradmin',
+            'otheradmin@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.organizer = User.objects.create_user(
+            'deleteorganizer',
+            'deleteorganizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            'deleteattendee',
+            'deleteattendee@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+
+    def test_admin_can_delete_attendee(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse('user_delete', args=[self.attendee.pk]),
+        )
+
+        self.assertRedirects(response, reverse('admin_dashboard'))
+        self.assertFalse(User.objects.filter(pk=self.attendee.pk).exists())
+
+    def test_admin_can_delete_organizer_and_their_events(self):
+        Event.objects.create(
+            organizer=self.organizer,
+            title='Organizer Event',
+            date=timezone.now(),
+        )
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse('user_delete', args=[self.organizer.pk]),
+        )
+
+        self.assertRedirects(response, reverse('admin_dashboard'))
+        self.assertFalse(User.objects.filter(pk=self.organizer.pk).exists())
+        self.assertFalse(Event.objects.filter(title='Organizer Event').exists())
+
+    def test_admin_cannot_delete_self(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse('user_delete', args=[self.admin_user.pk]),
+        )
+
+        self.assertRedirects(response, reverse('admin_dashboard'))
+        self.assertTrue(User.objects.filter(pk=self.admin_user.pk).exists())
+
+    def test_admin_cannot_delete_another_admin(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(
+            reverse('user_delete', args=[self.other_admin.pk]),
+        )
+
+        self.assertRedirects(response, reverse('admin_dashboard'))
+        self.assertTrue(User.objects.filter(pk=self.other_admin.pk).exists())
+
+    def test_organizer_cannot_delete_users(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.post(
+            reverse('user_delete', args=[self.attendee.pk]),
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('unauthorized'))
+        self.assertTrue(User.objects.filter(pk=self.attendee.pk).exists())
+
+    def test_confirm_page_renders_for_admin(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(
+            reverse('user_delete', args=[self.attendee.pk]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.attendee.username)
+        self.assertTemplateUsed(
+            response,
+            'authentication/user_confirm_delete.html',
+        )

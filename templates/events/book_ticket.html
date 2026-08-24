@@ -3,29 +3,53 @@
 {% block title %}Book Ticket | Eventify{% endblock %}
 
 {% block content %}
+<div class="mb-4">
+    <a href="{% url 'event_detail' event.pk %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
+        ← Back to Event
+    </a>
+</div>
+
 <div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-10 mb-8">
     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Booking</p>
     <h1 class="text-3xl font-bold text-gray-900 display">Book Ticket</h1>
 </div>
 
 <div class="pb-12">
-    <div class="mx-auto max-w-2xl px-4">
+    <div class="mx-auto max-w-3xl px-4">
         <div class="rounded-2xl border border-indigo-100 bg-white shadow-sm overflow-hidden mb-6">
             <div class="bg-indigo-50 px-6 py-8 sm:px-8">
-                <h2 class="text-2xl font-bold text-gray-900 display mb-3">{{ event.title }}</h2>
-                <div class="grid sm:grid-cols-2 gap-4 text-sm text-gray-600">
-                    <p><strong class="text-gray-900">Date:</strong> {{ event.date|date:"M d, Y — g:i A" }}</p>
-                    <p><strong class="text-gray-900">Price per ticket:</strong> ${{ event.price }}</p>
-                    <p><strong class="text-gray-900">Category:</strong> {{ event.category_label }}</p>
-                    <p><strong class="text-gray-900">Tickets available:</strong> {{ event.tickets_remaining }} / {{ event.max_tickets }}</p>
+                <div class="grid gap-6 sm:grid-cols-2 sm:items-start">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900 display mb-3">{{ event.title }}</h2>
+                        <div class="grid sm:grid-cols-2 gap-4 text-sm text-gray-600">
+                            <p><strong class="text-gray-900">Date:</strong> {{ event.date|date:"M d, Y — g:i A" }}</p>
+                            <p><strong class="text-gray-900">Price per ticket:</strong> ${{ event.price }}</p>
+                            <p><strong class="text-gray-900">Category:</strong> {{ event.category_label }}</p>
+                            <p><strong class="text-gray-900">Tickets available:</strong> {{ event.tickets_remaining }} / {{ event.max_tickets }}</p>
+                        </div>
+                        {% if event.description %}
+                        <div class="mt-4 p-4 bg-white rounded-lg border border-indigo-100">
+                            <p class="text-gray-700 whitespace-pre-line">{{ event.description }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="sm:justify-self-end w-full">
+                        {% if event.image %}
+                        <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-56 sm:h-64 object-cover rounded-xl bg-gray-50">
+                        {% else %}
+                        <div class="w-full h-56 sm:h-64 rounded-xl bg-white/70 flex items-center justify-center text-indigo-400 text-sm">
+                            No image available
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
-                {% if event.description %}
-                <div class="mt-4 p-4 bg-white rounded-lg border border-indigo-100">
-                    <p class="text-gray-700 whitespace-pre-line">{{ event.description }}</p>
-                </div>
-                {% endif %}
             </div>
 
+            {% if event.is_sold_out %}
+            <div class="p-6 sm:p-8">
+                <p class="rounded-lg border border-red-200 bg-red-50 p-4 font-semibold text-red-700">This event is sold out.</p>
+            </div>
+            {% else %}
             <form method="post" class="p-6 sm:p-8">
                 {% csrf_token %}
                 <div class="mb-6">
@@ -39,10 +63,18 @@
                         value="1"
                         min="1"
                         max="{{ event.tickets_remaining }}"
+                        data-unit-price="{{ event.price }}"
                         required
                         class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
                     >
                     <p class="mt-2 text-xs text-gray-500">Maximum: {{ event.tickets_remaining }} ticket{{ event.tickets_remaining|pluralize }}</p>
+                </div>
+
+                <div class="mb-6 rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3">
+                    <p class="text-sm text-gray-700">
+                        <strong class="text-gray-900">Total:</strong>
+                        $<span id="booking-total">{{ event.price }}</span>
+                    </p>
                 </div>
 
                 <div class="flex flex-col gap-3 sm:flex-row">
@@ -53,14 +85,35 @@
                         Confirm Booking
                     </button>
                     <a
-                        href="{% url 'event_list' %}"
+                        href="{% url 'event_detail' event.pk %}"
                         class="inline-flex items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 px-6 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100"
                     >
                         Cancel
                     </a>
                 </div>
             </form>
+            {% endif %}
         </div>
     </div>
 </div>
+<script>
+    (function () {
+        var quantityInput = document.getElementById('quantity');
+        var totalEl = document.getElementById('booking-total');
+        if (!quantityInput || !totalEl) {
+            return;
+        }
+        var unitPrice = parseFloat(quantityInput.getAttribute('data-unit-price')) || 0;
+        function updateTotal() {
+            var quantity = parseInt(quantityInput.value, 10);
+            if (isNaN(quantity) || quantity < 1) {
+                quantity = 0;
+            }
+            totalEl.textContent = (unitPrice * quantity).toFixed(2);
+        }
+        quantityInput.addEventListener('input', updateTotal);
+        quantityInput.addEventListener('change', updateTotal);
+        updateTotal();
+    })();
+</script>
 {% endblock %}

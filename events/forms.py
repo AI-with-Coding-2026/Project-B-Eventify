@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 
 from .models import Category, Event, EventBooking, Ticket
 
@@ -10,6 +11,7 @@ INPUT_CLASSES = (
 )
 
 TEXTAREA_CLASSES = INPUT_CLASSES + " min-h-[120px]"
+
 
 
 class CategoryForm(forms.ModelForm):
@@ -62,6 +64,11 @@ class EventForm(forms.ModelForm):
             }
         ),
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Dynamically merge hardcoded + admin-created categories.
+        self.fields['category'].choices = Event.get_all_category_choices()
 
     date = forms.DateTimeField(
         widget=forms.DateTimeInput(
@@ -131,6 +138,12 @@ class EventForm(forms.ModelForm):
     def clean_max_tickets(self):
         value = self.cleaned_data.get("max_tickets")
         return value or 1
+
+    def clean_date(self):
+        date = self.cleaned_data.get("date")
+        if date and not self.instance.pk and date < timezone.now():
+            raise forms.ValidationError("Event date and time cannot be in the past.")
+        return date
 
     def clean(self):
         cleaned_data = super().clean()
