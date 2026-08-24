@@ -258,6 +258,26 @@ def analytics_dashboard(request):
         events_qs = events_qs.filter(organizer_id=organizer_id)
     total_events = events_qs.count()
 
+    filtered_events = list(events_qs.select_related('organizer').annotate(
+        event_tickets_sold=Coalesce(Sum('tickets__quantity'), 0),
+        event_revenue=Coalesce(
+            Sum(
+                F('tickets__quantity') * F('price'),
+                output_field=DecimalField(),
+            ),
+            0,
+            output_field=DecimalField(),
+        ),
+    ).order_by('-date', 'title'))
+    event_chart_data = [
+        {
+            'title': event.title,
+            'revenue': float(event.event_revenue),
+            'tickets': event.event_tickets_sold,
+        }
+        for event in filtered_events
+    ]
+
     organizers = User.objects.filter(role=UserRole.ORGANIZER).order_by('username')
 
     context = {
@@ -265,6 +285,8 @@ def analytics_dashboard(request):
         'total_bookings': total_bookings,
         'total_tickets_sold': total_tickets_sold,
         'total_events': total_events,
+        'filtered_events': filtered_events,
+        'event_chart_data': event_chart_data,
         'organizers': organizers,
         'selected_organizer': organizer_id,
     }

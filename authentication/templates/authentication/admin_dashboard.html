@@ -30,70 +30,76 @@
         </div>
     </div>
 
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <label for="admin-table-search" class="sr-only">Search dashboard data</label>
+        <input id="admin-table-search" type="search" placeholder="Search dashboard data..."
+            class="w-full sm:max-w-md rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+        <label for="admin-table-filter" class="sr-only">Filter dashboard section</label>
+        <select id="admin-table-filter" class="w-full sm:w-52 rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+            <option value="all">All sections</option>
+            <option value="users">Users</option>
+            <option value="categories">Categories</option>
+            <option value="tickets">Tickets</option>
+            <option value="bookings">Bookings</option>
+            <option value="events">Events</option>
+            <option value="upcoming-events">Upcoming events</option>
+        </select>
+    </div>
+
     <!-- Block grid: each management area is its own card -->
     <div class="grid gap-6 md:grid-cols-2">
 
         <!-- Users block -->
-        <div id="users" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div id="users" data-table-section="users" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 md:col-span-2">
             <h2 class="text-lg font-semibold mb-4 display">Users</h2>
 
-            <div class="mb-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="min-w-0">
                 <p class="text-sm font-semibold text-gray-700 mb-2">Organizers</p>
 
                 {% if organizers %}
-                <ul class="divide-y divide-gray-100 max-h-40 overflow-y-auto">
+                <div class="overflow-x-auto">
+                <table data-table class="min-w-full divide-y divide-gray-100 text-sm">
+                    <thead class="bg-indigo-50 text-left text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                        <tr><th class="px-3 py-2"><button type="button" data-sort="0">Username</button></th><th class="px-3 py-2"><button type="button" data-sort="1">Email</button></th><th class="px-3 py-2">Actions</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
                     {% for organizer in organizers %}
-                    <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
-                        <span>
-                            <strong>{{ organizer.username }}</strong>
-                            <span class="text-gray-500">
-                                ({{ organizer.email|default:"No email" }})
-                            </span>
-                        </span>
-                        <a
-                            href="{% url 'user_delete' organizer.pk %}"
-                            class="text-xs font-semibold text-red-600 hover:underline shrink-0"
-                        >
-                            Delete
-                        </a>
-                    </li>
+                    <tr><td class="px-3 py-2 font-medium text-gray-900">{{ organizer.username }}</td><td class="px-3 py-2 text-gray-600">{{ organizer.email|default:"No email" }}</td><td class="px-3 py-2"><a href="{% url 'user_delete' organizer.pk %}" class="text-xs font-semibold text-red-600 hover:underline">Delete</a></td></tr>
                     {% endfor %}
-                </ul>
+                    </tbody>
+                </table>
+                </div>
                 {% else %}
                 <p class="text-gray-400 text-sm">No organizers found.</p>
                 {% endif %}
             </div>
 
-            <div>
+            <div class="min-w-0">
                 <p class="text-sm font-semibold text-gray-700 mb-2">Attendees</p>
 
                 {% if attendees %}
-                <ul class="divide-y divide-gray-100 max-h-40 overflow-y-auto">
+                <div class="overflow-x-auto">
+                <table data-table class="min-w-full divide-y divide-gray-100 text-sm">
+                    <thead class="bg-indigo-50 text-left text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                        <tr><th class="px-3 py-2"><button type="button" data-sort="0">Username</button></th><th class="px-3 py-2"><button type="button" data-sort="1">Email</button></th><th class="px-3 py-2">Actions</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
                     {% for attendee in attendees %}
-                    <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
-                        <span>
-                            <strong>{{ attendee.username }}</strong>
-                            <span class="text-gray-500">
-                                ({{ attendee.email|default:"No email" }})
-                            </span>
-                        </span>
-                        <a
-                            href="{% url 'user_delete' attendee.pk %}"
-                            class="text-xs font-semibold text-red-600 hover:underline shrink-0"
-                        >
-                            Delete
-                        </a>
-                    </li>
+                    <tr><td class="px-3 py-2 font-medium text-gray-900">{{ attendee.username }}</td><td class="px-3 py-2 text-gray-600">{{ attendee.email|default:"No email" }}</td><td class="px-3 py-2"><a href="{% url 'user_delete' attendee.pk %}" class="text-xs font-semibold text-red-600 hover:underline">Delete</a></td></tr>
                     {% endfor %}
-                </ul>
+                    </tbody>
+                </table>
+                </div>
                 {% else %}
                 <p class="text-gray-400 text-sm">No attendees found.</p>
                 {% endif %}
             </div>
+            </div>
         </div>
 
         <!-- Categories block -->
-        <div id="categories" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div id="categories" data-table-section="categories" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 md:col-span-2">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold display">Manage Categories</h2>
 
@@ -106,110 +112,41 @@
             </div>
 
             {% if categories %}
-            <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+            <div class="overflow-x-auto"><table data-table class="min-w-full divide-y divide-gray-100 text-sm"><thead class="bg-indigo-50 text-left text-xs font-semibold uppercase tracking-wide text-indigo-700"><tr><th class="px-3 py-2"><button type="button" data-sort="0">Category</button></th><th class="px-3 py-2"><button type="button" data-sort="1">Description</button></th><th class="px-3 py-2">Actions</th></tr></thead><tbody class="divide-y divide-gray-100">
                 {% for category in categories %}
-                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
-                    <span>
-                        <strong>{{ category.name }}</strong>
-                        <span class="text-gray-500">
-                            — {{ category.description|default:"No description" }}
-                        </span>
-                    </span>
-
-                    <div class="flex gap-2 shrink-0">
-                        <a
-                            href="{% url 'category_update' category.pk %}"
-                            class="text-xs font-semibold text-indigo-600 hover:underline"
-                        >
-                            Edit
-                        </a>
-
-                        <a
-                            href="{% url 'category_delete' category.pk %}"
-                            class="text-xs font-semibold text-red-600 hover:underline"
-                        >
-                            Delete
-                        </a>
-                    </div>
-                </li>
+                <tr><td class="px-3 py-2 font-medium text-gray-900">{{ category.name }}</td><td class="px-3 py-2 text-gray-600">{{ category.description|default:"No description" }}</td><td class="px-3 py-2 whitespace-nowrap"><a href="{% url 'category_update' category.pk %}" class="mr-3 text-xs font-semibold text-indigo-600 hover:underline">Edit</a><a href="{% url 'category_delete' category.pk %}" class="text-xs font-semibold text-red-600 hover:underline">Delete</a></td></tr>
                 {% endfor %}
-            </ul>
+            </tbody></table></div>
             {% else %}
             <p class="text-gray-400 text-sm">No categories found.</p>
             {% endif %}
         </div>
 
         <!-- Tickets block -->
-        <div id="tickets" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div id="tickets" data-table-section="tickets" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h2 class="text-lg font-semibold mb-4 display">Tickets</h2>
 
             {% if tickets %}
-            <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+            <div class="overflow-x-auto"><table data-table class="min-w-full divide-y divide-gray-100 text-sm"><thead class="bg-indigo-50 text-left text-xs font-semibold uppercase tracking-wide text-indigo-700"><tr><th class="px-3 py-2"><button type="button" data-sort="0">Attendee</button></th><th class="px-3 py-2"><button type="button" data-sort="1">Event</button></th><th class="px-3 py-2"><button type="button" data-sort="2">Quantity</button></th><th class="px-3 py-2">Actions</th></tr></thead><tbody class="divide-y divide-gray-100">
                 {% for ticket in tickets %}
-                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
-                    <span>
-                        <strong>{{ ticket.attendee.username }}</strong>
-                        <span class="text-gray-500">
-                            → {{ ticket.event.title }} ({{ ticket.quantity }})
-                        </span>
-                    </span>
-
-                    <div class="flex gap-2 shrink-0">
-                        <a
-                            href="{% url 'ticket_edit' ticket.pk %}"
-                            class="text-xs font-semibold text-indigo-600 hover:underline"
-                        >
-                            Edit
-                        </a>
-
-                        <a
-                            href="{% url 'ticket_delete' ticket.pk %}"
-                            class="text-xs font-semibold text-red-600 hover:underline"
-                        >
-                            Delete
-                        </a>
-                    </div>
-                </li>
+                <tr><td class="px-3 py-2 font-medium text-gray-900">{{ ticket.attendee.username }}</td><td class="px-3 py-2 text-gray-600">{{ ticket.event.title }}</td><td class="px-3 py-2 text-gray-600">{{ ticket.quantity }}</td><td class="px-3 py-2 whitespace-nowrap"><a href="{% url 'ticket_edit' ticket.pk %}" class="mr-3 text-xs font-semibold text-indigo-600 hover:underline">Edit</a><a href="{% url 'ticket_delete' ticket.pk %}" class="text-xs font-semibold text-red-600 hover:underline">Delete</a></td></tr>
                 {% endfor %}
-            </ul>
+            </tbody></table></div>
             {% else %}
             <p class="text-gray-400 text-sm">No tickets found.</p>
             {% endif %}
         </div>
 
         <!-- Bookings block -->
-        <div id="bookings" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div id="bookings" data-table-section="bookings" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h2 class="text-lg font-semibold mb-4 display">Bookings</h2>
 
             {% if bookings %}
-            <ul class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+            <div class="overflow-x-auto"><table data-table class="min-w-full divide-y divide-gray-100 text-sm"><thead class="bg-indigo-50 text-left text-xs font-semibold uppercase tracking-wide text-indigo-700"><tr><th class="px-3 py-2"><button type="button" data-sort="0">User</button></th><th class="px-3 py-2"><button type="button" data-sort="1">Event</button></th><th class="px-3 py-2">Actions</th></tr></thead><tbody class="divide-y divide-gray-100">
                 {% for booking in bookings %}
-                <li class="py-2 text-sm text-gray-700 flex items-center justify-between gap-3">
-                    <span>
-                        <strong>{{ booking.user.username }}</strong>
-                        <span class="text-gray-500">
-                            → {{ booking.event.title }}
-                        </span>
-                    </span>
-
-                    <div class="flex gap-2 shrink-0">
-                        <a
-                            href="{% url 'booking_edit' booking.pk %}"
-                            class="text-xs font-semibold text-indigo-600 hover:underline"
-                        >
-                            Edit
-                        </a>
-
-                        <a
-                            href="{% url 'booking_delete' booking.pk %}"
-                            class="text-xs font-semibold text-red-600 hover:underline"
-                        >
-                            Delete
-                        </a>
-                    </div>
-                </li>
+                <tr><td class="px-3 py-2 font-medium text-gray-900">{{ booking.user.username }}</td><td class="px-3 py-2 text-gray-600">{{ booking.event.title }}</td><td class="px-3 py-2 whitespace-nowrap"><a href="{% url 'booking_edit' booking.pk %}" class="mr-3 text-xs font-semibold text-indigo-600 hover:underline">Edit</a><a href="{% url 'booking_delete' booking.pk %}" class="text-xs font-semibold text-red-600 hover:underline">Delete</a></td></tr>
                 {% endfor %}
-            </ul>
+            </tbody></table></div>
             {% else %}
             <p class="text-gray-400 text-sm">No bookings found.</p>
             {% endif %}
@@ -217,7 +154,7 @@
 
     </div>
 
-    <!-- Events block - grid view -->
+    <!-- Events block -->
     <div id="events" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold display">Events</h2>
@@ -231,55 +168,38 @@
         </div>
 
         {% if events %}
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {% for event in events %}
-            <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300">
-
-                {% if event.image %}
-                    <a href="{% url 'event_detail' event.pk %}">
-                        <img
-                            src="{{ event.image.url }}"
-                            alt="{{ event.title }}"
-                            class="w-full h-32 object-cover hover:opacity-95 transition"
-                        >
-                    </a>
-                {% else %}
-                    <a href="{% url 'event_detail' event.pk %}" class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm hover:bg-indigo-100 transition">
-                        No image
-                    </a>
-                {% endif %}
-
-                <div class="p-4 flex flex-col flex-1">
-                    <h3 class="font-semibold text-gray-900 mb-1">
-                        <a href="{% url 'event_detail' event.pk %}" class="hover:text-indigo-600 transition">
-                            {{ event.title }}
-                        </a>
-                    </h3>
-
-                    <p class="text-xs text-gray-500 mb-3">
-                        <strong>Date:</strong>
-                        {{ event.date|date:"M d, Y" }}
-                    </p>
-
-                    <div class="flex gap-3 mt-auto pt-2 border-t border-gray-100">
-                        <a
-                            href="{% url 'edit_event' event.pk %}"
-                            class="text-xs font-semibold text-indigo-600 hover:underline"
-                        >
-                            Edit
-                        </a>
-
-                        <a
-                            href="{% url 'delete_event' event.pk %}"
-                            class="text-xs font-semibold text-red-600 hover:underline"
-                        >
-                            Delete
-                        </a>
-                    </div>
-                </div>
-
-            </div>
-            {% endfor %}
+        <div class="overflow-x-auto" data-table-section="events">
+            <table data-table class="min-w-full divide-y divide-gray-100 text-sm">
+                <thead class="bg-indigo-50 text-left text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                    <tr>
+                        <th scope="col" class="px-4 py-3"><button type="button" data-sort="0">Event</button></th>
+                        <th scope="col" class="px-4 py-3"><button type="button" data-sort="1">Organizer</button></th>
+                        <th scope="col" class="px-4 py-3"><button type="button" data-sort="2">Date</button></th>
+                        <th scope="col" class="px-4 py-3"><button type="button" data-sort="3">Location</button></th>
+                        <th scope="col" class="px-4 py-3"><button type="button" data-sort="4">Price</button></th>
+                        <th scope="col" class="px-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-gray-600">
+                    {% for event in events %}
+                    <tr class="transition hover:bg-indigo-50/50">
+                        <td class="whitespace-nowrap px-4 py-4">
+                            <a href="{% url 'event_detail' event.pk %}" class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
+                                {{ event.title }}
+                            </a>
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-4">{{ event.organizer|default:"-" }}</td>
+                        <td class="whitespace-nowrap px-4 py-4">{{ event.date|date:"M d, Y" }}</td>
+                        <td class="whitespace-nowrap px-4 py-4">{{ event.location|default:"TBA" }}</td>
+                        <td class="whitespace-nowrap px-4 py-4">${{ event.price }}</td>
+                        <td class="whitespace-nowrap px-4 py-4">
+                            <a href="{% url 'edit_event' event.pk %}" class="mr-3 text-xs font-semibold text-indigo-600 hover:underline">Edit</a>
+                            <a href="{% url 'delete_event' event.pk %}" class="text-xs font-semibold text-red-600 hover:underline">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
         {% else %}
         <p class="text-gray-400 text-sm">No events found.</p>
@@ -302,49 +222,36 @@
         </div>
 
         {% if upcoming_events %}
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {% for event in upcoming_events %}
-            <a
-                href="{% url 'event_detail' event.pk %}"
-                class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit"
-            >
-
-                {% if event.image %}
-                    <img
-                        src="{{ event.image.url }}"
-                        alt="{{ event.title }}"
-                        class="w-full h-32 object-cover"
-                    >
-                {% else %}
-                    <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">
-                        No image
-                    </div>
-                {% endif %}
-
-                <div class="p-4 flex flex-col flex-1">
-                    <h3 class="font-semibold text-gray-900 mb-1">
-                        {{ event.title }}
-                    </h3>
-
-                    {% if event.description %}
-                    <p class="text-xs text-gray-500 mb-2">
-                        {{ event.description|truncatewords:12 }}
-                    </p>
-                    {% endif %}
-
-                    <p class="text-xs text-gray-500">
-                        <strong>Date:</strong>
-                        {{ event.date|date:"M d, Y" }}
-                    </p>
-
-                    <p class="text-xs text-gray-500">
-                        <strong>Price:</strong>
-                        ${{ event.price }}
-                    </p>
-                </div>
-
-            </a>
-            {% endfor %}
+        <div class="overflow-x-auto" data-table-section="upcoming-events">
+            <table data-table class="min-w-full divide-y divide-gray-100 text-sm">
+                <thead class="bg-indigo-50 text-left text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                    <tr>
+                        <th scope="col" class="px-4 py-3"><button type="button" data-sort="0">Event</button></th>
+                        <th scope="col" class="px-4 py-3"><button type="button" data-sort="1">Date</button></th>
+                        <th scope="col" class="px-4 py-3"><button type="button" data-sort="2">Location</button></th>
+                        <th scope="col" class="px-4 py-3"><button type="button" data-sort="3">Price</button></th>
+                        <th scope="col" class="px-4 py-3"><button type="button" data-sort="4">Organizer</button></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-gray-600">
+                    {% for event in upcoming_events %}
+                    <tr class="transition hover:bg-indigo-50/50">
+                        <td class="whitespace-nowrap px-4 py-4">
+                            <a href="{% url 'event_detail' event.pk %}" class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
+                                {{ event.title }}
+                            </a>
+                            {% if event.description %}
+                            <p class="mt-1 max-w-xs truncate text-xs text-gray-500">{{ event.description|truncatewords:12 }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-4">{{ event.date|date:"M d, Y" }}</td>
+                        <td class="whitespace-nowrap px-4 py-4">{{ event.location|default:"TBA" }}</td>
+                        <td class="whitespace-nowrap px-4 py-4">${{ event.price }}</td>
+                        <td class="whitespace-nowrap px-4 py-4">{{ event.organizer|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
         {% else %}
         <p class="text-gray-400 text-center py-8">
@@ -422,6 +329,56 @@
         window.addEventListener('pageshow', function () {
             runCountUpAnimation();
         });
+    })();
+</script>
+
+<script>
+    (function () {
+        const searchInput = document.getElementById('admin-table-search');
+        const sectionFilter = document.getElementById('admin-table-filter');
+        const sections = document.querySelectorAll('[data-table-section]');
+
+        function applyFilters() {
+            const query = (searchInput.value || '').toLowerCase().trim();
+            const selectedSection = sectionFilter.value;
+
+            sections.forEach(function (section) {
+                const isVisibleSection = selectedSection === 'all' || section.dataset.tableSection === selectedSection;
+                section.classList.toggle('hidden', !isVisibleSection);
+
+                if (!isVisibleSection) return;
+                section.querySelectorAll('tbody tr').forEach(function (row) {
+                    row.classList.toggle('hidden', query && !row.textContent.toLowerCase().includes(query));
+                });
+            });
+        }
+
+        document.querySelectorAll('[data-table]').forEach(function (table) {
+            table.querySelectorAll('[data-sort]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const column = Number(button.dataset.sort);
+                    const direction = table.dataset.sortDirection === 'asc' ? 'desc' : 'asc';
+                    const rows = Array.from(table.tBodies[0].rows);
+
+                    rows.sort(function (firstRow, secondRow) {
+                        const first = firstRow.cells[column].textContent.trim().toLowerCase();
+                        const second = secondRow.cells[column].textContent.trim().toLowerCase();
+                        const firstNumber = Number(first.replace(/[^0-9.-]/g, ''));
+                        const secondNumber = Number(second.replace(/[^0-9.-]/g, ''));
+                        const comparison = !Number.isNaN(firstNumber) && !Number.isNaN(secondNumber)
+                            ? firstNumber - secondNumber
+                            : first.localeCompare(second);
+                        return direction === 'asc' ? comparison : -comparison;
+                    });
+
+                    rows.forEach(function (row) { table.tBodies[0].appendChild(row); });
+                    table.dataset.sortDirection = direction;
+                });
+            });
+        });
+
+        searchInput.addEventListener('input', applyFilters);
+        sectionFilter.addEventListener('change', applyFilters);
     })();
 </script>
 
