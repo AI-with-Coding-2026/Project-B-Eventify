@@ -119,7 +119,7 @@ def _resolve_back_navigation(request):
 
 
 def event_list(request):
-    events = Event.objects.all().order_by('date')
+    events = Event.objects.filter(date__gte=timezone.now()).order_by('date')
 
     search_query = request.GET.get('search', '')
     selected_category = request.GET.get('category', '')

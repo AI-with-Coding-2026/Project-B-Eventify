@@ -847,6 +847,20 @@ class EventListViewTest(TestCase):
         self.assertContains(response, "Grid")
         self.assertContains(response, "List")
 
+    def test_event_list_excludes_past_events(self):
+        now = timezone.now()
+        past_event = Event.objects.create(
+            title="Past Concluded Event",
+            description="Ended event",
+            date=now - timedelta(days=5),
+            price=20.00,
+            category="tech"
+        )
+        response = self.client.get(reverse('event_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Past Concluded Event")
+        self.assertContains(response, "Tech Conference")
+
     def test_event_list_filtering(self):
         start_date = (timezone.now() + timedelta(days=1)).strftime('%Y-%m-%d')
         end_date = (timezone.now() + timedelta(days=5)).strftime('%Y-%m-%d')
