@@ -191,6 +191,10 @@ class Ticket(models.Model):
     def __str__(self):
         return f'{self.attendee} → {self.event} ({self.quantity})'
 
+    @property
+    def user(self):
+        return self.attendee
+
 
 class EventBooking(models.Model):
     user = models.ForeignKey(

@@ -1,3 +1,5 @@
+from django.db.models import Sum, F, DecimalField
+from django.db.models.functions import Coalesce
 from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -6,7 +8,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
+
 from events.models import Category, Event, EventBooking, Ticket
+
 from .decorators import admin_required, role_required
 
 from decimal import Decimal
@@ -16,33 +20,40 @@ from .decorators import admin_required, organizer_required, role_required
 from .forms import UserRegistrationForm
 from .models import User, UserRole
 
+
 @login_not_required
 def register(request):
     if request.user.is_authenticated:
         if request.user.is_admin:
             return redirect('admin_dashboard')
         return redirect('home')
+
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
+
         if form.is_valid():
             user = form.save()
             login(request, user)
             return redirect('register_success')
     else:
         form = UserRegistrationForm()
+
     return render(
         request,
         'authentication/register.html',
         {'form': form}
     )
 
+
 @login_not_required
 def register_success(request):
     return render(request, 'authentication/register_success.html')
 
+
 @login_not_required
 def home(request):
     return render(request, 'authentication/home.html')
+
 
 @admin_required
 def admin_dashboard(request):
@@ -75,17 +86,17 @@ def user_delete(request, pk):
 
     if target.pk == request.user.pk:
         messages.error(request, 'You cannot delete your own account.')
-        return redirect('admin_dashboard')
+        return redirect('admin_user_list')
 
     if target.role == UserRole.ADMIN:
         messages.error(request, 'Admin accounts cannot be deleted from the dashboard.')
-        return redirect('admin_dashboard')
+        return redirect('admin_user_list')
 
     if request.method == 'POST':
         username = target.username
         target.delete()
         messages.success(request, f'User "{username}" deleted successfully.')
-        return redirect('admin_dashboard')
+        return redirect('admin_user_list')
 
     return render(
         request,
@@ -111,14 +122,18 @@ def login_view(request):
             if user.is_organizer:
                 return redirect('organizer_dashboard')
             return redirect('attendee_dashboard')
+
     return render(request, 'authentication/login.html')
+
 
 def logout_view(request):
     logout(request)
     return redirect('login')
 
+
 def unauthorized(request):
     return render(request, 'authentication/unauthorized.html', status=403)
+
 
 @role_required(UserRole.ORGANIZER)
 
@@ -201,6 +216,7 @@ def organizer_dashboard_stats_api(request):
         'events': events_data,
     })
 
+
 @role_required(UserRole.ATTENDEE)
 def attendee_dashboard(request):
     upcoming_events = Event.objects.filter(
@@ -209,6 +225,13 @@ def attendee_dashboard(request):
     return render(request, 'authentication/attendee_dashboard.html', {
         'upcoming_events': upcoming_events,
     })
+
+
+@admin_required
+def admin_user_list(request):
+    users = User.objects.exclude(pk=request.user.pk).order_by('username')
+    return render(request, 'authentication/admin_user_list.html', {'users': users})
+
 
 @role_required(UserRole.ATTENDEE)
 def my_bookings(request):
@@ -238,7 +261,6 @@ def my_bookings(request):
         if not any(t.event_id == b.event_id for t in past_tickets)
     ]
 
-
     upcoming_bookings = sorted(
         upcoming_tickets + upcoming_legacy,
         key=lambda x: x.event.date,
@@ -259,7 +281,6 @@ def my_bookings(request):
     })
 
 
-# 2. دالة إغلاق/إلغاء الحجز (دالة مستقلة تبدأ من بداية السطر)
 @role_required(UserRole.ATTENDEE)
 def cancel_booking(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk, attendee=request.user)
@@ -291,3 +312,40 @@ def cancel_booking(request, pk):
         'ticket': ticket,
         'quantity_range': range(1, ticket.quantity + 1),
     })
+
+@admin_required
+def analytics_dashboard(request):
+    organizer_id = request.GET.get('organizer')
+
+    tickets = Ticket.objects.select_related('event', 'event__organizer')
+
+    if organizer_id:
+        tickets = tickets.filter(event__organizer_id=organizer_id)
+
+    total_revenue = tickets.aggregate(
+        total=Coalesce(
+            Sum(F('quantity') * F('event__price'), output_field=DecimalField()),
+            0,
+            output_field=DecimalField(),
+        )
+    )['total']
+
+    total_bookings = tickets.count()
+    total_tickets_sold = tickets.aggregate(total=Coalesce(Sum('quantity'), 0))['total']
+
+    events_qs = Event.objects.all()
+    if organizer_id:
+        events_qs = events_qs.filter(organizer_id=organizer_id)
+    total_events = events_qs.count()
+
+    organizers = User.objects.filter(role=UserRole.ORGANIZER).order_by('username')
+
+    context = {
+        'total_revenue': total_revenue,
+        'total_bookings': total_bookings,
+        'total_tickets_sold': total_tickets_sold,
+        'total_events': total_events,
+        'organizers': organizers,
+        'selected_organizer': organizer_id,
+    }
+    return render(request, 'authentication/analytics_dashboard.html', context)

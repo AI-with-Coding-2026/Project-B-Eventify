@@ -100,6 +100,20 @@
         </div>
         {% endfor %}
     </div>
+    <section class="mt-12">
+        <h2 class="text-2xl font-bold mb-4">Past Events</h2>
+        {% if past_events %}
+            <div id="past-events-view" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {% for event in past_events %}
+                    <div class="opacity-60 grayscale">
+                        {% include "events/partials/event_card_grid.html" with event=event %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-400">No past events yet.</p>
+        {% endif %}
+    </section>
 
     {% if page_obj.has_other_pages %}
         <nav class="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Pagination">

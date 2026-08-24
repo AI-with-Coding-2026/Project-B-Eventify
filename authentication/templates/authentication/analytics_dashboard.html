@@ -1,0 +1,39 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% block title %}Analytics — Eventify{% endblock %}
+{% block admin_content %}
+<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold display">Analytics Dashboard</h1>
+        <form method="get" class="flex items-center gap-2">
+            <select name="organizer" onchange="this.form.submit()"
+                class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                <option value="">All Organizers</option>
+                {% for org in organizers %}
+                <option value="{{ org.pk }}" {% if selected_organizer == org.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ org.username }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-indigo-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-indigo-600">${{ total_revenue }}</p>
+            <p class="text-sm text-gray-500">Total Revenue</p>
+        </div>
+        <div class="bg-indigo-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-indigo-600">{{ total_bookings }}</p>
+            <p class="text-sm text-gray-500">Total Bookings</p>
+        </div>
+        <div class="bg-indigo-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-indigo-600">{{ total_tickets_sold }}</p>
+            <p class="text-sm text-gray-500">Tickets Sold</p>
+        </div>
+        <div class="bg-indigo-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-indigo-600">{{ total_events }}</p>
+            <p class="text-sm text-gray-500">Events</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

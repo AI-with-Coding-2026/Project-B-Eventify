@@ -275,8 +275,7 @@
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {% for event in upcoming_events %}
             <a href="{% url 'event_detail' event.pk %}"
-               class="animate-slide-in-right bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit"
-               style="animation-delay: calc({{ forloop.counter0 }} * 100ms);">
+                class="animate-fade-slide bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit">
                 {% if event.image %}
                     <img
                         src="{{ event.image.url }}"
