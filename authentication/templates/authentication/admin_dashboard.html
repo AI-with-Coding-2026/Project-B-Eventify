@@ -51,10 +51,8 @@
                                     ({{ organizer.email|default:"No email" }})
                                 </span>
                             </span>
-                            <a
-                                href="{% url 'user_delete' organizer.pk %}"
-                                class="text-xs font-semibold text-red-600 hover:underline shrink-0"
-                            >
+                            <a href="{% url 'user_delete' organizer.pk %}"
+                                class="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 transition shrink-0">
                                 Delete
                             </a>
                         </li>
@@ -78,10 +76,8 @@
                                     ({{ attendee.email|default:"No email" }})
                                 </span>
                             </span>
-                            <a
-                                href="{% url 'user_delete' attendee.pk %}"
-                                class="text-xs font-semibold text-red-600 hover:underline shrink-0"
-                            >
+                            <a href="{% url 'user_delete' attendee.pk %}"
+                                class="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 transition shrink-0">
                                 Delete
                             </a>
                         </li>
@@ -120,17 +116,12 @@
                         </span>
 
                         <div class="flex gap-2 shrink-0">
-                            <a
-                                href="{% url 'category_update' category.pk %}"
-                                class="text-xs font-semibold text-indigo-600 hover:underline"
-                            >
+                            <a href="{% url 'category_update' category.pk %}"
+                                class="inline-flex items-center justify-center rounded-lg bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
                                 Edit
                             </a>
-
-                            <a
-                                href="{% url 'category_delete' category.pk %}"
-                                class="text-xs font-semibold text-red-600 hover:underline"
-                            >
+                            <a href="{% url 'category_delete' category.pk %}"
+                                class="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 transition">
                                 Delete
                             </a>
                         </div>
@@ -160,17 +151,12 @@
                         </span>
 
                         <div class="flex gap-2 shrink-0">
-                            <a
-                                href="{% url 'ticket_edit' ticket.pk %}"
-                                class="text-xs font-semibold text-indigo-600 hover:underline"
-                            >
+                            <a href="{% url 'ticket_edit' ticket.pk %}"
+                                class="inline-flex items-center justify-center rounded-lg bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
                                 Edit
                             </a>
-
-                            <a
-                                href="{% url 'ticket_delete' ticket.pk %}"
-                                class="text-xs font-semibold text-red-600 hover:underline"
-                            >
+                            <a href="{% url 'ticket_delete' ticket.pk %}"
+                                class="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 transition">
                                 Delete
                             </a>
                         </div>
@@ -200,17 +186,12 @@
                         </span>
 
                         <div class="flex gap-2 shrink-0">
-                            <a
-                                href="{% url 'booking_edit' booking.pk %}"
-                                class="text-xs font-semibold text-indigo-600 hover:underline"
-                            >
+                            <a href="{% url 'booking_edit' booking.pk %}"
+                                class="inline-flex items-center justify-center rounded-lg bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
                                 Edit
                             </a>
-
-                            <a
-                                href="{% url 'booking_delete' booking.pk %}"
-                                class="text-xs font-semibold text-red-600 hover:underline"
-                            >
+                            <a href="{% url 'booking_delete' booking.pk %}"
+                                class="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 transition">
                                 Delete
                             </a>
                         </div>
