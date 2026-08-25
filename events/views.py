@@ -2,6 +2,7 @@ from urllib.parse import urlparse
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Sum
@@ -16,6 +17,7 @@ from .emails import (
 from authentication.decorators import (
     admin_required,
     attendee_required,
+    approved_organizer_required,
     organizer_required,
     role_required,
     organizer_or_admin_required,
@@ -23,7 +25,7 @@ from authentication.decorators import (
 from authentication.models import UserRole
 
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
-from .models import Category, Event, EventBooking, Ticket
+from .models import Category, Event, EventBooking, EventPublishStatus, Ticket
 
 
 def _user_can_manage_event(user, event):
@@ -34,6 +36,21 @@ def _user_can_manage_event(user, event):
         user.role == UserRole.ORGANIZER
         and event.organizer_id == user.id
     )
+
+
+def _set_created_event_status(event, user):
+    if user.is_admin:
+        event.publish_status = EventPublishStatus.APPROVED
+    else:
+        event.publish_status = EventPublishStatus.PENDING
+
+
+def _user_can_see_unpublished_event(user, event):
+    if event.is_published:
+        return True
+    if not user.is_authenticated:
+        return False
+    return user.is_admin or event.organizer_id == user.id
 
 
 def _user_has_booked_event(user, event):
@@ -48,6 +65,7 @@ def _user_has_booked_event(user, event):
 
 # Map URL path prefixes to human-readable back-button labels.
 _BACK_LABEL_MAP = [
+    ('/admin/event-requests/', 'Back to Event Requests'),
     ('/admin/', 'Back to Admin Dashboard'),
     ('/dashboard/organizer/', 'Back to Organizer Dashboard'),
     ('/dashboard/attendee/bookings/', 'Back to My Bookings'),
@@ -136,7 +154,9 @@ def _resolve_back_navigation(request):
 
 
 def event_list(request):
-    events = Event.objects.all().order_by('date')
+    events = Event.objects.filter(
+        publish_status=EventPublishStatus.APPROVED,
+    ).order_by('date')
 
     search_query = request.GET.get('search', '')
     selected_category = request.GET.get('category', '')
@@ -214,6 +234,9 @@ def event_detail(request, pk):
     event = get_object_or_404(Event, pk=pk)
 
     user = request.user
+    if not _user_can_see_unpublished_event(user, event):
+        raise Http404('Event not found.')
+
     user_has_booked = False
 
     if user.is_authenticated:
@@ -225,9 +248,14 @@ def event_detail(request, pk):
             user.is_authenticated
             and _user_can_manage_event(user, event)
         ),
+        'can_review_event': (
+            user.is_authenticated
+            and user.is_admin
+        ),
         'can_book': (
             user.is_authenticated
             and user.role == UserRole.ATTENDEE
+            and event.is_published
             and not user_has_booked
             and not event.is_sold_out
             and not event.is_expired
@@ -253,6 +281,13 @@ def book_event(request, pk):
 def book_ticket(request, pk):
     """Book tickets without allowing a request to exceed event capacity."""
     event = get_object_or_404(Event, pk=pk)
+
+    if not event.is_published:
+        messages.error(
+            request,
+            'This event is waiting for admin approval and cannot be booked yet.',
+        )
+        return redirect('event_list')
 
     if event.is_expired:
         messages.error(
@@ -362,48 +397,10 @@ def my_tickets(request):
 
 @attendee_required
 def cancel_ticket(request, pk):
-    """
-    Cancel a ticket belonging to the currently logged-in attendee.
+    """Attendee cancel URLs all use the same non-admin confirm page."""
+    from authentication.views import cancel_booking
 
-    The cancellation email is sent before the Ticket object is deleted
-    because the email needs the ticket, attendee and event information.
-    """
-    ticket = get_object_or_404(
-        Ticket,
-        pk=pk,
-        attendee=request.user
-    )
-
-    if request.method == "POST":
-        try:
-            send_booking_cancellation_email(ticket)
-
-            messages.success(
-                request,
-                "Booking cancelled and cancellation email sent successfully."
-            )
-
-        except Exception as e:
-            print(
-                f"CANCELLATION EMAIL ERROR: {e}"
-            )
-
-            messages.warning(
-                request,
-                "Booking was cancelled, but the cancellation email could not be sent."
-            )
-
-        ticket.delete()
-
-        return redirect("my_bookings")
-
-    return render(
-        request,
-        "events/ticket_confirm_delete.html",
-        {
-            "ticket": ticket,
-        },
-    )
+    return cancel_booking(request, pk)
 
 
 @organizer_required
@@ -420,7 +417,7 @@ def organizer_event_list(request):
     )
 
 
-@organizer_or_admin_required
+@approved_organizer_required
 def event_create(request):
     """Create an event and assign the logged-in organizer as owner."""
     if request.method == 'POST':
@@ -432,16 +429,15 @@ def event_create(request):
         if form.is_valid():
             event = form.save(commit=False)
             event.organizer = request.user
+            _set_created_event_status(event, request.user)
             event.save()
-
+            if request.user.is_admin:
+                messages.success(request, 'Event created successfully.')
+                return redirect('admin_dashboard')
             messages.success(
                 request,
-                'Event created successfully.'
+                'Event submitted. It will appear in the system after an admin approves it.',
             )
-
-            if request.user.is_admin:
-                return redirect('admin_dashboard')
-
             return redirect('organizer_event_list')
 
     else:
@@ -458,7 +454,7 @@ def event_create(request):
     )
 
 
-@organizer_or_admin_required
+@approved_organizer_required
 def event_edit(request, pk):
     """Edit an event. Admins can edit any event, organizers only their own."""
     if request.user.is_admin:
@@ -499,7 +495,7 @@ def event_edit(request, pk):
     )
 
 
-@organizer_or_admin_required
+@approved_organizer_required
 def event_delete(request, pk):
     """Delete an event only if it belongs to the logged-in organizer."""
     event = get_object_or_404(
@@ -651,7 +647,7 @@ def my_events(request):
     )
 
 
-@role_required(UserRole.ORGANIZER)
+@approved_organizer_required
 def create_event(request):
     if request.method == "POST":
         form = EventForm(
@@ -662,16 +658,17 @@ def create_event(request):
         if form.is_valid():
             event = form.save(commit=False)
             event.organizer = request.user
+            _set_created_event_status(event, request.user)
             event.save()
+
+            if request.user.is_admin:
+                messages.success(request, "Event created successfully.")
+                return redirect("admin_dashboard")
 
             messages.success(
                 request,
-                "Event created successfully.",
+                "Event submitted. It will appear in the system after an admin approves it.",
             )
-
-            if request.user.is_admin:
-                return redirect("admin_dashboard")
-
             return redirect("my_events")
 
     else:
@@ -688,7 +685,7 @@ def create_event(request):
     )
 
 
-@role_required(UserRole.ORGANIZER)
+@approved_organizer_required
 def edit_event(request, pk):
     event = get_object_or_404(
         Event,
@@ -738,7 +735,7 @@ def edit_event(request, pk):
     )
 
 
-@role_required(UserRole.ORGANIZER)
+@approved_organizer_required
 def delete_event(request, pk):
     event = get_object_or_404(
         Event,

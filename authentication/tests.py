@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase
@@ -5,7 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from unittest.mock import ANY, patch
 
-from events.models import Event
+from events.models import Event, EventPublishStatus
 from .forms import UserRegistrationForm
 from .models import User, UserRole
 from . import views
@@ -77,6 +78,7 @@ class UserRegistrationFormTests(TestCase):
         self.assertTrue(form.is_valid())
         user = form.save()
         self.assertEqual(user.role, UserRole.ORGANIZER)
+        self.assertTrue(user.is_approved_organizer)
 
     def test_registration_form_accepts_attendee(self):
         form = UserRegistrationForm(
@@ -126,6 +128,7 @@ class RegisterViewTests(TestCase):
 
         user = User.objects.get(username='vieworg')
         self.assertEqual(user.role, UserRole.ORGANIZER)
+        self.assertTrue(user.is_approved_organizer)
 
 
 class RoleBasedAccessControlTests(TestCase):
@@ -590,3 +593,198 @@ class AdminUserDeleteTests(TestCase):
             response,
             'authentication/user_confirm_delete.html',
         )
+
+
+class EventApprovalWorkflowTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            'approveadmin',
+            'approveadmin@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.organizer = User.objects.create_user(
+            'eventorg',
+            'eventorg@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+
+    def _event_form_data(self, title='Pending Concert'):
+        return {
+            'title': title,
+            'description': 'Needs admin approval',
+            'date': (timezone.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M'),
+            'price': '25.00',
+            'category': 'music',
+            'max_tickets': '8',
+        }
+
+    def test_organizer_can_create_event_but_it_stays_pending(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.post(
+            reverse('create_event'),
+            self._event_form_data(),
+        )
+
+        self.assertRedirects(response, reverse('my_events'))
+        event = Event.objects.get(title='Pending Concert')
+        self.assertEqual(event.organizer, self.organizer)
+        self.assertTrue(event.is_pending_publish)
+        self.assertFalse(event.is_published)
+
+    def test_pending_event_is_hidden_from_public_list(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Hidden Pending Event',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+
+        response = self.client.get(reverse('event_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, event.title)
+
+    def test_organizer_dashboard_still_allows_create_event(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(reverse('organizer_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '+ Create Event')
+        self.assertContains(response, 'until an admin accepts them')
+        self.assertNotContains(
+            response,
+            'You cannot create or publish events until an admin accepts your request',
+        )
+
+    def test_admin_can_view_event_requests(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Needs Review',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('event_request_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Needs Review')
+        self.assertContains(response, reverse('event_detail', args=[event.pk]))
+        self.assertContains(response, 'View details')
+        self.assertContains(response, 'Accept')
+        self.assertContains(response, 'Deny')
+
+    def test_admin_can_open_pending_event_details(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Needs Review Detail',
+            description='Full pending event copy',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.get(
+            reverse('event_detail', args=[event.pk]),
+            {'from': 'requests'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Needs Review Detail')
+        self.assertContains(response, 'Full pending event copy')
+        self.assertContains(response, 'Back to Event Requests')
+        self.assertContains(response, reverse('event_request_list'))
+        self.assertContains(response, 'Waiting for approval')
+        self.assertContains(response, 'Accept')
+        self.assertContains(response, 'Deny')
+        self.assertContains(response, reverse('event_request_approve', args=[event.pk]))
+        self.assertContains(response, reverse('event_request_deny', args=[event.pk]))
+        self.assertNotContains(response, reverse('edit_event', args=[event.pk]))
+        self.assertNotContains(response, reverse('delete_event', args=[event.pk]))
+
+    def test_admin_can_approve_event_from_detail_page(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Approve From Detail',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.post(
+            reverse('event_request_approve', args=[event.pk]),
+            {'next': 'detail'},
+        )
+
+        self.assertRedirects(response, reverse('event_detail', args=[event.pk]))
+        event.refresh_from_db()
+        self.assertTrue(event.is_published)
+
+        detail = self.client.get(reverse('event_detail', args=[event.pk]))
+        self.assertContains(detail, 'Approve From Detail')
+        self.assertNotContains(detail, 'Waiting for approval')
+        self.assertContains(detail, 'Unpublish')
+
+    def test_admin_can_approve_event(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Approve Me',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.post(
+            reverse('event_request_approve', args=[event.pk]),
+        )
+
+        self.assertRedirects(response, reverse('event_request_list'))
+        event.refresh_from_db()
+        self.assertTrue(event.is_published)
+
+        public_list = self.client.get(reverse('event_list'))
+        self.assertContains(public_list, 'Approve Me')
+
+    def test_admin_can_deny_event(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Deny Me',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.post(
+            reverse('event_request_deny', args=[event.pk]),
+        )
+
+        self.assertRedirects(response, reverse('event_request_list'))
+        event.refresh_from_db()
+        self.assertTrue(event.is_denied_publish)
+        self.assertFalse(event.is_published)
+
+        public_list = self.client.get(reverse('event_list'))
+        self.assertNotContains(public_list, 'Deny Me')
+
+    def test_organizer_cannot_approve_event(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Stay Pending',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+        self.client.force_login(self.organizer)
+
+        response = self.client.post(
+            reverse('event_request_approve', args=[event.pk]),
+        )
+
+        self.assertEqual(response.url, reverse('unauthorized'))
+        event.refresh_from_db()
+        self.assertTrue(event.is_pending_publish)
+

@@ -1,4 +1,5 @@
 import os
+import ssl
 from decimal import Decimal
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from decouple import config
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.urls import reverse
+from requests.adapters import HTTPAdapter
 
 
 BOOKING_CONFIRMATION_TEXT = (
@@ -53,6 +55,26 @@ def _get_logo_src():
         )
 
     return ""
+
+
+class _SystemCAAdapter(HTTPAdapter):
+    """Use the OS certificate store so local antivirus HTTPS scanning works."""
+
+    def init_poolmanager(self, *args, **kwargs):
+        kwargs["ssl_context"] = ssl.create_default_context()
+        return super().init_poolmanager(*args, **kwargs)
+
+    def proxy_manager_for(self, *args, **kwargs):
+        kwargs["ssl_context"] = ssl.create_default_context()
+        return super().proxy_manager_for(*args, **kwargs)
+
+
+def _brevo_session():
+    session = requests.Session()
+    adapter = _SystemCAAdapter()
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
 
 
 def _get_brevo_api_key():
@@ -104,7 +126,7 @@ def _send_brevo_email(
         "htmlContent": html_body,
     }
 
-    response = requests.post(
+    response = _brevo_session().post(
         "https://api.brevo.com/v3/smtp/email",
         headers={
             "api-key": api_key,

@@ -49,6 +49,31 @@ urlpatterns = [
         name='admin_user_list',
     ),
     path(
+        'admin/event-requests/',
+        views.event_request_list,
+        name='event_request_list',
+    ),
+    path(
+        'admin/event-requests/<int:pk>/approve/',
+        views.event_request_approve,
+        name='event_request_approve',
+    ),
+    path(
+        'admin/event-requests/<int:pk>/deny/',
+        views.event_request_deny,
+        name='event_request_deny',
+    ),
+    path(
+        'admin/organizer-requests/<int:pk>/approve/',
+        views.organizer_request_approve,
+        name='organizer_request_approve',
+    ),
+    path(
+        'admin/organizer-requests/<int:pk>/deny/',
+        views.organizer_request_deny,
+        name='organizer_request_deny',
+    ),
+    path(
         'admin/analytics/',
         views.analytics_dashboard,
         name='analytics_dashboard',

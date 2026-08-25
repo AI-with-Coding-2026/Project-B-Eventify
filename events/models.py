@@ -4,6 +4,12 @@ from django.db.models import Sum
 from django.utils.text import slugify
 
 
+class EventPublishStatus(models.TextChoices):
+    PENDING = 'pending', 'Pending'
+    APPROVED = 'approved', 'Approved'
+    DENIED = 'denied', 'Denied'
+
+
 class Category(models.Model):
     # Category name must be unique to avoid duplicates (e.g., Music, Sports)
     name = models.CharField(
@@ -97,6 +103,11 @@ class Event(models.Model):
         blank=True,
         verbose_name="Custom category",
     )
+    publish_status = models.CharField(
+        max_length=20,
+        choices=EventPublishStatus.choices,
+        default=EventPublishStatus.APPROVED,
+    )
 
     def __str__(self):
         return self.title
@@ -161,6 +172,18 @@ class Event(models.Model):
         from django.utils import timezone
         return self.date < timezone.now()
 
+    @property
+    def is_published(self):
+        return self.publish_status == EventPublishStatus.APPROVED
+
+    @property
+    def is_pending_publish(self):
+        return self.publish_status == EventPublishStatus.PENDING
+
+    @property
+    def is_denied_publish(self):
+        return self.publish_status == EventPublishStatus.DENIED
+
 
 
 class Ticket(models.Model):
@@ -219,3 +242,27 @@ class EventBooking(models.Model):
 
     def __str__(self):
         return f"{self.user.username} → {self.event.title}"
+
+    @property
+    def attendee(self):
+        return self.user
+
+    @property
+    def quantity(self):
+        return 1
+
+
+def get_attendee_cancellable_booking(user, pk):
+    """Return a Ticket or legacy EventBooking owned by this attendee."""
+    ticket = (
+        Ticket.objects.filter(pk=pk, attendee=user)
+        .select_related('event', 'attendee')
+        .first()
+    )
+    if ticket is not None:
+        return ticket
+    return (
+        EventBooking.objects.filter(pk=pk, user=user)
+        .select_related('event', 'user')
+        .first()
+    )

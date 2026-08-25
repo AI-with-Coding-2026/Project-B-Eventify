@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.admin import UserAdmin
 
 from .admin_site import eventify_admin_site
-from .models import User, UserRole
+from .models import OrganizerApprovalStatus, User, UserRole
 
 
 class CustomUserCreationForm(forms.ModelForm):
@@ -31,6 +31,10 @@ class CustomUserCreationForm(forms.ModelForm):
         user.set_password(self.cleaned_data['password1'])
         if user.role == UserRole.ADMIN:
             user.is_staff = True
+        if user.role == UserRole.ORGANIZER:
+            user.organizer_status = OrganizerApprovalStatus.APPROVED
+        else:
+            user.organizer_status = OrganizerApprovalStatus.NOT_REQUIRED
         if commit:
             user.save()
         return user
@@ -49,10 +53,17 @@ class CustomUserChangeForm(forms.ModelForm):
 
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'role', 'is_staff', 'is_active')
-    list_filter = ('role', 'is_staff', 'is_active')
+    list_display = (
+        'username',
+        'email',
+        'role',
+        'organizer_status',
+        'is_staff',
+        'is_active',
+    )
+    list_filter = ('role', 'organizer_status', 'is_staff', 'is_active')
     fieldsets = UserAdmin.fieldsets + (
-        ('Role', {'fields': ('role',)}),
+        ('Role', {'fields': ('role', 'organizer_status')}),
     )
     add_fieldsets = (
         (None, {

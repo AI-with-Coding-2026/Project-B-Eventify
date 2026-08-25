@@ -81,6 +81,20 @@ def organizer_required(view_func):
     return role_required(UserRole.ORGANIZER)(view_func)
 
 
+def approved_organizer_required(view_func):
+    """Allow organizers (and admins) to create and manage events."""
+
+    @login_required(login_url='login')
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        user = request.user
+        if user.is_admin or user.is_organizer:
+            return view_func(request, *args, **kwargs)
+        return redirect('unauthorized')
+
+    return _wrapped_view
+
+
 def attendee_required(view_func):
     """Shortcut for views restricted to Attendee users."""
     return role_required(UserRole.ATTENDEE)(view_func)

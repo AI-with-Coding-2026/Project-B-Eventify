@@ -9,13 +9,22 @@ from django.db.models.functions import Coalesce
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
-from events.models import Category, Event, EventBooking, Ticket
+from events.emails import send_booking_cancellation_email
 from events.exports import export_events_excel, export_events_pdf
+from events.models import (
+    Category,
+    Event,
+    EventBooking,
+    EventPublishStatus,
+    Ticket,
+    get_attendee_cancellable_booking,
+)
 
 from .decorators import admin_required, organizer_required, role_required
 from .forms import UserRegistrationForm
-from .models import User, UserRole
+from .models import OrganizerApprovalStatus, User, UserRole
 
 
 @login_not_required
@@ -58,7 +67,8 @@ def admin_dashboard(request):
     organizers = users.filter(role=UserRole.ORGANIZER)
     attendees = users.filter(role=UserRole.ATTENDEE)
     upcoming_events = Event.objects.filter(
-        date__gte=timezone.now()
+        date__gte=timezone.now(),
+        publish_status=EventPublishStatus.APPROVED,
     ).order_by('date')[:3]
     context = {
         'total_users': users.count(),
@@ -143,7 +153,10 @@ def unauthorized(request):
 def organizer_dashboard(request):
     """Dashboard showing ticket sales performance, revenue, and charts for the organizer's events."""
     events = Event.objects.filter(organizer=request.user).order_by('-date')
-    upcoming_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')[:3]
+    upcoming_events = Event.objects.filter(
+        date__gte=timezone.now(),
+        publish_status=EventPublishStatus.APPROVED,
+    ).order_by('date')[:3]
 
     total_events = events.count()
     total_tickets_sold = sum(event.tickets_sold for event in events)
@@ -270,7 +283,8 @@ def organizer_export_pdf(request):
 @role_required(UserRole.ATTENDEE)
 def attendee_dashboard(request):
     upcoming_events = Event.objects.filter(
-        date__gte=timezone.now()
+        date__gte=timezone.now(),
+        publish_status=EventPublishStatus.APPROVED,
     ).order_by('date')[:3]
     return render(request, 'authentication/attendee_dashboard.html', {
         'upcoming_events': upcoming_events,
@@ -281,6 +295,116 @@ def attendee_dashboard(request):
 def admin_user_list(request):
     users = User.objects.exclude(pk=request.user.pk).order_by('username')
     return render(request, 'authentication/admin_user_list.html', {'users': users})
+
+
+@admin_required
+def organizer_request_list(request):
+    pending = User.objects.filter(
+        role=UserRole.ORGANIZER,
+        organizer_status=OrganizerApprovalStatus.PENDING,
+    ).order_by('date_joined')
+    reviewed = User.objects.filter(
+        role=UserRole.ORGANIZER,
+        organizer_status__in=[
+            OrganizerApprovalStatus.APPROVED,
+            OrganizerApprovalStatus.DENIED,
+        ],
+    ).order_by('-date_joined')
+    return render(
+        request,
+        'authentication/organizer_request_list.html',
+        {
+            'pending_requests': pending,
+            'reviewed_requests': reviewed,
+        },
+    )
+
+
+@admin_required
+@require_POST
+def organizer_request_approve(request, pk):
+    organizer = get_object_or_404(
+        User,
+        pk=pk,
+        role=UserRole.ORGANIZER,
+    )
+    organizer.organizer_status = OrganizerApprovalStatus.APPROVED
+    organizer.save(update_fields=['organizer_status'])
+    messages.success(
+        request,
+        f'Organizer "{organizer.username}" was approved and can now publish events.',
+    )
+    return redirect('organizer_request_list')
+
+
+@admin_required
+@require_POST
+def organizer_request_deny(request, pk):
+    organizer = get_object_or_404(
+        User,
+        pk=pk,
+        role=UserRole.ORGANIZER,
+    )
+    organizer.organizer_status = OrganizerApprovalStatus.DENIED
+    organizer.save(update_fields=['organizer_status'])
+    messages.success(
+        request,
+        f'Organizer request from "{organizer.username}" was denied.',
+    )
+    return redirect('organizer_request_list')
+
+
+@admin_required
+def event_request_list(request):
+    pending_events = Event.objects.filter(
+        publish_status=EventPublishStatus.PENDING,
+    ).select_related('organizer').order_by('date')
+    reviewed_events = Event.objects.filter(
+        publish_status__in=[
+            EventPublishStatus.APPROVED,
+            EventPublishStatus.DENIED,
+        ],
+    ).select_related('organizer').order_by('-date')[:20]
+    return render(
+        request,
+        'authentication/event_request_list.html',
+        {
+            'pending_events': pending_events,
+            'reviewed_events': reviewed_events,
+        },
+    )
+
+
+def _redirect_after_event_review(request, event):
+    if request.POST.get('next') == 'detail':
+        return redirect('event_detail', pk=event.pk)
+    return redirect('event_request_list')
+
+
+@admin_required
+@require_POST
+def event_request_approve(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    event.publish_status = EventPublishStatus.APPROVED
+    event.save(update_fields=['publish_status'])
+    messages.success(
+        request,
+        f'Event "{event.title}" was approved and is now live in the system.',
+    )
+    return _redirect_after_event_review(request, event)
+
+
+@admin_required
+@require_POST
+def event_request_deny(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    event.publish_status = EventPublishStatus.DENIED
+    event.save(update_fields=['publish_status'])
+    messages.success(
+        request,
+        f'Event "{event.title}" was denied and will not be published.',
+    )
+    return _redirect_after_event_review(request, event)
 
 
 @role_required(UserRole.ATTENDEE)
@@ -333,7 +457,13 @@ def my_bookings(request):
 
 @role_required(UserRole.ATTENDEE)
 def cancel_booking(request, pk):
-    ticket = get_object_or_404(Ticket, pk=pk, attendee=request.user)
+    ticket = get_attendee_cancellable_booking(request.user, pk)
+    if ticket is None:
+        messages.error(
+            request,
+            'That booking could not be found. It may already have been cancelled.',
+        )
+        return redirect('my_bookings')
 
     if request.method == 'POST':
         try:
@@ -346,8 +476,19 @@ def cancel_booking(request, pk):
             return redirect('cancel_booking', pk=pk)
 
         if cancel_quantity >= ticket.quantity:
+            try:
+                send_booking_cancellation_email(ticket)
+                messages.success(
+                    request,
+                    'Booking cancelled and cancellation email sent successfully.',
+                )
+            except Exception as e:
+                print(f'CANCELLATION EMAIL ERROR: {e}')
+                messages.warning(
+                    request,
+                    'Booking was cancelled, but the cancellation email could not be sent.',
+                )
             ticket.delete()
-            messages.success(request, 'Booking cancelled successfully.')
         else:
             ticket.quantity -= cancel_quantity
             ticket.save()

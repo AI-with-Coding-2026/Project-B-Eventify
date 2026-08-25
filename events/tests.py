@@ -10,7 +10,12 @@ from django.utils import timezone
 
 from authentication.models import User, UserRole
 
-from .emails import send_booking_confirmation_email
+from unittest.mock import patch
+
+from .emails import (
+    send_booking_cancellation_email,
+    send_booking_confirmation_email,
+)
 from .models import Category, Event, EventBooking, Ticket
 
 
@@ -243,6 +248,7 @@ class OrganizerEventPermissionTests(TestCase):
         self.assertRedirects(response, reverse('organizer_event_list'))
         event = Event.objects.get(title='New Concert')
         self.assertEqual(event.organizer, self.organizer_a)
+        self.assertTrue(event.is_pending_publish)
 
     def test_organizer_can_enter_custom_category_when_other_is_selected(self):
         self.client.force_login(self.organizer_a)
@@ -1065,3 +1071,154 @@ class AnalyticsExportTests(TestCase):
         self.assertEqual(excel_resp.status_code, 302)
         pdf_resp = self.client.get(reverse('organizer_export_pdf'))
         self.assertEqual(pdf_resp.status_code, 302)
+
+
+class BookingCancellationEmailTests(TestCase):
+    def setUp(self):
+        self.attendee = User.objects.create_user(
+            'cancel_email_attendee',
+            'cancel_email_attendee@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+        self.organizer = User.objects.create_user(
+            'cancel_email_organizer',
+            'cancel_email_organizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.event = Event.objects.create(
+            organizer=self.organizer,
+            title='Cancelled Concert',
+            date=timezone.now(),
+            price=Decimal('25.00'),
+            category='music',
+            max_tickets=10,
+        )
+        self.ticket = Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=2,
+        )
+
+    def test_renders_cancellation_templates(self):
+        from django.template.loader import render_to_string
+
+        context = {
+            'ticket': self.ticket,
+            'unit_price': Decimal('25.00'),
+            'total_price': Decimal('50.00'),
+            'event_url': 'https://example.com/events/1/',
+            'logo_src': '',
+        }
+        text_body = render_to_string(
+            'events/booking_cancellation_email.txt',
+            context,
+        )
+        html_body = render_to_string(
+            'events/booking_cancellation_email.html',
+            context,
+        )
+
+        self.assertIn('Your Eventify Booking Cancellation Confirmation', text_body)
+        self.assertIn('Cancelled Concert', text_body)
+        self.assertIn('Tickets cancelled: 2', text_body)
+        self.assertIn('$50.00', html_body)
+        self.assertIn('Booking cancelled', html_body)
+
+    @patch('events.emails._get_brevo_api_key', return_value='test-key')
+    @patch('events.emails._send_brevo_email')
+    def test_sends_cancellation_via_brevo(self, mock_send, _mock_key):
+        mock_send.return_value = {'messageId': 'cancel-test-id'}
+
+        result = send_booking_cancellation_email(self.ticket)
+
+        mock_send.assert_called_once()
+        payload = mock_send.call_args.kwargs
+        self.assertEqual(result, {'messageId': 'cancel-test-id'})
+        self.assertEqual(
+            payload['to'][0]['email'],
+            'cancel_email_attendee@example.com',
+        )
+        self.assertEqual(
+            payload['subject'],
+            'Your Eventify Booking Cancellation Confirmation',
+        )
+        self.assertIn('Cancelled Concert', payload['text_body'])
+        self.assertIn('Booking cancelled', payload['html_body'])
+
+    def test_requires_attendee_email(self):
+        self.attendee.email = ''
+        self.attendee.save()
+        self.ticket.refresh_from_db()
+
+        with self.assertRaises(ValueError):
+            send_booking_cancellation_email(self.ticket)
+
+    def test_cancel_page_uses_attendee_template_not_admin(self):
+        self.client.login(
+            username='cancel_email_attendee',
+            password='strong-pass-123',
+        )
+
+        response = self.client.get(
+            reverse('cancel_ticket', args=[self.ticket.pk]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'authentication/booking_confirm_cancel.html',
+        )
+        self.assertContains(response, 'Cancel Booking')
+        self.assertNotContains(response, 'Delete Ticket')
+        self.assertNotContains(response, 'admin_booking_list')
+
+    @patch('authentication.views.send_booking_cancellation_email')
+    def test_cancel_ticket_view_sends_email_before_delete(self, mock_send):
+        mock_send.return_value = {'messageId': 'view-cancel-id'}
+        self.client.login(
+            username='cancel_email_attendee',
+            password='strong-pass-123',
+        )
+
+        response = self.client.post(
+            reverse('cancel_ticket', args=[self.ticket.pk]),
+        )
+
+        self.assertRedirects(response, reverse('my_bookings'))
+        mock_send.assert_called_once()
+        self.assertFalse(Ticket.objects.filter(pk=self.ticket.pk).exists())
+
+    @patch('authentication.views.send_booking_cancellation_email')
+    def test_cancel_legacy_event_booking_instead_of_404(self, mock_send):
+        mock_send.return_value = {'messageId': 'legacy-cancel-id'}
+        self.ticket.delete()
+        legacy = EventBooking.objects.create(
+            user=self.attendee,
+            event=self.event,
+        )
+        self.client.login(
+            username='cancel_email_attendee',
+            password='strong-pass-123',
+        )
+
+        response = self.client.get(
+            reverse('cancel_ticket', args=[legacy.pk]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'authentication/booking_confirm_cancel.html',
+        )
+        self.assertContains(response, 'Cancelled Concert')
+        self.assertNotContains(response, 'Delete Ticket')
+
+        response = self.client.post(
+            reverse('cancel_ticket', args=[legacy.pk]),
+        )
+
+        self.assertRedirects(response, reverse('my_bookings'))
+        mock_send.assert_called_once()
+        self.assertFalse(EventBooking.objects.filter(pk=legacy.pk).exists())

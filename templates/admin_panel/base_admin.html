@@ -17,6 +17,15 @@
                 class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'admin_user_list' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
                 Users
             </a>
+            <a href="{% url 'event_request_list' %}"
+               class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'event_request_list' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                <span>Event Requests</span>
+                {% if pending_event_count %}
+                <span class="ml-2 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-xs font-bold text-white">
+                    {{ pending_event_count }}
+                </span>
+                {% endif %}
+            </a>
             <a href="{% url 'analytics_dashboard' %}"
                 class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'analytics_dashboard' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
                 Analytics
@@ -25,6 +34,7 @@
                 class="block px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'admin_booking_list' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
                 Bookings
             </a>
+
         </nav>
     </aside>
 

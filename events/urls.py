@@ -123,7 +123,7 @@ urlpatterns = [
     path(
         'tickets/<int:pk>/cancel/',
         views.cancel_ticket,
-        name='cancel_booking',
+        name='cancel_ticket',
     ),
 
     path(
