@@ -1,0 +1,49 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}Manage Tickets — Eventify{% endblock %}
+
+{% block admin_content %}
+<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-6" data-datagrid-wrapper>
+    <div class="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+        <div>
+            <h1 class="text-2xl font-bold display">Tickets</h1>
+            <p class="text-sm text-gray-600 mt-1">Managing <strong class="text-gray-900" data-datagrid-count>{{ tickets|length }}</strong> ticket{{ tickets|length|pluralize }}</p>
+        </div>
+        <input type="search" data-datagrid-search placeholder="Search tickets..."
+            class="w-full sm:w-64 rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+    </div>
+
+    <div class="overflow-x-auto">
+        <table data-datagrid class="min-w-full divide-y divide-gray-100 text-sm">
+            <thead class="bg-indigo-50 text-left text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                <tr>
+                    <th scope="col" class="px-4 py-3"><button type="button" data-sort="0">Attendee</button></th>
+                    <th scope="col" class="px-4 py-3"><button type="button" data-sort="1">Event</button></th>
+                    <th scope="col" class="px-4 py-3"><button type="button" data-sort="2">Quantity</button></th>
+                    <th scope="col" class="px-4 py-3"><button type="button" data-sort="3">Booked At</button></th>
+                    <th scope="col" class="px-4 py-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-gray-600">
+                {% for ticket in tickets %}
+                <tr class="transition hover:bg-indigo-50/50">
+                    <td class="whitespace-nowrap px-4 py-3 font-medium text-gray-900">{{ ticket.attendee.username }}</td>
+                    <td class="whitespace-nowrap px-4 py-3">{{ ticket.event.title }}</td>
+                    <td class="whitespace-nowrap px-4 py-3">{{ ticket.quantity }}</td>
+                    <td class="whitespace-nowrap px-4 py-3">{{ ticket.booked_at|date:"M d, Y" }}</td>
+                    <td class="whitespace-nowrap px-4 py-3 space-x-2">
+                        <a href="{% url 'ticket_edit' ticket.pk %}"
+                            class="inline-flex items-center justify-center rounded-lg bg-indigo-50 px-4 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">Edit</a>
+                        <a href="{% url 'ticket_delete' ticket.pk %}"
+                            class="inline-flex items-center justify-center rounded-lg bg-red-50 px-4 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition">Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="py-8 text-gray-400 text-center">No tickets found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

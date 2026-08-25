@@ -1,13 +1,25 @@
+from django.db.models import Sum, F, DecimalField
+from django.db.models.functions import Coalesce
 from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.shortcuts import redirect, render, get_object_or_404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import redirect, render
 from django.utils import timezone
+
 from events.models import Category, Event, EventBooking, Ticket
+
 from .decorators import admin_required, role_required
+
+from decimal import Decimal
+import json
+
+from .decorators import admin_required, organizer_required, role_required
 from .forms import UserRegistrationForm
 from .models import User, UserRole
+
 
 @login_not_required
 def register(request):
@@ -15,27 +27,33 @@ def register(request):
         if request.user.is_admin:
             return redirect('admin_dashboard')
         return redirect('home')
+
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
+
         if form.is_valid():
             user = form.save()
             login(request, user)
             return redirect('register_success')
     else:
         form = UserRegistrationForm()
+
     return render(
         request,
         'authentication/register.html',
         {'form': form}
     )
 
+
 @login_not_required
 def register_success(request):
     return render(request, 'authentication/register_success.html')
 
+
 @login_not_required
 def home(request):
     return render(request, 'authentication/home.html')
+
 
 @admin_required
 def admin_dashboard(request):
@@ -104,23 +122,100 @@ def login_view(request):
             if user.is_organizer:
                 return redirect('organizer_dashboard')
             return redirect('attendee_dashboard')
+
     return render(request, 'authentication/login.html')
+
 
 def logout_view(request):
     logout(request)
     return redirect('login')
 
+
 def unauthorized(request):
     return render(request, 'authentication/unauthorized.html', status=403)
 
+
 @role_required(UserRole.ORGANIZER)
+
+@organizer_required
 def organizer_dashboard(request):
-    upcoming_events = Event.objects.filter(
-        date__gte=timezone.now()
-    ).order_by('date')[:3]
-    return render(request, 'authentication/organizer_dashboard.html', {
+    """Dashboard showing ticket sales performance, revenue, and charts for the organizer's events."""
+    events = Event.objects.filter(organizer=request.user).order_by('-date')
+    upcoming_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')[:3]
+
+    total_events = events.count()
+    total_tickets_sold = sum(event.tickets_sold for event in events)
+    total_tickets_remaining = sum(event.tickets_remaining for event in events)
+    total_revenue = sum((event.revenue for event in events), Decimal('0.00'))
+
+    # Chronological order for chart rendering (oldest to newest)
+    chart_events = list(reversed(list(events)))
+    chart_labels = [e.title for e in chart_events]
+    chart_tickets_sold = [e.tickets_sold for e in chart_events]
+    chart_tickets_remaining = [e.tickets_remaining for e in chart_events]
+    chart_revenue = [float(e.revenue) for e in chart_events]
+
+    context = {
         'upcoming_events': upcoming_events,
+        'events': events,
+        'total_events': total_events,
+        'total_tickets_sold': total_tickets_sold,
+        'total_tickets_remaining': total_tickets_remaining,
+        'total_revenue': total_revenue,
+        'chart_labels_json': json.dumps(chart_labels),
+        'chart_tickets_sold_json': json.dumps(chart_tickets_sold),
+        'chart_tickets_remaining_json': json.dumps(chart_tickets_remaining),
+        'chart_revenue_json': json.dumps(chart_revenue),
+    }
+    return render(request, 'authentication/organizer_dashboard.html', context)
+
+
+@organizer_required
+def organizer_dashboard_stats_api(request):
+    """JSON API endpoint returning live statistics and chart data for the organizer's events."""
+    events = Event.objects.filter(organizer=request.user).order_by('-date')
+
+    upcoming_events = Event.objects.filter(
+    date__gte=timezone.now()
+    ).order_by('date')[:3]
+
+    total_events = events.count()
+    total_tickets_sold = sum(event.tickets_sold for event in events)
+    total_tickets_remaining = sum(event.tickets_remaining for event in events)
+    total_revenue = float(sum((event.revenue for event in events), Decimal('0.00')))
+
+    chart_events = list(reversed(list(events)))
+    chart_labels = [e.title for e in chart_events]
+    chart_tickets_sold = [e.tickets_sold for e in chart_events]
+    chart_tickets_remaining = [e.tickets_remaining for e in chart_events]
+    chart_revenue = [float(e.revenue) for e in chart_events]
+
+    events_data = [
+        {
+            'pk': e.pk,
+            'title': e.title,
+            'price': str(e.price),
+            'tickets_sold': e.tickets_sold,
+            'tickets_remaining': e.tickets_remaining,
+            'max_tickets': e.max_tickets,
+            'revenue': float(e.revenue),
+            'is_sold_out': e.is_sold_out,
+        }
+        for e in events
+    ]
+
+    return JsonResponse({
+        'total_events': total_events,
+        'total_tickets_sold': total_tickets_sold,
+        'total_tickets_remaining': total_tickets_remaining,
+        'total_revenue': total_revenue,
+        'chart_labels': chart_labels,
+        'chart_tickets_sold': chart_tickets_sold,
+        'chart_tickets_remaining': chart_tickets_remaining,
+        'chart_revenue': chart_revenue,
+        'events': events_data,
     })
+
 
 @role_required(UserRole.ATTENDEE)
 def attendee_dashboard(request):
@@ -130,6 +225,13 @@ def attendee_dashboard(request):
     return render(request, 'authentication/attendee_dashboard.html', {
         'upcoming_events': upcoming_events,
     })
+
+
+@admin_required
+def admin_user_list(request):
+    users = User.objects.exclude(pk=request.user.pk).order_by('username')
+    return render(request, 'authentication/admin_user_list.html', {'users': users})
+
 
 @role_required(UserRole.ATTENDEE)
 def my_bookings(request):
@@ -159,7 +261,6 @@ def my_bookings(request):
         if not any(t.event_id == b.event_id for t in past_tickets)
     ]
 
-
     upcoming_bookings = sorted(
         upcoming_tickets + upcoming_legacy,
         key=lambda x: x.event.date,
@@ -180,7 +281,6 @@ def my_bookings(request):
     })
 
 
-# 2. دالة إغلاق/إلغاء الحجز (دالة مستقلة تبدأ من بداية السطر)
 @role_required(UserRole.ATTENDEE)
 def cancel_booking(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk, attendee=request.user)
@@ -212,3 +312,62 @@ def cancel_booking(request, pk):
         'ticket': ticket,
         'quantity_range': range(1, ticket.quantity + 1),
     })
+
+@admin_required
+def analytics_dashboard(request):
+    organizer_id = request.GET.get('organizer')
+
+    tickets = Ticket.objects.select_related('event', 'event__organizer')
+
+    if organizer_id:
+        tickets = tickets.filter(event__organizer_id=organizer_id)
+
+    total_revenue = tickets.aggregate(
+        total=Coalesce(
+            Sum(F('quantity') * F('event__price'), output_field=DecimalField()),
+            0,
+            output_field=DecimalField(),
+        )
+    )['total']
+
+    total_bookings = tickets.count()
+    total_tickets_sold = tickets.aggregate(total=Coalesce(Sum('quantity'), 0))['total']
+
+    events_qs = Event.objects.all()
+    if organizer_id:
+        events_qs = events_qs.filter(organizer_id=organizer_id)
+    total_events = events_qs.count()
+
+    filtered_events = list(events_qs.select_related('organizer').annotate(
+        event_tickets_sold=Coalesce(Sum('tickets__quantity'), 0),
+        event_revenue=Coalesce(
+            Sum(
+                F('tickets__quantity') * F('price'),
+                output_field=DecimalField(),
+            ),
+            0,
+            output_field=DecimalField(),
+        ),
+    ).order_by('-date', 'title'))
+    event_chart_data = [
+        {
+            'title': event.title,
+            'revenue': float(event.event_revenue),
+            'tickets': event.event_tickets_sold,
+        }
+        for event in filtered_events
+    ]
+
+    organizers = User.objects.filter(role=UserRole.ORGANIZER).order_by('username')
+
+    context = {
+        'total_revenue': total_revenue,
+        'total_bookings': total_bookings,
+        'total_tickets_sold': total_tickets_sold,
+        'total_events': total_events,
+        'filtered_events': filtered_events,
+        'event_chart_data': event_chart_data,
+        'organizers': organizers,
+        'selected_organizer': organizer_id,
+    }
+    return render(request, 'authentication/analytics_dashboard.html', context)
