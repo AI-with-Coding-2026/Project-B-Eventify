@@ -1,172 +1,619 @@
 {% extends 'base.html' %}
-
 {% block title %}Organizer Dashboard — Eventify{% endblock %}
 
 {% block content %}
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="max-w-4xl mx-auto space-y-8">
+<style>
+@keyframes fadeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
-    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+@keyframes highlightPulse {
+    0% { background-color: rgba(16, 185, 129, 0.25); }
+    100% { background-color: transparent; }
+}
 
-        <h1 class="text-2xl font-bold text-gray-900 display mb-2">Organizer Dashboard</h1>
+.animate-fade-in-up {
+    opacity: 0;
+    animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 
-        <p class="text-gray-600 mb-6">Welcome, {{ user.username }}. You are logged in as an Organizer.</p>
+.animation-delay-100 { animation-delay: 100ms; }
+.animation-delay-200 { animation-delay: 200ms; }
+.animation-delay-300 { animation-delay: 300ms; }
+.animation-delay-400 { animation-delay: 400ms; }
 
-        <div class="flex flex-wrap justify-center items-center gap-4">
+.row-highlight-pulse {
+    animation: highlightPulse 2s ease-out forwards;
+}
+</style>
 
-            <a href="{% url 'create_event' %}" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 shadow-sm transition">
-                + Create Event
-            </a>
+<div class="max-w-6xl mx-auto space-y-8">
 
-            <a href="{% url 'my_events' %}" class="bg-indigo-50 text-indigo-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition">
-                My Events
-            </a>
-
-        </div>
-
+    <!-- Header Section -->
+<div class="animate-fade-in-up flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 display">Organizer Dashboard</h1>
     </div>
 
+    <div class="flex flex-col sm:flex-row gap-3">
+        <a href="{% url 'my_events' %}"
+           class="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-indigo-200 px-5 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 shadow-sm shadow-sm transition">
+            My Events
+        </a>
+
+        <a href="{% url 'create_event' %}"
+           class="inline-block bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition hover:text-indigo-600 shadow-sm transition">
+            Create Event
+        </a>
+    </div>
+</div>
+
+    <!-- Overview Stats Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Card 1: Total Events -->
+        <div class="animate-fade-in-up animation-delay-100 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition transform hover:-translate-y-1">
+            <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Total Events</p>
+                <h3 id="statTotalEvents" class="text-3xl font-bold text-gray-900 mt-1" data-value="{{ total_events }}">0</h3>
+            </div>
+        </div>
+
+        <!-- Card 2: Total Tickets Sold -->
+        <div class="animate-fade-in-up animation-delay-200 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition transform hover:-translate-y-1">
+            <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+            </div>
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Total Tickets Sold</p>
+                <h3 id="statTicketsSold" class="text-3xl font-bold text-gray-900 mt-1" data-value="{{ total_tickets_sold }}">0</h3>
+            </div>
+        </div>
+
+        <!-- Card 3: Total Revenue -->
+        <div class="animate-fade-in-up animation-delay-300 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition transform hover:-translate-y-1">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Total Revenue Generated</p>
+                <h3 id="statTotalRevenue" class="text-3xl font-bold text-emerald-600 mt-1" data-value="{{ total_revenue }}">$0.00</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Charts Section -->
+    {% if events %}
+    <div class="animate-fade-in-up animation-delay-300 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Column-Line Combo Chart (Tickets Sold vs Revenue) -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-900 display">Sales Volume & Revenue Comparison</h2>
+                    <p class="text-xs text-gray-500">Column bars indicate tickets sold; line indicates revenue ($) generated per event.</p>
+                </div>
+            </div>
+            <div class="relative h-72 w-full">
+                <canvas id="salesComboChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Ticket Allocation & Capacity Doughnut Chart -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900 display mb-1">Ticket Capacity Allocation</h2>
+                <p class="text-xs text-gray-500 mb-4">Overall breakdown of tickets sold vs remaining capacity.</p>
+            </div>
+            <div class="relative h-60 w-full flex items-center justify-center">
+                <canvas id="capacityDoughnutChart"></canvas>
+            </div>
+            <div class="flex items-center justify-around border-t border-gray-100 pt-4 mt-2 text-center text-xs">
+                <div>
+                    <span class="inline-block w-3 h-3 rounded-full bg-indigo-600 mr-1"></span>
+                    <span id="legendSoldText" class="text-gray-600 font-semibold">Sold: {{ total_tickets_sold }}</span>
+                </div>
+                <div>
+                    <span class="inline-block w-3 h-3 rounded-full bg-slate-200 mr-1"></span>
+                    <span id="legendRemainingText" class="text-gray-600 font-semibold">Remaining: {{ total_tickets_remaining }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Event Sales Performance Table -->
+    <div class="animate-fade-in-up animation-delay-400 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 display">Event Sales & Performance</h2>
+                <p class="text-sm text-gray-500">Track ticket capacity, sales progress, and total revenue per event.</p>
+            </div>
+            {% if events %}
+            <span id="eventCountBadge" class="text-xs font-medium bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                {{ events|length }} event{{ events|length|pluralize }} total
+            </span>
+            {% endif %}
+        </div>
+
+        {% if events %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-50/80 text-gray-500 font-semibold text-xs uppercase tracking-wider border-b border-gray-100">
+                        <th class="py-4 px-6">Event Details</th>
+                        <th class="py-4 px-6">Ticket Price</th>
+                        <th class="py-4 px-6">Tickets Sold</th>
+                        <th class="py-4 px-6">Tickets Remaining</th>
+                        <th class="py-4 px-6">Total Revenue</th>
+                        <th class="py-4 px-6 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="eventsTableBody" class="divide-y divide-gray-100">
+                    {% for event in events %}
+                    <tr id="eventRow-{{ event.pk }}" class="hover:bg-gray-50/50 transition-colors">
+                        <!-- Event Info -->
+                        <td class="py-4 px-6">
+                            <div class="flex items-center gap-3">
+                                {% if event.image %}
+                                    <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-12 h-12 rounded-xl object-cover shrink-0 border border-gray-100">
+                                {% else %}
+                                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
+                                        EVENT
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <a href="{% url 'event_detail' event.pk %}" class="font-bold text-gray-900 hover:text-indigo-600 transition">
+                                        {{ event.title }}
+                                    </a>
+                                    <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                                        <span> {{ event.date|date:"M d, Y @ H:i" }}</span>
+                                        {% if event.location %}
+                                        <span> {{ event.location }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Ticket Price -->
+                        <td class="py-4 px-6 font-semibold text-gray-800">
+                            ${{ event.price }}
+                        </td>
+
+                        <!-- Tickets Sold -->
+                        <td class="py-4 px-6">
+                            <div class="flex items-center gap-2">
+                                <span id="eventSold-{{ event.pk }}" class="font-bold text-gray-900">{{ event.tickets_sold }}</span>
+                                <span class="text-xs text-gray-400">/ {{ event.max_tickets }} capacity</span>
+                            </div>
+                        </td>
+
+                        <!-- Tickets Remaining -->
+                        <td id="eventRemainingCell-{{ event.pk }}" class="py-4 px-6">
+                            {% if event.is_sold_out %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                    Sold Out
+                                </span>
+                            {% elif event.tickets_remaining <= 5 %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+                                    Only {{ event.tickets_remaining }} left!
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                    {{ event.tickets_remaining }} remaining
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Revenue Generated -->
+                        <td id="eventRevenue-{{ event.pk }}" class="py-4 px-6 font-extrabold text-emerald-600">
+                            ${{ event.revenue|floatformat:2 }}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="py-4 px-6 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{% url 'event_detail' event.pk %}" class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-xs transition">
+                                    View
+                                </a>
+                                <a href="{% url 'edit_event' event.pk %}" class="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium text-xs transition">
+                                    Edit
+                                </a>
+                                <a href="{% url 'delete_event' event.pk %}" class="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-medium text-xs transition">
+                                    Delete
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="py-12 px-6 text-center">
+            <div class="w-16 h-16 bg-indigo-50 text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-1">No Events Found</h3>
+            <p class="text-sm text-gray-500 max-w-md mx-auto mb-6">You haven't created any events yet. Once you create events, your ticket sales and revenue metrics will appear here.</p>
+            <a href="{% url 'create_event' %}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition text-sm">
+                + Create Your First Event
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+
+    <!-- Upcoming Events -->
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-
         <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 display">
+                Upcoming Events
+            </h2>
 
-            <h2 class="text-lg font-semibold text-gray-900 display">Upcoming Events</h2>
-
-            <a href="{% url 'event_list' %}" class="text-sm text-indigo-600 font-medium hover:underline">
+            <a
+                href="{% url 'event_list' %}"
+                class="text-sm text-indigo-600 font-medium hover:underline"
+            >
                 View all events →
             </a>
-
         </div>
 
         {% if upcoming_events %}
-
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
             {% for event in upcoming_events %}
             <a href="{% url 'event_detail' event.pk %}"
-                style="animation-delay: {{ forloop.counter0|add:0 }}00ms;"
                 class="animate-fade-slide bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit">
                 {% if event.image %}
-
-                    <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-32 object-cover">
-
+                    <img
+                        src="{{ event.image.url }}"
+                        alt="{{ event.title }}"
+                        class="w-full h-32 object-cover"
+                    >
                 {% else %}
-
                     <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">
                         No image
                     </div>
-
                 {% endif %}
 
                 <div class="p-4 flex flex-col flex-1">
-
-                    <h3 class="font-semibold text-gray-900 mb-1">{{ event.title }}</h3>
+                    <h3 class="font-semibold text-gray-900 mb-1">
+                        {{ event.title }}
+                    </h3>
 
                     {% if event.description %}
-
                     <p class="text-xs text-gray-500 mb-2">
                         {{ event.description|truncatewords:12 }}
                     </p>
-
                     {% endif %}
 
                     <p class="text-xs text-gray-500">
-                        <strong>Date:</strong> {{ event.date|date:"M d, Y" }}
+                        <strong>Date:</strong>
+                        {{ event.date|date:"M d, Y" }}
                     </p>
 
                     <p class="text-xs text-gray-500">
-                        <strong>Price:</strong> ${{ event.price }}
+                        <strong>Price:</strong>
+                        ${{ event.price }}
                     </p>
-
-                    <!-- Added: Tickets remaining -->
-
-                    <p class="text-xs text-gray-500 ticket-remaining"
-                       data-remaining="{{ event.tickets_remaining }}"
-                       data-total="{{ event.max_tickets }}">
-
-                        <strong>Tickets remaining:</strong>
-                        <span class="remaining-number">{{ event.tickets_remaining }}</span>
-
-                    </p>
-
                 </div>
 
             </a>
-
             {% endfor %}
-
         </div>
-
         {% else %}
-
         <p class="text-gray-400 text-center py-8">
             No upcoming events at the moment.
         </p>
-
         {% endif %}
-
     </div>
 
 </div>
 
-<!-- Added: highlight remaining tickets when 30% or less -->
-
 <script>
+(function() {
+    // Stat counter animation function
+    function animateValue(element, start, end, duration, isCurrency = false) {
+        if (start === end) return;
+        const range = end - start;
+        const minTimer = 50;
+        let stepTime = Math.abs(Math.floor(duration / (range || 1)));
+        stepTime = Math.max(stepTime, minTimer);
+        const startTime = new Date().getTime();
+        const endTime = startTime + duration;
+        let timer;
 
-    (function () {
+        function run() {
+            const now = new Date().getTime();
+            const remaining = Math.max((endTime - now) / duration, 0);
+            const value = Math.round(end - (remaining * range));
+            if (isCurrency) {
+                element.innerHTML = '$' + (value / 100).toFixed(2);
+            } else {
+                element.innerHTML = value;
+            }
+            if (value == end) {
+                clearInterval(timer);
+            }
+        }
 
-        function checkRemainingTickets() {
+        timer = setInterval(run, stepTime);
+        run();
+    }
 
-            const ticketElements =
-                document.querySelectorAll('.ticket-remaining');
+    // Initial counter roll-up animation
+    const elEvents = document.getElementById('statTotalEvents');
+    const elTickets = document.getElementById('statTicketsSold');
+    const elRevenue = document.getElementById('statTotalRevenue');
 
-            ticketElements.forEach(function (ticketElement) {
+    let currentEvents = parseInt(elEvents.dataset.value || 0, 10);
+    let currentTickets = parseInt(elTickets.dataset.value || 0, 10);
+    let currentRevenueCents = Math.round(parseFloat(elRevenue.dataset.value || 0) * 100);
 
-                const remaining = Number(
-                    ticketElement.getAttribute('data-remaining')
-                );
+    animateValue(elEvents, 0, currentEvents, 1000);
+    animateValue(elTickets, 0, currentTickets, 1200);
+    animateValue(elRevenue, 0, currentRevenueCents, 1400, true);
 
-                const total = Number(
-                    ticketElement.getAttribute('data-total')
-                );
+    {% if events %}
+    let labels = {{ chart_labels_json|safe }};
+    let ticketsSold = {{ chart_tickets_sold_json|safe }};
+    let revenue = {{ chart_revenue_json|safe }};
+    let totalSold = {{ total_tickets_sold }};
+    let totalRemaining = {{ total_tickets_remaining }};
 
-                const remainingNumber =
-                    ticketElement.querySelector('.remaining-number');
+    let comboChart, doughnutChart;
 
-                if (
-                    remainingNumber &&
-                    total > 0 &&
-                    remaining <= (total * 0.30)
-                ) {
+    // Wait one frame so the fade-in/layout of the parent cards settles first;
+    // creating the chart mid-layout-shift can trigger an internal Chart.js
+    // "resize" pass, which redraws instantly with no animation.
+    requestAnimationFrame(function() {
 
-                    remainingNumber.classList.add('text-red-600');
-
+    // 1. Column-Line Combo Chart
+    const comboCtx = document.getElementById('salesComboChart').getContext('2d');
+    comboChart = new Chart(comboCtx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Tickets Sold',
+                    data: ticketsSold,
+                    backgroundColor: 'rgba(79, 70, 229, 0.85)',
+                    hoverBackgroundColor: 'rgba(67, 56, 202, 1)',
+                    borderRadius: 8,
+                    yAxisID: 'yTickets',
+                    order: 2
+                },
+                {
+                    type: 'line',
+                    label: 'Revenue ($)',
+                    data: revenue,
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                    tension: 0.3,
+                    yAxisID: 'yRevenue',
+                    order: 1
                 }
-
-            });
-
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            resizeDelay: 200,
+            animation: {
+                duration: 1200,
+                easing: 'easeOutQuart'
+            },
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.label.includes('Revenue')) {
+                                return `Revenue: $${context.raw.toFixed(2)}`;
+                            }
+                            return `Tickets Sold: ${context.raw}`;
+                        }
+                    }
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 8,
+                        font: { family: 'Inter', size: 12, weight: '500' }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { family: 'Inter', size: 11 } }
+                },
+                yTickets: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Tickets Sold',
+                        font: { family: 'Inter', size: 11, weight: '600' }
+                    },
+                    ticks: {
+                        stepSize: 1,
+                        font: { family: 'Inter', size: 11 }
+                    },
+                    grid: { borderDash: [4, 4], color: '#f1f5f9' }
+                },
+                yRevenue: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Revenue ($)',
+                        font: { family: 'Inter', size: 11, weight: '600' }
+                    },
+                    ticks: {
+                        callback: function(value) { return '$' + value; },
+                        font: { family: 'Inter', size: 11 }
+                    },
+                    grid: { drawOnChartArea: false }
+                }
+            }
         }
+    });
 
-        if (document.readyState === 'loading') {
-
-            document.addEventListener(
-                'DOMContentLoaded',
-                checkRemainingTickets
-            );
-
-        } else {
-
-            checkRemainingTickets();
-
+    // 2. Capacity Doughnut Chart
+    const doughnutCtx = document.getElementById('capacityDoughnutChart').getContext('2d');
+    doughnutChart = new Chart(doughnutCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Tickets Sold', 'Tickets Remaining'],
+            datasets: [{
+                data: [totalSold, totalRemaining],
+                backgroundColor: [
+                    'rgba(79, 70, 229, 0.9)',
+                    'rgba(226, 232, 240, 0.9)'
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            resizeDelay: 200,
+            cutout: '70%',
+            animation: {
+                animateScale: true,
+                animateRotate: true,
+                duration: 1200
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = totalSold + totalRemaining;
+                            const percentage = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
+                            return `${context.label}: ${context.raw} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
         }
+    });
 
-        window.addEventListener(
-            'pageshow',
-            checkRemainingTickets
-        );
+    }); // end requestAnimationFrame
 
-    })();
+    // --- Live Auto-Updating Background Polling (Every 5 seconds) ---
+    const API_URL = "{% url 'organizer_dashboard_stats_api' %}";
 
+    async function pollLiveStats() {
+        try {
+            const response = await fetch(API_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!response.ok) return;
+            const data = await response.json();
+
+            // Update Summary Stats with smooth number animations
+            const newEvents = data.total_events;
+            const newTickets = data.total_tickets_sold;
+            const newRevenueCents = Math.round(data.total_revenue * 100);
+
+            if (newEvents !== currentEvents) {
+                animateValue(elEvents, currentEvents, newEvents, 600);
+                currentEvents = newEvents;
+            }
+            if (newTickets !== currentTickets) {
+                animateValue(elTickets, currentTickets, newTickets, 600);
+                currentTickets = newTickets;
+            }
+            if (newRevenueCents !== currentRevenueCents) {
+                animateValue(elRevenue, currentRevenueCents, newRevenueCents, 600, true);
+                currentRevenueCents = newRevenueCents;
+            }
+
+            // Update Chart.js Combo Chart smoothly
+            comboChart.data.labels = data.chart_labels;
+            comboChart.data.datasets[0].data = data.chart_tickets_sold;
+            comboChart.data.datasets[1].data = data.chart_revenue;
+            comboChart.update('active');
+
+            // Update Doughnut Chart smoothly
+            totalSold = data.total_tickets_sold;
+            totalRemaining = data.total_tickets_remaining;
+            doughnutChart.data.datasets[0].data = [totalSold, totalRemaining];
+            doughnutChart.update('active');
+
+            document.getElementById('legendSoldText').innerText = `Sold: ${totalSold}`;
+            document.getElementById('legendRemainingText').innerText = `Remaining: ${totalRemaining}`;
+
+            // Update Table Rows & Trigger Pulse Highlight on changes
+            if (data.events && Array.isArray(data.events)) {
+                data.events.forEach(ev => {
+                    const rowEl = document.getElementById(`eventRow-${ev.pk}`);
+                    const soldEl = document.getElementById(`eventSold-${ev.pk}`);
+                    const remainingCellEl = document.getElementById(`eventRemainingCell-${ev.pk}`);
+                    const revenueEl = document.getElementById(`eventRevenue-${ev.pk}`);
+
+                    if (soldEl) {
+                        const prevSold = parseInt(soldEl.innerText, 10);
+                        if (ev.tickets_sold > prevSold) {
+                            soldEl.innerText = ev.tickets_sold;
+                            if (rowEl) {
+                                rowEl.classList.remove('row-highlight-pulse');
+                                void rowEl.offsetWidth; // trigger reflow
+                                rowEl.classList.add('row-highlight-pulse');
+                            }
+                        }
+                    }
+
+                    if (revenueEl) {
+                        revenueEl.innerText = `$${ev.revenue.toFixed(2)}`;
+                    }
+
+                    if (remainingCellEl) {
+                        if (ev.is_sold_out) {
+                            remainingCellEl.innerHTML = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Sold Out</span>`;
+                        } else if (ev.tickets_remaining <= 5) {
+                            remainingCellEl.innerHTML = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Only ${ev.tickets_remaining} left!</span>`;
+                        } else {
+                            remainingCellEl.innerHTML = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">${ev.tickets_remaining} remaining</span>`;
+                        }
+                    }
+                });
+            }
+
+        } catch (err) {
+            console.error('Error polling dashboard live stats:', err);
+        }
+    }
+
+    // Start background polling every 5000ms (5s)
+    setInterval(pollLiveStats, 5000);
+
+    {% endif %}
+})();
 </script>
-
 {% endblock %}

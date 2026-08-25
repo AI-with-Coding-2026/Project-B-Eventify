@@ -14,6 +14,11 @@ urlpatterns = [
         name='organizer_dashboard',
     ),
     path(
+        'dashboard/organizer/api/stats/',
+        views.organizer_dashboard_stats_api,
+        name='organizer_dashboard_stats_api',
+    ),
+    path(
         'dashboard/attendee/',
         views.attendee_dashboard,
         name='attendee_dashboard',
