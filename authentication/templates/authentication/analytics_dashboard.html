@@ -99,31 +99,15 @@
 {% endif %}
 
 <div class="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100" data-datagrid-wrapper>
-    <div class="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center mb-4">
-        <div>
+    <div class="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+        <label class="w-full sm:absolute sm:left-1/2 sm:w-64 sm:-translate-x-1/2">
+            <span class="sr-only">Search filtered events</span>
+            <input type="search" data-datagrid-search placeholder="Search events..."
+                class="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+        </label>
+        <div class="sm:order-first">
             <h2 class="text-lg font-semibold display">Filtered Events</h2>
             <span class="text-sm text-gray-500"><strong data-datagrid-count>{{ total_events }}</strong> event{{ total_events|pluralize }}</span>
-        </div>
-        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <label>
-                <span class="sr-only">Search in column</span>
-                <select data-datagrid-search-column
-                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 sm:w-36">
-                    <option value="-1">All columns</option>
-                    <option value="0">Event</option>
-                    <option value="1">Organizer</option>
-                    <option value="2">Category</option>
-                    <option value="3">Date</option>
-                    <option value="4">Location</option>
-                    <option value="5">Price</option>
-                    <option value="6">Revenue</option>
-                </select>
-            </label>
-            <label class="w-full sm:w-64">
-                <span class="sr-only">Search filtered events</span>
-                <input type="search" data-datagrid-search placeholder="Search events..."
-                    class="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-            </label>
         </div>
     </div>
 
