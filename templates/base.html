@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,8 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Event Platform{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body class="min-h-screen bg-gray-100 antialiased">
+    <header class="bg-slate-900 text-white py-4 px-6">
+      <div class="container mx-auto flex justify-between items-center">
+        <a href="{% url 'event_list' %}">
+          <img src="{% static 'images/logo.png' %}" alt="Eventify Logo" class="header-logo">
+        </a>
+      </div>
+    </header>
+
     {% block content %}{% endblock %}
 </body>
 </html>

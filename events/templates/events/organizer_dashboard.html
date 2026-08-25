@@ -1,0 +1,541 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Organizer Dashboard | Eventify</title>
+
+    <link
+        rel="stylesheet"
+        href="{% static 'css/organizer_dashboard.css' %}"
+    >
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <aside class="sidebar">
+
+        <div class="brand-block">
+
+            <div class="brand-mark">
+                E
+            </div>
+
+            <div>
+                <h1>Eventify</h1>
+                <p>Organizer Workspace</p>
+            </div>
+
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+            <a
+                href="{% url 'organizer_dashboard' %}"
+                class="nav-link active"
+            >
+                <span class="nav-icon">D</span>
+                <span>Dashboard</span>
+            </a>
+
+            <a
+                href="{% url 'event_list' %}"
+                class="nav-link"
+            >
+                <span class="nav-icon">E</span>
+                <span>My Events</span>
+            </a>
+
+            <a
+                href="{% url 'event_create' %}"
+                class="nav-link"
+            >
+                <span class="nav-icon">+</span>
+                <span>Create Event</span>
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-footer">
+
+            <p class="sidebar-label">
+                SIGNED IN AS
+            </p>
+
+            <div class="user-info">
+
+                <div class="user-avatar">
+                    {{ request.user.username|first|upper }}
+                </div>
+
+                <div>
+                    <strong>
+                        {{ request.user.username }}
+                    </strong>
+
+                    <span>
+                        Organizer
+                    </span>
+                </div>
+
+            </div>
+
+
+            <form
+                method="post"
+                action="{% url 'logout' %}"
+                class="logout-form"
+            >
+                {% csrf_token %}
+
+                <button
+                    type="submit"
+                    class="logout-button"
+                >
+                    <span class="logout-icon">
+                        ↪
+                    </span>
+
+                    Log Out
+                </button>
+            </form>
+
+        </div>
+
+    </aside>
+
+
+    <main class="main-content">
+
+        <header class="top-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    ORGANIZER ANALYTICS
+                </p>
+
+                <h2>
+                    Performance Dashboard
+                </h2>
+
+                <p class="header-copy">
+                    Track ticket sales, event capacity and revenue
+                    across your Eventify portfolio.
+                </p>
+
+            </div>
+
+
+            <a
+                href="{% url 'event_create' %}"
+                class="primary-button"
+            >
+                <span>+</span>
+                Create Event
+            </a>
+
+        </header>
+
+
+        <section class="stats-grid">
+
+            <article class="metric-card">
+
+                <div class="metric-top">
+
+                    <div>
+
+                        <p class="metric-label">
+                            Total Events
+                        </p>
+
+                        <p class="metric-value">
+                            {{ total_events }}
+                        </p>
+
+                    </div>
+
+                    <div class="metric-icon icon-indigo">
+                        E
+                    </div>
+
+                </div>
+
+                <div class="metric-footer">
+                    <span class="status-dot"></span>
+                    Active organizer portfolio
+                </div>
+
+            </article>
+
+
+            <article class="metric-card">
+
+                <div class="metric-top">
+
+                    <div>
+
+                        <p class="metric-label">
+                            Tickets Sold
+                        </p>
+
+                        <p class="metric-value">
+                            {{ total_tickets_sold }}
+                        </p>
+
+                    </div>
+
+                    <div class="metric-icon icon-cyan">
+                        T
+                    </div>
+
+                </div>
+
+                <div class="metric-footer">
+                    <span class="status-dot"></span>
+                    Confirmed bookings only
+                </div>
+
+            </article>
+
+
+            <article class="metric-card">
+
+                <div class="metric-top">
+
+                    <div>
+
+                        <p class="metric-label">
+                            Tickets Remaining
+                        </p>
+
+                        <p class="metric-value">
+                            {{ total_tickets_remaining }}
+                        </p>
+
+                    </div>
+
+                    <div class="metric-icon icon-amber">
+                        R
+                    </div>
+
+                </div>
+
+                <div class="metric-footer">
+                    <span class="status-dot"></span>
+                    Available capacity
+                </div>
+
+            </article>
+
+
+            <article class="metric-card revenue-card">
+
+                <div class="metric-top">
+
+                    <div>
+
+                        <p class="metric-label">
+                            Total Revenue
+                        </p>
+
+                        <p class="metric-value revenue-value">
+                            R{{ total_revenue|floatformat:2 }}
+                        </p>
+
+                    </div>
+
+                    <div class="metric-icon icon-green">
+                        R
+                    </div>
+
+                </div>
+
+                <div class="metric-footer">
+                    <span class="status-dot"></span>
+                    Confirmed sales revenue
+                </div>
+
+            </article>
+
+        </section>
+
+
+        <section class="content-grid">
+
+            <div class="analytics-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+
+                        <p class="eyebrow">
+                            EVENT PERFORMANCE
+                        </p>
+
+                        <h3>
+                            Sales by Event
+                        </h3>
+
+                        <p>
+                            Real-time overview of ticket movement
+                            across your events.
+                        </p>
+
+                    </div>
+
+                    <a
+                        href="{% url 'event_list' %}"
+                        class="secondary-link"
+                    >
+                        View all events
+                    </a>
+
+                </div>
+
+
+                {% if event_stats %}
+
+                    <div class="event-stack">
+
+                        {% for item in event_stats %}
+
+                            <article class="event-card">
+
+                                <div class="event-main">
+
+                                    <div class="event-heading">
+
+                                        <div>
+
+                                            <p class="event-date">
+                                                {{ item.event.date|date:"d M Y" }}
+                                            </p>
+
+                                            <h4>
+                                                {{ item.event.title }}
+                                            </h4>
+
+                                            <p class="event-location">
+                                                {{ item.event.location }}
+                                            </p>
+
+                                        </div>
+
+
+                                        <div class="event-revenue">
+
+                                            <span>
+                                                Revenue
+                                            </span>
+
+                                            <strong>
+                                                R{{ item.revenue|floatformat:2 }}
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="capacity-section">
+
+                                        <div class="capacity-copy">
+
+                                            <span>
+                                                Ticket Progress
+                                            </span>
+
+                                            <strong>
+                                                {{ item.tickets_sold }}
+                                                /
+                                                {{ item.event.max_tickets }}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div class="progress-track">
+
+                                            {% widthratio item.tickets_sold item.event.max_tickets 100 as sold_percentage %}
+
+                                            <div
+                                                class="progress-fill"
+                                                style="width: {{ sold_percentage }}%;"
+                                            ></div>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="event-metrics">
+
+                                        <div class="event-stat">
+                                            <span>Sold</span>
+                                            <strong>
+                                                {{ item.tickets_sold }}
+                                            </strong>
+                                        </div>
+
+                                        <div class="event-stat">
+                                            <span>Remaining</span>
+                                            <strong>
+                                                {{ item.tickets_remaining }}
+                                            </strong>
+                                        </div>
+
+                                        <div class="event-stat">
+                                            <span>Ticket Price</span>
+                                            <strong>
+                                                R{{ item.event.ticket_price|floatformat:2 }}
+                                            </strong>
+                                        </div>
+
+                                        <div class="event-stat">
+                                            <span>Capacity</span>
+                                            <strong>
+                                                {{ item.event.max_tickets }}
+                                            </strong>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </article>
+
+                        {% endfor %}
+
+                    </div>
+
+                {% else %}
+
+                    <div class="empty-state">
+
+                        <div class="empty-orb">
+                            E
+                        </div>
+
+                        <h4>
+                            No event performance data yet
+                        </h4>
+
+                        <p>
+                            Create an event to begin tracking
+                            ticket sales and revenue.
+                        </p>
+
+                        <a
+                            href="{% url 'event_create' %}"
+                            class="primary-button"
+                        >
+                            Create Your First Event
+                        </a>
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <aside class="insights-panel">
+
+                <p class="eyebrow">
+                    QUICK VIEW
+                </p>
+
+                <h3>
+                    Portfolio Summary
+                </h3>
+
+
+                <div class="insight-block">
+
+                    <span>
+                        Total Events
+                    </span>
+
+                    <strong>
+                        {{ total_events }}
+                    </strong>
+
+                </div>
+
+
+                <div class="insight-block">
+
+                    <span>
+                        Tickets Sold
+                    </span>
+
+                    <strong>
+                        {{ total_tickets_sold }}
+                    </strong>
+
+                </div>
+
+
+                <div class="insight-block">
+
+                    <span>
+                        Remaining Capacity
+                    </span>
+
+                    <strong>
+                        {{ total_tickets_remaining }}
+                    </strong>
+
+                </div>
+
+
+                <div class="insight-block revenue-insight">
+
+                    <span>
+                        Total Revenue
+                    </span>
+
+                    <strong>
+                        R{{ total_revenue|floatformat:2 }}
+                    </strong>
+
+                </div>
+
+
+                <div class="insight-note">
+
+                    <p class="note-title">
+                        Data Source
+                    </p>
+
+                    <p>
+                        Dashboard totals are calculated from
+                        confirmed bookings linked to events
+                        owned by your organizer account.
+                    </p>
+
+                </div>
+
+            </aside>
+
+        </section>
+
+    </main>
+
+</div>
+
+</body>
+</html>

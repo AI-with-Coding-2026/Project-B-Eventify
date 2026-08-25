@@ -1,55 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events</title>
-</head>
-<body>
-
-    <h1>Events</h1>
-
-    {% if user.is_authenticated and user.role == "organizer" %}
-        <p>
-            <a href="{% url 'event_create' %}">Create New Event</a>
-        </p>
-    {% endif %}
-
-    {% for event in events %}
-        <hr>
-
-        <h2>{{ event.title }}</h2>
-
-        <p>{{ event.description }}</p>
-        <p>Location: {{ event.location }}</p>
-        <p>Date: {{ event.date }}</p>
-        <p>Ticket price: {{ event.ticket_price }}</p>
-        <p>Maximum tickets: {{ event.max_tickets }}</p>
-        <p>Organizer: {{ event.organizer.username }}</p>
-
-        {% if event.poster %}
-            <img
-                src="{{ event.poster.url }}"
-                alt="{{ event.title }}"
-                width="250"
-            >
-        {% endif %}
-
-        {% if event.organizer == user %}
-            <p>
-                <a href="{% url 'event_edit' event.pk %}">
-                    Edit
-                </a>
-
-                <a href="{% url 'event_delete' event.pk %}">
-                    Delete
-                </a>
-            </p>
-        {% endif %}
-
-    {% empty %}
-        <p>No events have been created yet.</p>
-    {% endfor %}
-
-</body>
-</html>
+<form method="GET" action="" class="flex flex-wrap gap-4 mb-6 items-end">
+    <!-- Search Input -->
+    <div class="flex flex-col">
+      <label for="q" class="text-sm font-medium">Search</label>
+      <input 
+        type="text" 
+        id="q" 
+        name="q" 
+        placeholder="Search events..." 
+        value="{{ search_query }}" 
+        class="px-3 py-2 border rounded-md"
+      />
+    </div>
+  
+    <!-- Location Filter Input -->
+    <div class="flex flex-col">
+      <label for="location" class="text-sm font-medium">Venue / Location</label>
+      <input 
+        type="text" 
+        id="location" 
+        name="location" 
+        placeholder="Filter by location..." 
+        value="{{ location_query }}" 
+        class="px-3 py-2 border rounded-md"
+      />
+    </div>
+  
+    <!-- Sort Dropdown -->
+    <div class="flex flex-col">
+      <label for="sort" class="text-sm font-medium">Sort by Date</label>
+      <select name="sort" id="sort" onchange="this.form.submit()" class="px-3 py-2 border rounded-md">
+        <option value="asc" {% if current_sort == 'asc' %}selected{% endif %}>Date: Soonest First</option>
+        <option value="desc" {% if current_sort == 'desc' %}selected{% endif %}>Date: Furthest Out</option>
+      </select>
+    </div>
+  
+    <!-- Action Buttons -->
+    <div class="flex gap-2">
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+        Apply
+      </button>
+      {% if search_query or location_query or current_sort != 'asc' %}
+        <a href="?" class="text-sm text-gray-500 underline py-2 self-center">Clear</a>
+      {% endif %}
+    </div>
+  </form>
