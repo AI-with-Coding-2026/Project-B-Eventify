@@ -198,16 +198,22 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100 text-gray-600">
                     {% for booking in bookings %}
-                    <tr class="transition hover:bg-indigo-50/50">
-                        <td class="whitespace-nowrap px-4 py-3 font-medium text-gray-900">{{ booking.user.username }}</td>
-                        <td class="whitespace-nowrap px-4 py-3">{{ booking.event.title }}</td>
-                        <td class="whitespace-nowrap px-4 py-3">{{ booking.booked_at|date:"M d, Y" }}</td>
-                        <td class="whitespace-nowrap px-4 py-3">
-                            <a href="{% url 'booking_edit' booking.pk %}" class="mr-3 text-xs font-semibold text-indigo-600 hover:underline">Edit</a>
-                            <a href="{% url 'booking_delete' booking.pk %}" class="text-xs font-semibold text-red-600 hover:underline">Delete</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
+                   <tr class="transition hover:bg-indigo-50/50">
+    <td class="whitespace-nowrap px-4 py-3 font-medium text-gray-900">
+        {% if booking.attendee %}{{ booking.attendee.username }}{% else %}{{ booking.user.username }}{% endif %}
+    </td>
+    <td class="whitespace-nowrap px-4 py-3">{{ booking.event.title }}</td>
+    <td class="whitespace-nowrap px-4 py-3">{{ booking.booked_at|date:"M d, Y" }}</td>
+    <td class="whitespace-nowrap px-4 py-3">
+        {% if not booking.attendee %}
+            <a href="{% url 'booking_edit' booking.pk %}" class="mr-3 text-xs font-semibold text-indigo-600 hover:underline">Edit</a>
+            <a href="{% url 'booking_delete' booking.pk %}" class="text-xs font-semibold text-red-600 hover:underline">Delete</a>
+        {% else %}
+            <span class="text-xs text-gray-400">—</span>
+        {% endif %}
+    </td>
+</tr>
+{% endfor %}
                     </tbody>
                 </table>
                 </div>

@@ -72,7 +72,12 @@ def admin_dashboard(request):
         'attendees': attendees.order_by('username'),
         'events': Event.objects.select_related('organizer').order_by('date'),
         'tickets': Ticket.objects.select_related('attendee', 'event').order_by('-booked_at'),
-        'bookings': EventBooking.objects.select_related('user', 'event').order_by('-booked_at'),
+        'bookings': sorted(
+    list(Ticket.objects.select_related('attendee', 'event')) +
+    list(EventBooking.objects.select_related('user', 'event')),
+    key=lambda b: b.booked_at,
+    reverse=True,
+),
         'categories': Category.objects.order_by('name'),
         'upcoming_events': upcoming_events,
     }
