@@ -98,24 +98,47 @@
 </script>
 {% endif %}
 
-<div class="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-    <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold display">Filtered Events</h2>
-        <span class="text-sm text-gray-500">{{ total_events }} event{{ total_events|pluralize }}</span>
+<div class="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100" data-datagrid-wrapper>
+    <div class="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center mb-4">
+        <div>
+            <h2 class="text-lg font-semibold display">Filtered Events</h2>
+            <span class="text-sm text-gray-500"><strong data-datagrid-count>{{ total_events }}</strong> event{{ total_events|pluralize }}</span>
+        </div>
+        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <label>
+                <span class="sr-only">Search in column</span>
+                <select data-datagrid-search-column
+                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 sm:w-36">
+                    <option value="-1">All columns</option>
+                    <option value="0">Event</option>
+                    <option value="1">Organizer</option>
+                    <option value="2">Category</option>
+                    <option value="3">Date</option>
+                    <option value="4">Location</option>
+                    <option value="5">Price</option>
+                    <option value="6">Revenue</option>
+                </select>
+            </label>
+            <label class="w-full sm:w-64">
+                <span class="sr-only">Search filtered events</span>
+                <input type="search" data-datagrid-search placeholder="Search events..."
+                    class="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+            </label>
+        </div>
     </div>
 
     {% if filtered_events %}
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-100 text-sm">
+        <table data-datagrid class="min-w-full divide-y divide-gray-100 text-sm">
             <thead class="bg-indigo-50 text-left text-xs font-semibold uppercase tracking-wide text-indigo-700">
                 <tr>
-                    <th class="px-4 py-3">Event</th>
-                    <th class="px-4 py-3">Organizer</th>
-                    <th class="px-4 py-3">Category</th>
-                    <th class="px-4 py-3">Date</th>
-                    <th class="px-4 py-3">Location</th>
-                    <th class="px-4 py-3">Price</th>
-                    <th class="px-4 py-3">Revenue</th>
+                    <th class="px-4 py-3"><button type="button" data-sort="0">Event</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="1">Organizer</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="2">Category</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="3">Date</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="4">Location</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="5">Price</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="6">Revenue</button></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-gray-600">
