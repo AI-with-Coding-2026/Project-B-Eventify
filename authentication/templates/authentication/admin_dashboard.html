@@ -253,9 +253,9 @@
                         >
                     </a>
                 {% else %}
-                    <a href="{% url 'event_detail' event.pk %}" class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm hover:bg-indigo-100 transition">
-                        No image
-                    </a>
+                <a href="{% url 'event_detail' event.pk %}" class="block w-full h-32 overflow-hidden hover:opacity-95 transition">
+                    {% include 'events/partials/event_image_placeholder.html' %}
+                </a>
                 {% endif %}
 
                 <div class="p-4 flex flex-col flex-1">
@@ -326,9 +326,9 @@
                         class="w-full h-32 object-cover"
                     >
                 {% else %}
-                    <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">
-                        No image
-                    </div>
+                <div class="w-full h-32 overflow-hidden">
+                    {% include 'events/partials/event_image_placeholder.html' %}
+                </div>
                 {% endif %}
 
                 <div class="p-4 flex flex-col flex-1">

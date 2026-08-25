@@ -32,7 +32,7 @@
                 {% if event.image %}
                 <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-32 object-cover">
                 {% else %}
-                <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">No image</div>
+                <div class="w-full h-32 overflow-hidden">{% include 'events/partials/event_image_placeholder.html' %}</div>
                 {% endif %}
                 <div class="p-4 flex flex-col flex-1">
                     <h3 class="font-semibold text-gray-900 mb-1">{{ event.title }}</h3>
