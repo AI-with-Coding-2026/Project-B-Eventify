@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 from .models import Category, Event, EventBooking, Ticket
 
 
@@ -143,14 +144,35 @@ class EventForm(forms.ModelForm):
         # When editing an existing Event, Django automatically
         # loads the currently selected Many-to-Many categories.
 
+    def clean_max_tickets(self):
+        value = self.cleaned_data.get("max_tickets")
+        return value or 1
+
+    def clean_date(self):
+        date = self.cleaned_data.get("date")
+        if date and not self.instance.pk and date < timezone.now():
+            raise forms.ValidationError("Event date and time cannot be in the past.")
+        return date
+
     def clean_image(self):
         image = self.cleaned_data.get("image")
 
-        if image:
-            # Keep any existing image validation here if required.
-            pass
+        if (
+            image
+            and hasattr(image, "content_type")
+            and image.content_type
+            not in [
+                "image/jpeg",
+                "image/png",
+                "image/webp",
+            ]
+        ):
+            raise forms.ValidationError(
+                "Only JPG, PNG, and WebP images are allowed."
+            )
 
         return image
+
 
 
 class TicketForm(forms.ModelForm):
