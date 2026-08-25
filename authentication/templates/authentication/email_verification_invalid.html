@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Invalid Verification Link — Eventify{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow mt-8 text-center">
+    <div class="text-red-500 text-4xl mb-4">!</div>
+
+    <h1 class="text-2xl font-bold mb-3">
+        Verification link is invalid
+    </h1>
+
+    <p class="text-gray-600 mb-6">
+        This verification link is invalid or has expired.
+        Please register again to receive a new verification email.
+    </p>
+
+    <a href="{% url 'register' %}"
+       class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">
+        Back to Registration
+    </a>
+</div>
+{% endblock %}

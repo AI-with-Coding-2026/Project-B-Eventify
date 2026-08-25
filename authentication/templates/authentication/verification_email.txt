@@ -1,0 +1,14 @@
+Subject: Verify your Eventify email address
+
+Hello {{ user.username }},
+
+Thank you for creating an Eventify account.
+
+Please verify your email address before you can use your account.
+
+Verify Email: {{ verification_url }}
+
+If you did not create this account, you can ignore this email.
+
+Thank you,
+Eventify Team
