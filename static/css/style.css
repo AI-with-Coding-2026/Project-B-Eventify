@@ -456,6 +456,10 @@ a:hover {
     }
 }
 
+.flip-column-label-red {
+    color: #ef4444 !important;
+}
+
 /* Individual Flip Card Column - Ultra Compact Sizes */
 .flip-card {
     position: relative;
@@ -473,6 +477,35 @@ a:hover {
     user-select: none;
 }
 
+.flip-card.flip-card-wide {
+    width: 54px;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+}
+
+/* Red styling for Seconds card digits and SECONDS label everywhere */
+.flip-card.flip-card-red,
+.flip-card[data-unit="seconds"],
+.flip-card.flip-card-red span,
+.flip-card[data-unit="seconds"] span {
+    color: #ef4444 !important;
+}
+
+.flip-card.flip-card-red,
+.flip-card[data-unit="seconds"] {
+    box-shadow: 0 2px 5px rgba(239, 68, 68, 0.15), 0 0 0 1px #fca5a5 !important;
+}
+
+.flip-card.flip-card-red::after,
+.flip-card[data-unit="seconds"]::after {
+    background-color: #fca5a5 !important;
+}
+
+.flip-column-label-red,
+.flip-column:has([data-unit="seconds"]) .flip-column-label {
+    color: #ef4444 !important;
+}
+
 @media (min-width: 640px) {
     .flip-card {
         width: 48px;
@@ -480,6 +513,12 @@ a:hover {
         font-size: 30px;
         line-height: 56px;
         border-radius: 7px;
+    }
+
+    .flip-card.flip-card-wide {
+        width: 68px;
+        font-size: 26px;
+        letter-spacing: -0.5px;
     }
 }
 
