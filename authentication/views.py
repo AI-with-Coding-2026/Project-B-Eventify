@@ -72,7 +72,12 @@ def admin_dashboard(request):
         'attendees': attendees.order_by('username'),
         'events': Event.objects.select_related('organizer').order_by('date'),
         'tickets': Ticket.objects.select_related('attendee', 'event').order_by('-booked_at'),
-        'bookings': EventBooking.objects.select_related('user', 'event').order_by('-booked_at'),
+        'bookings': sorted(
+    list(Ticket.objects.select_related('attendee', 'event')) +
+    list(EventBooking.objects.select_related('user', 'event')),
+    key=lambda b: b.booked_at,
+    reverse=True,
+),
         'categories': Category.objects.order_by('name'),
         'upcoming_events': upcoming_events,
     }
@@ -86,17 +91,17 @@ def user_delete(request, pk):
 
     if target.pk == request.user.pk:
         messages.error(request, 'You cannot delete your own account.')
-        return redirect('admin_user_list')
+        return redirect('admin_dashboard')
 
     if target.role == UserRole.ADMIN:
         messages.error(request, 'Admin accounts cannot be deleted from the dashboard.')
-        return redirect('admin_user_list')
+        return redirect('admin_dashboard')
 
     if request.method == 'POST':
         username = target.username
         target.delete()
         messages.success(request, f'User "{username}" deleted successfully.')
-        return redirect('admin_user_list')
+        return redirect('admin_dashboard')
 
     return render(
         request,
@@ -338,6 +343,26 @@ def analytics_dashboard(request):
         events_qs = events_qs.filter(organizer_id=organizer_id)
     total_events = events_qs.count()
 
+    filtered_events = list(events_qs.select_related('organizer').annotate(
+        event_tickets_sold=Coalesce(Sum('tickets__quantity'), 0),
+        event_revenue=Coalesce(
+            Sum(
+                F('tickets__quantity') * F('price'),
+                output_field=DecimalField(),
+            ),
+            0,
+            output_field=DecimalField(),
+        ),
+    ).order_by('-date', 'title'))
+    event_chart_data = [
+        {
+            'title': event.title,
+            'revenue': float(event.event_revenue),
+            'tickets': event.event_tickets_sold,
+        }
+        for event in filtered_events
+    ]
+
     organizers = User.objects.filter(role=UserRole.ORGANIZER).order_by('username')
 
     context = {
@@ -345,6 +370,8 @@ def analytics_dashboard(request):
         'total_bookings': total_bookings,
         'total_tickets_sold': total_tickets_sold,
         'total_events': total_events,
+        'filtered_events': filtered_events,
+        'event_chart_data': event_chart_data,
         'organizers': organizers,
         'selected_organizer': organizer_id,
     }
