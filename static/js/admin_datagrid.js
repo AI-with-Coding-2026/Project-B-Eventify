@@ -85,12 +85,14 @@
 
     function initSearch(wrapper) {
         var searchInput = wrapper.querySelector('[data-datagrid-search]');
+        var searchColumn = wrapper.querySelector('[data-datagrid-search-column]');
         var tables = wrapper.querySelectorAll('[data-datagrid]');
 
         if (!searchInput || tables.length === 0) return;
 
-        searchInput.addEventListener('input', function () {
+        function applySearch() {
             var query = searchInput.value.toLowerCase().trim();
+            var columnIndex = searchColumn ? Number(searchColumn.value) : -1;
 
             tables.forEach(function (table) {
                 var tbody = table.tBodies[0];
@@ -98,7 +100,9 @@
 
                 var visibleCount = 0;
                 Array.from(tbody.rows).forEach(function (row) {
-                    var text = row.textContent.toLowerCase();
+                    var text = columnIndex >= 0
+                        ? (row.cells[columnIndex] || {textContent: ''}).textContent.toLowerCase()
+                        : row.textContent.toLowerCase();
                     var matches = !query || text.indexOf(query) !== -1;
                     row.style.display = matches ? '' : 'none';
                     if (matches) visibleCount++;
@@ -115,7 +119,10 @@
                     }
                 }
             });
-        });
+        }
+
+        searchInput.addEventListener('input', applySearch);
+        if (searchColumn) searchColumn.addEventListener('change', applySearch);
     }
 
     /* ── Column-Value Filter ───────────────────────────────────── */
