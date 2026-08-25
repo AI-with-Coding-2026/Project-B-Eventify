@@ -12,35 +12,23 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
 
             <div class="bg-indigo-50 rounded-lg p-4 text-center">
-
                 <p class="text-2xl font-bold text-indigo-600 count-up" data-target="{{ total_users }}">0</p>
-
                 <p class="text-sm text-gray-500">Total Users</p>
-
             </div>
 
             <div class="bg-indigo-50 rounded-lg p-4 text-center">
-
                 <p class="text-2xl font-bold text-indigo-600 count-up" data-target="{{ admin_count }}">0</p>
-
                 <p class="text-sm text-gray-500">Admins</p>
-
             </div>
 
             <div class="bg-indigo-50 rounded-lg p-4 text-center">
-
                 <p class="text-2xl font-bold text-indigo-600 count-up" data-target="{{ organizer_count }}">0</p>
-
                 <p class="text-sm text-gray-500">Organizers</p>
-
             </div>
 
             <div class="bg-indigo-50 rounded-lg p-4 text-center">
-
                 <p class="text-2xl font-bold text-indigo-600 count-up" data-target="{{ attendee_count }}">0</p>
-
                 <p class="text-sm text-gray-500">Attendees</p>
-
             </div>
 
         </div>
@@ -72,9 +60,7 @@
                         <strong>{{ organizer.username }}</strong>
 
                         <span class="text-gray-500">
-
                             ({{ organizer.email|default:"No email" }})
-
                         </span>
 
                     </li>
@@ -106,9 +92,7 @@
                         <strong>{{ attendee.username }}</strong>
 
                         <span class="text-gray-500">
-
                             ({{ attendee.email|default:"No email" }})
-
                         </span>
 
                     </li>
@@ -136,15 +120,10 @@
                 <h2 class="text-lg font-semibold display">Manage Categories</h2>
 
                 <a
-
                     href="{% url 'category_create' %}"
-
                     class="inline-block bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-indigo-100"
-
                 >
-
                     + Add
-
                 </a>
 
             </div>
@@ -162,9 +141,7 @@
                         <strong>{{ category.name }}</strong>
 
                         <span class="text-gray-500">
-
                             — {{ category.description|default:"No description" }}
-
                         </span>
 
                     </span>
@@ -172,27 +149,17 @@
                     <div class="flex gap-2 shrink-0">
 
                         <a
-
                             href="{% url 'category_update' category.pk %}"
-
                             class="text-xs font-semibold text-indigo-600 hover:underline"
-
                         >
-
                             Edit
-
                         </a>
 
                         <a
-
                             href="{% url 'category_delete' category.pk %}"
-
                             class="text-xs font-semibold text-red-600 hover:underline"
-
                         >
-
                             Delete
-
                         </a>
 
                     </div>
@@ -230,9 +197,7 @@
                         <strong>{{ ticket.attendee.username }}</strong>
 
                         <span class="text-gray-500">
-
                             → {{ ticket.event.title }} ({{ ticket.quantity }})
-
                         </span>
 
                     </span>
@@ -240,27 +205,17 @@
                     <div class="flex gap-2 shrink-0">
 
                         <a
-
                             href="{% url 'ticket_edit' ticket.pk %}"
-
                             class="text-xs font-semibold text-indigo-600 hover:underline"
-
                         >
-
                             Edit
-
                         </a>
 
                         <a
-
                             href="{% url 'ticket_delete' ticket.pk %}"
-
                             class="text-xs font-semibold text-red-600 hover:underline"
-
                         >
-
                             Delete
-
                         </a>
 
                     </div>
@@ -298,9 +253,7 @@
                         <strong>{{ booking.user.username }}</strong>
 
                         <span class="text-gray-500">
-
                             → {{ booking.event.title }}
-
                         </span>
 
                     </span>
@@ -308,27 +261,17 @@
                     <div class="flex gap-2 shrink-0">
 
                         <a
-
                             href="{% url 'booking_edit' booking.pk %}"
-
                             class="text-xs font-semibold text-indigo-600 hover:underline"
-
                         >
-
                             Edit
-
                         </a>
 
                         <a
-
                             href="{% url 'booking_delete' booking.pk %}"
-
                             class="text-xs font-semibold text-red-600 hover:underline"
-
                         >
-
                             Delete
-
                         </a>
 
                     </div>
@@ -358,15 +301,10 @@
             <h2 class="text-lg font-semibold display">Events</h2>
 
             <a
-
                 href="{% url 'event_create' %}"
-
                 class="inline-block bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-indigo-100"
-
             >
-
                 + Add event
-
             </a>
 
         </div>
@@ -382,21 +320,15 @@
                 {% if event.image %}
 
                     <img
-
                         src="{{ event.image.url }}"
-
                         alt="{{ event.title }}"
-
                         class="w-full h-32 object-cover"
-
                     >
 
                 {% else %}
 
                     <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">
-
                         No image
-
                     </div>
 
                 {% endif %}
@@ -404,43 +336,28 @@
                 <div class="p-4 flex flex-col flex-1">
 
                     <h3 class="font-semibold text-gray-900 mb-1">
-
                         {{ event.title }}
-
                     </h3>
 
                     <p class="text-xs text-gray-500 mb-3">
-
                         <strong>Date:</strong>
-
                         {{ event.date|date:"M d, Y" }}
-
                     </p>
 
                     <div class="flex gap-3 mt-auto pt-2 border-t border-gray-100">
 
                         <a
-
                             href="{% url 'edit_event' event.pk %}"
-
                             class="text-xs font-semibold text-indigo-600 hover:underline"
-
                         >
-
                             Edit
-
                         </a>
 
                         <a
-
                             href="{% url 'delete_event' event.pk %}"
-
                             class="text-xs font-semibold text-red-600 hover:underline"
-
                         >
-
                             Delete
-
                         </a>
 
                     </div>
@@ -468,21 +385,14 @@
         <div class="flex items-center justify-between mb-4">
 
             <h2 class="text-lg font-semibold text-gray-900 display">
-
                 Upcoming Events
-
             </h2>
 
             <a
-
                 href="{% url 'event_list' %}"
-
                 class="text-sm text-indigo-600 font-medium hover:underline"
-
             >
-
                 View all events →
-
             </a>
 
         </div>
@@ -494,31 +404,22 @@
             {% for event in upcoming_events %}
 
             <a
-
                 href="{% url 'event_detail' event.pk %}"
-
                 class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-sm transition hover:-translate-y-1 hover:shadow-md hover:border-indigo-300 no-underline text-inherit"
-
             >
 
                 {% if event.image %}
 
                     <img
-
                         src="{{ event.image.url }}"
-
                         alt="{{ event.title }}"
-
                         class="w-full h-32 object-cover"
-
                     >
 
                 {% else %}
 
                     <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">
-
                         No image
-
                     </div>
 
                 {% endif %}
@@ -526,52 +427,38 @@
                 <div class="p-4 flex flex-col flex-1">
 
                     <h3 class="font-semibold text-gray-900 mb-1">
-
                         {{ event.title }}
-
                     </h3>
 
                     {% if event.description %}
 
                     <p class="text-xs text-gray-500 mb-2">
-
                         {{ event.description|truncatewords:12 }}
-
                     </p>
 
                     {% endif %}
 
                     <p class="text-xs text-gray-500">
-
                         <strong>Date:</strong>
-
                         {{ event.date|date:"M d, Y" }}
-
                     </p>
 
                     <p class="text-xs text-gray-500">
-
                         <strong>Price:</strong>
-
                         ${{ event.price }}
-
                     </p>
 
                     <!-- Added: tickets remaining -->
 
                     <p class="text-xs text-gray-500 ticket-remaining"
-
                        data-remaining="{{ event.tickets_remaining }}"
-
                        data-total="{{ event.max_tickets }}">
 
                         <strong>Tickets remaining:</strong>
 
                         <span class="remaining-number">
-
                             {{ event.tickets_remaining }}
-
-                        </span>/{{ event.max_tickets }}
+                        </span>
 
                     </p>
 
@@ -586,9 +473,7 @@
         {% else %}
 
         <p class="text-gray-400 text-center py-8">
-
             No upcoming events at the moment.
-
         </p>
 
         {% endif %}
@@ -610,11 +495,8 @@
             counters.forEach(function (counter) {
 
                 const target = parseInt(
-
                     counter.getAttribute('data-target'),
-
                     10
-
                 );
 
                 if (isNaN(target)) {
@@ -644,13 +526,10 @@
                     const progress = Math.min(elapsed / duration, 1);
 
                     const easedProgress =
-
                         1 - Math.pow(1 - progress, 4);
 
                     const currentValue = Math.round(
-
                         easedProgress * target
-
                     );
 
                     counter.textContent = currentValue;
@@ -676,11 +555,8 @@
         if (document.readyState === 'loading') {
 
             document.addEventListener(
-
                 'DOMContentLoaded',
-
                 runCountUpAnimation
-
             );
 
         } else {
@@ -708,35 +584,25 @@
         function checkRemainingTickets() {
 
             const ticketElements =
-
                 document.querySelectorAll('.ticket-remaining');
 
             ticketElements.forEach(function (ticketElement) {
 
                 const remaining = Number(
-
                     ticketElement.getAttribute('data-remaining')
-
                 );
 
                 const total = Number(
-
                     ticketElement.getAttribute('data-total')
-
                 );
 
                 const remainingNumber =
-
                     ticketElement.querySelector('.remaining-number');
 
                 if (
-
                     remainingNumber &&
-
                     total > 0 &&
-
                     remaining <= (total * 0.30)
-
                 ) {
 
                     remainingNumber.classList.add('text-red-600');
@@ -750,11 +616,8 @@
         if (document.readyState === 'loading') {
 
             document.addEventListener(
-
                 'DOMContentLoaded',
-
                 checkRemainingTickets
-
             );
 
         } else {
@@ -764,11 +627,8 @@
         }
 
         window.addEventListener(
-
             'pageshow',
-
             checkRemainingTickets
-
         );
 
     })();

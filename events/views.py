@@ -1,5 +1,5 @@
-import threading
 from urllib.parse import urlparse
+
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
@@ -8,6 +8,10 @@ from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
+from .emails import (
+    send_booking_confirmation_email,
+    send_booking_cancellation_email,
+)
 
 from authentication.decorators import (
     admin_required,
@@ -16,7 +20,11 @@ from authentication.decorators import (
     role_required,
 )
 from authentication.models import UserRole
-from .emails import send_booking_confirmation_email
+
+from .emails import (
+    send_booking_confirmation_email,
+    send_booking_cancellation_email,
+)
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
 from .models import Category, Event, EventBooking, Ticket
 
@@ -24,6 +32,7 @@ from .models import Category, Event, EventBooking, Ticket
 def _user_can_manage_event(user, event):
     if user.is_admin:
         return True
+
     return (
         user.role == UserRole.ORGANIZER
         and event.organizer_id == user.id
@@ -54,6 +63,7 @@ _BACK_LABEL_MAP = [
     ('/events/', 'Back to Events'),
 ]
 
+
 def get_user_bookings(user_id):
     """
     Fetch all bookings for a given user ID, combining current Ticket
@@ -81,13 +91,17 @@ def get_user_bookings(user_id):
         bookings.append({
             'event': booking.event,
             'quantity': 1,
-           'booked_at': booking.booked_at,
+            'booked_at': booking.booked_at,
             'source': 'legacy',
         })
 
-    bookings.sort(key=lambda b: b['booked_at'], reverse=True)
+    bookings.sort(
+        key=lambda b: b['booked_at'],
+        reverse=True
+    )
 
     return bookings
+
 
 def _resolve_back_navigation(request):
     """Return (back_url, back_label) from the HTTP Referer header.
@@ -101,10 +115,10 @@ def _resolve_back_navigation(request):
     default_label = 'Back to Events'
 
     referer = request.META.get('HTTP_REFERER', '')
+
     if not referer:
         return default_url, default_label
 
-    # Reject external / unsafe URLs.
     if not url_has_allowed_host_and_scheme(
         referer,
         allowed_hosts={request.get_host()},
@@ -114,16 +128,13 @@ def _resolve_back_navigation(request):
 
     parsed_path = urlparse(referer).path
 
-    # Don't link back to the same detail page.
     if parsed_path == request.path:
         return default_url, default_label
 
-    # Pick the most specific matching label.
     for prefix, label in _BACK_LABEL_MAP:
         if parsed_path.startswith(prefix):
             return referer, label
 
-    # Home page or any other internal page – still honour the referer.
     return referer, 'Back'
 
 
@@ -137,21 +148,34 @@ def event_list(request):
     max_price = request.GET.get('max_price', '')
 
     if search_query:
-        events = events.filter(title__icontains=search_query)
+        events = events.filter(
+            title__icontains=search_query
+        )
 
     if selected_category:
-        events = events.filter(category=selected_category)
+        events = events.filter(
+            category=selected_category
+        )
 
     if max_price:
-        events = events.filter(price__lte=max_price)
+        events = events.filter(
+            price__lte=max_price
+        )
 
     if start_date and end_date:
-        events = events.filter(date__date__range=(start_date, end_date))
+        events = events.filter(
+            date__date__range=(start_date, end_date)
+        )
     else:
         if start_date:
-            events = events.filter(date__date__gte=start_date)
+            events = events.filter(
+                date__date__gte=start_date
+            )
+
         if end_date:
-            events = events.filter(date__date__lte=end_date)
+            events = events.filter(
+                date__date__lte=end_date
+            )
 
     today = timezone.now().date()
     past_events = events.filter(date__date__lt=today).order_by('-date')
@@ -159,11 +183,13 @@ def event_list(request):
     selling_fast_threshold = 10  # tweak this number as needed
 
     paginator = Paginator(events, 6)
+
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     filter_params = request.GET.copy()
     filter_params.pop('page', None)
+
     filter_query_string = filter_params.urlencode()
 
     context = {
@@ -180,22 +206,28 @@ def event_list(request):
         'past_events': past_events,
         'selling_fast_threshold': selling_fast_threshold,
     }
-    return render(request, 'events/event_list.html', context)
+
+    return render(
+        request,
+        'events/event_list.html',
+        context
+    )
 
 def event_detail(request, pk):
     event = get_object_or_404(Event, pk=pk)
+
     user = request.user
     user_has_booked = False
 
     if user.is_authenticated:
         user_has_booked = _user_has_booked_event(user, event)
 
-
-    is_past_event = event.date < timezone.now()
-
     context = {
         'event': event,
-        'can_manage': user.is_authenticated and _user_can_manage_event(user, event),
+        'can_manage': (
+            user.is_authenticated
+            and _user_can_manage_event(user, event)
+        ),
         'can_book': (
             user.is_authenticated
             and user.role == UserRole.ATTENDEE
@@ -206,7 +238,12 @@ def event_detail(request, pk):
         'user_has_booked': user_has_booked,
         'is_past_event': event.is_expired,
     }
-    return render(request, 'events/event_detail.html', context)
+
+    return render(
+        request,
+        'events/event_detail.html',
+        context
+    )
 
 
 @role_required(UserRole.ATTENDEE)
@@ -221,8 +258,14 @@ def book_ticket(request, pk):
     event = get_object_or_404(Event, pk=pk)
 
     if event.is_expired:
-        messages.error(request, 'Booking is not available because this event has ended.')
-        return redirect('event_detail', pk=pk)
+        messages.error(
+            request,
+            'Booking is not available because this event has ended.'
+        )
+        return redirect(
+            'event_detail',
+            pk=pk
+        )
 
     if _user_has_booked_event(request.user, event):
         messages.info(request, 'You have already booked this event.')
@@ -230,24 +273,40 @@ def book_ticket(request, pk):
 
     if request.method == 'POST':
         try:
-            quantity = int(request.POST.get('quantity', 1))
+            quantity = int(
+                request.POST.get('quantity', 1)
+            )
         except (TypeError, ValueError):
             quantity = 0
 
         if quantity < 1:
-            messages.error(request, 'Choose at least one ticket.')
+            messages.error(
+                request,
+                'Choose at least one ticket.'
+            )
+
         else:
             with transaction.atomic():
-                event = Event.objects.select_for_update().get(pk=pk)
-                tickets_sold = Ticket.objects.filter(event=event).aggregate(
+                event = Event.objects.select_for_update().get(
+                    pk=pk
+                )
+
+                tickets_sold = Ticket.objects.filter(
+                    event=event
+                ).aggregate(
                     total=Sum('quantity')
                 )['total'] or 0
+
                 tickets_sold += event.bookings.count()
+
                 remaining = event.max_tickets - tickets_sold
 
                 if quantity > remaining:
                     if remaining <= 0:
-                        messages.error(request, 'This event is sold out.')
+                        messages.error(
+                            request,
+                            'This event is sold out.'
+                        )
                     else:
                         messages.error(
                             request,
@@ -261,19 +320,28 @@ def book_ticket(request, pk):
                         attendee=request.user,
                         quantity=quantity,
                     )
-                    
-                    # --------------------------------------------------
-                    # التعديل هنا: تشغيل الإرسال في الخلفية دون تعليق السيرفر
-                    # --------------------------------------------------
-                    threading.Thread(
-                        target=send_booking_confirmation_email,
-                        args=(ticket,)
-                    ).start()
 
-                    messages.success(
-                        request,
-                        f'Ticket booked for "{event.title}". Confirmation email is on its way.',
-                    )
+                    # Send confirmation email directly.
+                    # This allows Brevo errors to appear in the terminal.
+                    try:
+                        send_booking_confirmation_email(ticket)
+
+                        messages.success(
+                            request,
+                            f'Ticket booked for "{event.title}". '
+                            'Confirmation email sent successfully.'
+                        )
+
+                    except Exception as e:
+                        print(
+                            f"BOOKING EMAIL ERROR: {e}"
+                        )
+
+                        messages.warning(
+                            request,
+                            f'Ticket booked, but confirmation email '
+                            f'could not be sent: {e}'
+                        )
 
                     return redirect('my_bookings')
 
@@ -290,10 +358,59 @@ def my_tickets(request):
     return redirect('my_bookings')
 
 
+@attendee_required
+def cancel_ticket(request, pk):
+    """
+    Cancel a ticket belonging to the currently logged-in attendee.
+
+    The cancellation email is sent before the Ticket object is deleted
+    because the email needs the ticket, attendee and event information.
+    """
+    ticket = get_object_or_404(
+        Ticket,
+        pk=pk,
+        attendee=request.user
+    )
+
+    if request.method == "POST":
+        try:
+            send_booking_cancellation_email(ticket)
+
+            messages.success(
+                request,
+                "Booking cancelled and cancellation email sent successfully."
+            )
+
+        except Exception as e:
+            print(
+                f"CANCELLATION EMAIL ERROR: {e}"
+            )
+
+            messages.warning(
+                request,
+                "Booking was cancelled, but the cancellation email could not be sent."
+            )
+
+        ticket.delete()
+
+        return redirect("my_bookings")
+
+    return render(
+        request,
+        "events/ticket_confirm_delete.html",
+        {
+            "ticket": ticket,
+        },
+    )
+
+
 @organizer_required
 def organizer_event_list(request):
     """Show only events owned by the logged-in organizer."""
-    events = Event.objects.filter(organizer=request.user).order_by('-date')
+    events = Event.objects.filter(
+        organizer=request.user
+    ).order_by('-date')
+
     return render(
         request,
         'events/organizer_event_list.html',
@@ -305,15 +422,26 @@ def organizer_event_list(request):
 def event_create(request):
     """Create an event and assign the logged-in organizer as owner."""
     if request.method == 'POST':
-        form = EventForm(request.POST, request.FILES)
+        form = EventForm(
+            request.POST,
+            request.FILES
+        )
+
         if form.is_valid():
             event = form.save(commit=False)
             event.organizer = request.user
             event.save()
-            messages.success(request, 'Event created successfully.')
+
+            messages.success(
+                request,
+                'Event created successfully.'
+            )
+
             if request.user.is_admin:
                 return redirect('admin_dashboard')
+
             return redirect('organizer_event_list')
+
     else:
         form = EventForm()
 
@@ -331,18 +459,36 @@ def event_create(request):
 @organizer_required
 def event_edit(request, pk):
     """Edit an event only if it belongs to the logged-in organizer."""
-    event = get_object_or_404(Event, pk=pk, organizer=request.user)
+    event = get_object_or_404(
+        Event,
+        pk=pk,
+        organizer=request.user
+    )
 
     if request.method == 'POST':
-        form = EventForm(request.POST, request.FILES, instance=event)
+        form = EventForm(
+            request.POST,
+            request.FILES,
+            instance=event
+        )
+
         if form.is_valid():
             form.save()
-            messages.success(request, 'Event updated successfully.')
+
+            messages.success(
+                request,
+                'Event updated successfully.'
+            )
+
             if request.user.is_admin:
                 return redirect('admin_dashboard')
+
             return redirect('organizer_event_list')
+
     else:
-        form = EventForm(instance=event)
+        form = EventForm(
+            instance=event
+        )
 
     return render(
         request,
@@ -359,13 +505,23 @@ def event_edit(request, pk):
 @organizer_required
 def event_delete(request, pk):
     """Delete an event only if it belongs to the logged-in organizer."""
-    event = get_object_or_404(Event, pk=pk, organizer=request.user)
+    event = get_object_or_404(
+        Event,
+        pk=pk,
+        organizer=request.user
+    )
 
     if request.method == 'POST':
         event.delete()
-        messages.success(request, 'Event deleted successfully.')
+
+        messages.success(
+            request,
+            'Event deleted successfully.'
+        )
+
         if request.user.is_admin:
             return redirect('admin_dashboard')
+
         return redirect('organizer_event_list')
 
     return render(
@@ -378,7 +534,12 @@ def event_delete(request, pk):
 @admin_required
 def category_list(request):
     categories = Category.objects.all()
-    return render(request, 'events/category_list.html', {'categories': categories})
+
+    return render(
+        request,
+        'events/category_list.html',
+        {'categories': categories}
+    )
 
 
 @admin_required
@@ -413,10 +574,16 @@ def category_create(request):
 @admin_required
 def category_update(request, pk):
     """Allow admins to edit an existing category name/description."""
-    category = get_object_or_404(Category, pk=pk)
+    category = get_object_or_404(
+        Category,
+        pk=pk
+    )
 
     if request.method == 'POST':
-        form = CategoryForm(request.POST, instance=category)
+        form = CategoryForm(
+            request.POST,
+            instance=category
+        )
 
         if form.is_valid():
             form.save()
@@ -426,10 +593,15 @@ def category_update(request, pk):
                 'Category updated successfully.'
             )
 
-            return redirect('category_update', pk=category.pk)
+            return redirect(
+                'category_update',
+                pk=category.pk
+            )
 
     else:
-        form = CategoryForm(instance=category)
+        form = CategoryForm(
+            instance=category
+        )
 
     return render(
         request,
@@ -446,14 +618,19 @@ def category_update(request, pk):
 @admin_required
 def category_delete(request, pk):
     """Allow admins to delete an existing category after confirmation."""
-    category = get_object_or_404(Category, pk=pk)
+    category = get_object_or_404(
+        Category,
+        pk=pk
+    )
 
     if request.method == 'POST':
         category.delete()
+
         messages.success(
             request,
             'Category deleted successfully.'
         )
+
         return redirect('category_list')
 
     return render(
@@ -517,9 +694,15 @@ def create_event(request):
 
 @role_required(UserRole.ORGANIZER)
 def edit_event(request, pk):
-    event = get_object_or_404(Event, pk=pk)
+    event = get_object_or_404(
+        Event,
+        pk=pk
+    )
 
-    if not _user_can_manage_event(request.user, event):
+    if not _user_can_manage_event(
+        request.user,
+        event
+    ):
         raise PermissionDenied
 
     if request.method == "POST":
@@ -561,9 +744,15 @@ def edit_event(request, pk):
 
 @role_required(UserRole.ORGANIZER)
 def delete_event(request, pk):
-    event = get_object_or_404(Event, pk=pk)
+    event = get_object_or_404(
+        Event,
+        pk=pk
+    )
 
-    if not _user_can_manage_event(request.user, event):
+    if not _user_can_manage_event(
+        request.user,
+        event
+    ):
         raise PermissionDenied
 
     if request.method == "POST":
@@ -575,7 +764,10 @@ def delete_event(request, pk):
         )
 
         if request.user.is_admin:
-            return redirect(request.POST.get("next") or "admin_dashboard")
+            return redirect(
+                request.POST.get("next")
+                or "admin_dashboard"
+            )
 
         return redirect("my_events")
 
@@ -590,16 +782,31 @@ def delete_event(request, pk):
 
 @admin_required
 def ticket_edit(request, pk):
-    ticket = get_object_or_404(Ticket, pk=pk)
+    ticket = get_object_or_404(
+        Ticket,
+        pk=pk
+    )
 
     if request.method == "POST":
-        form = TicketForm(request.POST, instance=ticket)
+        form = TicketForm(
+            request.POST,
+            instance=ticket
+        )
+
         if form.is_valid():
             form.save()
-            messages.success(request, "Ticket updated successfully.")
+
+            messages.success(
+                request,
+                "Ticket updated successfully."
+            )
+
             return redirect("admin_dashboard")
+
     else:
-        form = TicketForm(instance=ticket)
+        form = TicketForm(
+            instance=ticket
+        )
 
     return render(
         request,
@@ -615,11 +822,33 @@ def ticket_edit(request, pk):
 
 @admin_required
 def ticket_delete(request, pk):
-    ticket = get_object_or_404(Ticket, pk=pk)
+    ticket = get_object_or_404(
+        Ticket,
+        pk=pk
+    )
 
     if request.method == "POST":
+        # Send the cancellation email BEFORE deleting the ticket.
+        try:
+            send_booking_cancellation_email(ticket)
+
+            messages.success(
+                request,
+                "Ticket cancelled and cancellation email sent successfully."
+            )
+
+        except Exception as e:
+            print(
+                f"CANCELLATION EMAIL ERROR: {e}"
+            )
+
+            messages.warning(
+                request,
+                "Ticket was deleted, but the cancellation email could not be sent."
+            )
+
         ticket.delete()
-        messages.success(request, "Ticket deleted successfully.")
+
         return redirect("admin_dashboard")
 
     return render(
@@ -633,16 +862,31 @@ def ticket_delete(request, pk):
 
 @admin_required
 def booking_edit(request, pk):
-    booking = get_object_or_404(EventBooking, pk=pk)
+    booking = get_object_or_404(
+        EventBooking,
+        pk=pk
+    )
 
     if request.method == "POST":
-        form = BookingForm(request.POST, instance=booking)
+        form = BookingForm(
+            request.POST,
+            instance=booking
+        )
+
         if form.is_valid():
             form.save()
-            messages.success(request, "Booking updated successfully.")
+
+            messages.success(
+                request,
+                "Booking updated successfully."
+            )
+
             return redirect("admin_dashboard")
+
     else:
-        form = BookingForm(instance=booking)
+        form = BookingForm(
+            instance=booking
+        )
 
     return render(
         request,
@@ -658,11 +902,19 @@ def booking_edit(request, pk):
 
 @admin_required
 def booking_delete(request, pk):
-    booking = get_object_or_404(EventBooking, pk=pk)
+    booking = get_object_or_404(
+        EventBooking,
+        pk=pk
+    )
 
     if request.method == "POST":
         booking.delete()
-        messages.success(request, "Booking deleted successfully.")
+
+        messages.success(
+            request,
+            "Booking deleted successfully."
+        )
+
         return redirect("admin_dashboard")
 
     return render(
