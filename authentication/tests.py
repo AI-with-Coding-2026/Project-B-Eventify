@@ -943,5 +943,5 @@ class EventApprovalWorkflowTests(TestCase):
         event.refresh_from_db()
         self.assertTrue(event.is_pending_publish)
 
-        ) 
+        
         

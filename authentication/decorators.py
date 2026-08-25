@@ -34,8 +34,8 @@ def role_required(*allowed_roles, login_url='login'):
     """
     Require an authenticated user with one of the given roles.
 
-    Unauthorized authenticated users are redirected to the shared
-    /unauthorized/ page (HTTP 403), matching admin_required behavior.
+    Admin users are allowed to access role-specific dashboards.
+    Unauthorized authenticated users are redirected to /unauthorized/.
     """
     roles = _normalize_roles(allowed_roles)
 
@@ -43,7 +43,10 @@ def role_required(*allowed_roles, login_url='login'):
         @login_required(login_url=login_url)
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
-            if request.user.role == UserRole.ADMIN or request.user.role in roles:
+            if (
+                request.user.role == UserRole.ADMIN
+                or request.user.role in roles
+            ):
                 return view_func(request, *args, **kwargs)
 
             return redirect('unauthorized')
@@ -63,7 +66,7 @@ def admin_required(view_func):
 
             return redirect_to_login(
                 request.get_full_path(),
-                login_url="login",
+                login_url='login',
             )
 
         if request.user.role == UserRole.ADMIN:
@@ -82,3 +85,45 @@ def organizer_required(view_func):
 def attendee_required(view_func):
     """Shortcut for views restricted to Attendee users."""
     return role_required(UserRole.ATTENDEE)(view_func)
+
+
+def organizer_or_admin_required(view_func):
+    """
+    Allow Admin users or Organizer users to access the view.
+    """
+    @login_required(login_url='login')
+    @wraps(view_func)
+    def wrapped_view(request, *args, **kwargs):
+        if request.user.role in (
+            UserRole.ADMIN,
+            UserRole.ORGANIZER,
+        ):
+            return view_func(request, *args, **kwargs)
+
+        return redirect('unauthorized')
+
+    return wrapped_view
+
+
+def approved_organizer_required(view_func):
+    """
+    Allow Admin users or approved Organizer users to access the view.
+    """
+
+    @login_required(login_url='login')
+    @wraps(view_func)
+    def wrapped_view(request, *args, **kwargs):
+        user = request.user
+
+        if user.role == UserRole.ADMIN:
+            return view_func(request, *args, **kwargs)
+
+        if (
+            user.role == UserRole.ORGANIZER
+            and getattr(user, 'is_approved_organizer', False)
+        ):
+            return view_func(request, *args, **kwargs)
+
+        return redirect('unauthorized')
+
+    return wrapped_view

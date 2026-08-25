@@ -108,6 +108,14 @@ class User(AbstractUser):
     def is_attendee(self):
         return self.role == UserRole.ATTENDEE
 
+    @property
+    def is_approved_organizer(self):
+        """Return True when this user is an approved Organizer."""
+        return (
+           self.role == UserRole.ORGANIZER
+           and self.organizer_status == OrganizerApprovalStatus.APPROVED
+    )
+
     def clean(self):
         super().clean()
 

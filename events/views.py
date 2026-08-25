@@ -417,7 +417,7 @@ def organizer_event_list(request):
     )
 
 
-@approved_organizer_required
+@organizer_required
 def event_create(request):
     """Create an event and assign the logged-in organizer as owner."""
     if request.method == 'POST':
@@ -438,7 +438,7 @@ def event_create(request):
                 request,
                 'Event submitted. It will appear in the system after an admin approves it.',
             )
-            return redirect('organizer_event_list')
+            return redirect('my_events')
 
     else:
         form = EventForm()

@@ -53,7 +53,7 @@
 
         <a href="{% url 'create_event' %}"
            class="inline-block bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-100 transition hover:text-indigo-600 shadow-sm transition">
-            Create Event
+           + Create Event
         </a>
     </div>
 </div>
@@ -139,6 +139,7 @@
             <div>
                 <h2 class="text-xl font-bold text-gray-900 display">Event Sales & Performance</h2>
                 <p class="text-sm text-gray-500">Track ticket capacity, sales progress, and total revenue per event.</p>
+                <p class="text-sm text-gray-500 mt-1">New events will remain pending until an admin accepts them.</p>
             </div>
             {% if events %}
             <span id="eventCountBadge" class="text-xs font-medium bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
