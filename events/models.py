@@ -98,6 +98,13 @@ class Event(models.Model):
         verbose_name="Custom category",
     )
 
+    categories = models.ManyToManyField(
+      Category,
+      through="EventCategory",
+      related_name="events",
+      blank=True,
+    )
+
     def __str__(self):
         return self.title
 
@@ -114,13 +121,41 @@ class Event(models.Model):
 
     @property
     def tickets_remaining(self):
-        booked = self.bookings.count()
+        booked = sum(
+            ticket.quantity
+            for ticket in self.tickets.all()
+        )
         return max(self.max_tickets - booked, 0)
-
+    
     @property
     def is_sold_out(self):
         return self.tickets_remaining <= 0
 
+class EventCategory(models.Model):
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        db_column="event_id",
+    )
+
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        db_column="category_id",
+    )
+
+    class Meta:
+        db_table = "event_category"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event", "category"],
+                name="unique_event_category",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.event.title} - {self.category.name}"
+    
 
 class Ticket(models.Model):
     """A ticket booked by an attendee for a specific event."""

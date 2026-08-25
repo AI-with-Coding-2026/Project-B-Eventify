@@ -4,108 +4,316 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>{% block title %}Eventify{% endblock %}</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="{% static 'images/eventify_icon.png' %}">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="icon"
+        type="image/png"
+        href="{% static 'images/eventify_icon.png' %}"
+    >
+
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .display { font-family: 'Inter', serif; }
-        .event-card-styled { background: #fff; border: 1px solid #e0e7ff; border-radius: 12px; overflow: hidden; transition: box-shadow 0.2s ease, transform 0.2s ease; }
-        .event-card-styled:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(79,70,229,0.12); }
-        @keyframes toast-shrink {
-            from { width: 100%; }
-            to { width: 0%; }
+        body {
+            font-family: 'Inter', sans-serif;
         }
+
+        .display {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .event-card-styled {
+            background: #fff;
+            border: 1px solid #e0e7ff;
+            border-radius: 12px;
+            overflow: hidden;
+            transition:
+                box-shadow 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        .event-card-styled:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.12);
+        }
+
+        @keyframes toast-shrink {
+            from {
+                width: 100%;
+            }
+
+            to {
+                width: 0%;
+            }
+        }
+
         .toast-progress {
             animation: toast-shrink 5s linear forwards;
         }
+
+        /*
+         * Eventify logo
+         *
+         * The logo sits directly on the indigo header.
+         * No white box is used.
+         */
+        .eventify-logo {
+            height: 64px;
+            width: auto;
+            object-fit: contain;
+            display: block;
+
+            /* Makes the logo brighter against the dark header */
+            filter: brightness(1.35) contrast(1.05);
+
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .eventify-logo:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
     </style>
 </head>
+
 <body class="min-h-screen bg-gray-100 antialiased flex flex-col">
 
-    <nav class="bg-indigo-600 text-white shadow">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <!-- NAVIGATION -->
+    <nav class="bg-indigo-600 text-white shadow-lg">
+
+        <div class="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
+
+            <!-- LOGO -->
             {% if user.is_authenticated %}
+
                 {% if user.is_admin %}
-                    <a href="{% url 'admin_dashboard' %}" class="flex items-center hover:opacity-90 transition">
+
+                    <a
+                        href="{% url 'admin_dashboard' %}"
+                        class="flex items-center hover:opacity-90 transition"
+                    >
+
                 {% elif user.is_organizer %}
-                    <a href="{% url 'organizer_dashboard' %}" class="flex items-center hover:opacity-90 transition">
+
+                    <a
+                        href="{% url 'organizer_dashboard' %}"
+                        class="flex items-center hover:opacity-90 transition"
+                    >
+
                 {% else %}
-                    <a href="{% url 'attendee_dashboard' %}" class="flex items-center hover:opacity-90 transition">
+
+                    <a
+                        href="{% url 'attendee_dashboard' %}"
+                        class="flex items-center hover:opacity-90 transition"
+                    >
+
                 {% endif %}
+
             {% else %}
-                <a href="{% url 'home' %}" class="flex items-center hover:opacity-90 transition">
+
+                <a
+                    href="{% url 'home' %}"
+                    class="flex items-center hover:opacity-90 transition"
+                >
+
             {% endif %}
-                <img src="{% static 'images/eventify_no_background.png' %}" alt="Eventify" class="h-16 w-auto object-contain">
+
+                <img
+                    src="{% static 'images/eventify_no_background.png' %}"
+                    alt="Eventify"
+                    class="eventify-logo"
+                >
+
             </a>
-            <button class="md:hidden text-2xl focus:outline-none" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+
+
+            <!-- MOBILE MENU BUTTON -->
+            <button
+                class="md:hidden text-2xl focus:outline-none"
+                onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+                aria-label="Open navigation menu"
+            >
                 ☰
             </button>
+
+
+            <!-- DESKTOP NAVIGATION -->
             <div class="hidden md:flex items-center gap-6 font-medium">
-                <a href="{% url 'event_list' %}" class="hover:text-indigo-200 transition">Events</a>
+
+                <a
+                    href="{% url 'event_list' %}"
+                    class="hover:text-indigo-200 transition"
+                >
+                    Events
+                </a>
+
                 {% if user.is_authenticated %}
-                    <a href="{% url 'logout' %}" class="hover:text-indigo-200 transition">Log out</a>
+
+                    <a
+                        href="{% url 'logout' %}"
+                        class="hover:text-indigo-200 transition"
+                    >
+                        Log out
+                    </a>
+
                 {% else %}
-                    <a href="{% url 'login' %}" class="hover:text-indigo-200 transition">Log in</a>
+
+                    <a
+                        href="{% url 'login' %}"
+                        class="hover:text-indigo-200 transition"
+                    >
+                        Log in
+                    </a>
+
                 {% endif %}
+
             </div>
+
         </div>
-        <div id="mobile-menu" class="hidden md:hidden bg-indigo-700 px-4 py-3 space-y-2">
-            <a href="{% url 'event_list' %}" class="block hover:text-indigo-200 py-1 transition">Events</a>
+
+
+        <!-- MOBILE MENU -->
+        <div
+            id="mobile-menu"
+            class="hidden md:hidden bg-indigo-700 px-4 py-3 space-y-2"
+        >
+
+            <a
+                href="{% url 'event_list' %}"
+                class="block hover:text-indigo-200 py-1 transition"
+            >
+                Events
+            </a>
+
             {% if user.is_authenticated %}
-                <a href="{% url 'logout' %}" class="block hover:text-indigo-200 py-1 transition">Log out</a>
+
+                <a
+                    href="{% url 'logout' %}"
+                    class="block hover:text-indigo-200 py-1 transition"
+                >
+                    Log out
+                </a>
+
             {% else %}
-                <a href="{% url 'login' %}" class="block hover:text-indigo-200 py-1 transition">Log in</a>
+
+                <a
+                    href="{% url 'login' %}"
+                    class="block hover:text-indigo-200 py-1 transition"
+                >
+                    Log in
+                </a>
+
             {% endif %}
+
         </div>
+
     </nav>
 
+
+    <!-- MAIN CONTENT -->
     <main class="flex-grow max-w-6xl mx-auto w-full px-4 py-8">
+
         {% if messages %}
+
             <div id="toast-container" class="space-y-3">
+
                 {% for message in messages %}
+
                     <div
                         class="toast-message relative overflow-hidden mb-1 px-4 py-3 rounded-lg text-sm shadow-sm
-                        {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-200
-                        {% elif message.tags == 'error' %}bg-red-100 text-red-700 border border-red-200
-                        {% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-800 border border-yellow-200
-                        {% else %}bg-blue-100 text-blue-800 border border-blue-200{% endif %}"
+                        {% if message.tags == 'success' %}
+                            bg-green-100 text-green-800 border border-green-200
+                        {% elif message.tags == 'error' %}
+                            bg-red-100 text-red-700 border border-red-200
+                        {% elif message.tags == 'warning' %}
+                            bg-yellow-100 text-yellow-800 border border-yellow-200
+                        {% else %}
+                            bg-blue-100 text-blue-800 border border-blue-200
+                        {% endif %}"
                         data-auto-dismiss="5000"
                     >
+
                         {{ message }}
-                        <div class="toast-progress absolute bottom-0 left-0 h-1
-                            {% if message.tags == 'success' %}bg-green-500
-                            {% elif message.tags == 'error' %}bg-red-500
-                            {% elif message.tags == 'warning' %}bg-yellow-500
-                            {% else %}bg-blue-500{% endif %}">
-                        </div>
+
+                        <div
+                            class="toast-progress absolute bottom-0 left-0 h-1
+                            {% if message.tags == 'success' %}
+                                bg-green-500
+                            {% elif message.tags == 'error' %}
+                                bg-red-500
+                            {% elif message.tags == 'warning' %}
+                                bg-yellow-500
+                            {% else %}
+                                bg-blue-500
+                            {% endif %}"
+                        ></div>
+
                     </div>
+
                 {% endfor %}
+
             </div>
+
         {% endif %}
 
-        {% block content %}{% endblock %}
+
+        {% block content %}
+        {% endblock %}
+
     </main>
 
+
+    <!-- FOOTER -->
     <footer class="bg-white border-t mt-auto">
+
         <div class="max-w-6xl mx-auto px-4 py-4 text-center text-sm text-gray-500">
+
             &copy; 2026 Eventify. All rights reserved.
+
         </div>
+
     </footer>
 
+
+    <!-- TOAST JAVASCRIPT -->
     <script>
-        document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
-            var ms = parseInt(el.dataset.autoDismiss, 10);
-            setTimeout(function () {
-                el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                el.style.opacity = '0';
-                el.style.transform = 'translateY(-4px)';
-                setTimeout(function () { el.remove(); }, 300);
-            }, ms);
-        });
+
+        document
+            .querySelectorAll('[data-auto-dismiss]')
+            .forEach(function (el) {
+
+                var ms = parseInt(
+                    el.dataset.autoDismiss,
+                    10
+                );
+
+                setTimeout(function () {
+
+                    el.style.transition =
+                        'opacity 0.3s ease, transform 0.3s ease';
+
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateY(-4px)';
+
+                    setTimeout(function () {
+                        el.remove();
+                    }, 300);
+
+                }, ms);
+
+            });
+
     </script>
+
 </body>
 </html>

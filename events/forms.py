@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 
 from .models import Category, Event, EventBooking, Ticket
 
@@ -15,35 +16,40 @@ TEXTAREA_CLASSES = INPUT_CLASSES + " min-h-[120px]"
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
-        fields = ['name', 'description']
+        fields = ["name", "description"]
 
         widgets = {
-            'name': forms.TextInput(attrs={
-                'class': INPUT_CLASSES,
-                'placeholder': 'Enter category name',
-            }),
-            'description': forms.Textarea(attrs={
-                'class': INPUT_CLASSES,
-                'rows': 3,
-                'placeholder': 'Optional description',
-            }),
+            "name": forms.TextInput(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "placeholder": "Enter category name",
+                }
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "rows": 3,
+                    "placeholder": "Optional description",
+                }
+            ),
         }
 
     def clean_name(self):
-        name = self.cleaned_data['name'].strip()
+        name = self.cleaned_data["name"].strip()
 
         if not name:
             raise forms.ValidationError(
-                'Category name cannot be empty.'
+                "Category name cannot be empty."
             )
 
         duplicates = Category.objects.filter(name__iexact=name)
+
         if self.instance.pk:
             duplicates = duplicates.exclude(pk=self.instance.pk)
 
         if duplicates.exists():
             raise forms.ValidationError(
-                'A category with this name already exists.'
+                "A category with this name already exists."
             )
 
         return name
@@ -84,14 +90,15 @@ class EventForm(forms.ModelForm):
             "date",
             "price",
             "max_tickets",
-            "category",
-            "custom_category",
+            "categories",
             "image",
         ]
 
         widgets = {
             "title": forms.TextInput(
-                attrs={"class": INPUT_CLASSES}
+                attrs={
+                    "class": INPUT_CLASSES,
+                }
             ),
             "description": forms.Textarea(
                 attrs={
@@ -100,7 +107,9 @@ class EventForm(forms.ModelForm):
                 }
             ),
             "location": forms.TextInput(
-                attrs={"class": INPUT_CLASSES}
+                attrs={
+                    "class": INPUT_CLASSES,
+                }
             ),
             "price": forms.NumberInput(
                 attrs={
@@ -109,15 +118,10 @@ class EventForm(forms.ModelForm):
                     "min": "0",
                 }
             ),
-            "category": forms.Select(
+            "categories": forms.SelectMultiple(
                 attrs={
                     "class": INPUT_CLASSES,
-                }
-            ),
-            "custom_category": forms.TextInput(
-                attrs={
-                    "class": INPUT_CLASSES,
-                    "placeholder": "Enter your category",
+                    "size": "5",
                 }
             ),
             "image": forms.ClearableFileInput(
@@ -128,25 +132,44 @@ class EventForm(forms.ModelForm):
             ),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Prevent selecting a past date/time in the browser.
+        now = timezone.localtime().replace(
+            second=0,
+            microsecond=0,
+        )
+
+        self.fields["date"].widget.attrs["min"] = now.strftime(
+            "%Y-%m-%dT%H:%M"
+        )
+
     def clean_max_tickets(self):
         value = self.cleaned_data.get("max_tickets")
         return value or 1
 
+    def clean_date(self):
+        date = self.cleaned_data.get("date")
+
+        # Backend protection against past event dates.
+        if date and date < timezone.now():
+            raise forms.ValidationError(
+                "Event date and time cannot be in the past."
+            )
+
+        return date
+
     def clean(self):
         cleaned_data = super().clean()
-        category = cleaned_data.get("category")
-        custom_category = (cleaned_data.get("custom_category") or "").strip()
 
-        if category == "other":
-            if not custom_category:
-                self.add_error(
-                    "custom_category",
-                    "Please enter a category name.",
-                )
-            else:
-                cleaned_data["custom_category"] = custom_category
-        else:
-            cleaned_data["custom_category"] = ""
+        categories = cleaned_data.get("categories")
+
+        if not categories:
+            self.add_error(
+                "categories",
+                "Please select at least one category.",
+            )
 
         return cleaned_data
 
@@ -173,20 +196,42 @@ class EventForm(forms.ModelForm):
 class TicketForm(forms.ModelForm):
     class Meta:
         model = Ticket
-        fields = ['event', 'attendee', 'quantity']
+        fields = ["event", "attendee", "quantity"]
+
         widgets = {
-            'event': forms.Select(attrs={'class': INPUT_CLASSES}),
-            'attendee': forms.Select(attrs={'class': INPUT_CLASSES}),
-            'quantity': forms.NumberInput(attrs={'class': INPUT_CLASSES, 'min': 1}),
+            "event": forms.Select(
+                attrs={
+                    "class": INPUT_CLASSES,
+                }
+            ),
+            "attendee": forms.Select(
+                attrs={
+                    "class": INPUT_CLASSES,
+                }
+            ),
+            "quantity": forms.NumberInput(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "min": 1,
+                }
+            ),
         }
 
 
 class BookingForm(forms.ModelForm):
     class Meta:
         model = EventBooking
-        fields = ['user', 'event']
-        widgets = {
-            'user': forms.Select(attrs={'class': INPUT_CLASSES}),
-            'event': forms.Select(attrs={'class': INPUT_CLASSES}),
-        }
+        fields = ["user", "event"]
 
+        widgets = {
+            "user": forms.Select(
+                attrs={
+                    "class": INPUT_CLASSES,
+                }
+            ),
+            "event": forms.Select(
+                attrs={
+                    "class": INPUT_CLASSES,
+                }
+            ),
+        }
