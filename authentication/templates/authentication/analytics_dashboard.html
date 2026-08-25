@@ -2,7 +2,7 @@
 {% block title %}Analytics — Eventify{% endblock %}
 {% block admin_content %}
 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h1 class="text-2xl font-bold display">Analytics Dashboard</h1>
         <form method="get" class="flex items-center gap-2">
             <select name="organizer" onchange="this.form.submit()"
@@ -340,13 +340,32 @@
 {% endif %}
 
 <div class="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100" data-datagrid-wrapper>
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+    <div class="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center mb-4">
         <div>
             <h2 class="text-lg font-semibold display">Filtered Events</h2>
-            <span class="text-sm text-gray-500">Managing <strong class="text-gray-900" data-datagrid-count>{{ total_events }}</strong> event{{ total_events|pluralize }}</span>
+            <span class="text-sm text-gray-500"><strong data-datagrid-count>{{ total_events }}</strong> event{{ total_events|pluralize }}</span>
         </div>
-        <input type="search" data-datagrid-search placeholder="Search filtered events..."
-            class="w-full sm:w-64 rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <label>
+                <span class="sr-only">Search in column</span>
+                <select data-datagrid-search-column
+                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 sm:w-36">
+                    <option value="-1">All columns</option>
+                    <option value="0">Event</option>
+                    <option value="1">Organizer</option>
+                    <option value="2">Category</option>
+                    <option value="3">Date</option>
+                    <option value="4">Location</option>
+                    <option value="5">Price</option>
+                    <option value="6">Revenue</option>
+                </select>
+            </label>
+            <label class="w-full sm:w-64">
+                <span class="sr-only">Search filtered events</span>
+                <input type="search" data-datagrid-search placeholder="Search events..."
+                    class="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+            </label>
+        </div>
     </div>
 
     {% if filtered_events %}
@@ -380,9 +399,101 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Export Dropdown Button -->
+    <div class="pt-4 mt-2 border-t border-gray-100 flex justify-end">
+        <div class="relative inline-block text-left" id="exportDropdownContainer">
+            <button
+                type="button"
+                id="exportDropdownBtn"
+                class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-xl text-sm shadow-sm transition hover:-translate-y-0.5 focus:outline-none cursor-pointer"
+                aria-expanded="false"
+                aria-haspopup="true"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                <span>Export</span>
+                <svg class="w-4 h-4 text-indigo-200 transition-transform duration-200" id="exportDropdownChevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+
+            <div
+                id="exportDropdownMenu"
+                class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-50 divide-y divide-gray-100"
+                style="min-width: 11rem;"
+                role="menu"
+            >
+                <a
+                    href="{% url 'organizer_export_pdf' %}{% if selected_organizer %}?organizer={{ selected_organizer }}{% endif %}"
+                    class="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition"
+                    role="menuitem"
+                >
+                    <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    <span>Export PDF</span>
+                </a>
+                <a
+                    href="{% url 'organizer_export_excel' %}{% if selected_organizer %}?organizer={{ selected_organizer }}{% endif %}"
+                    class="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    role="menuitem"
+                >
+                    <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Export Excel</span>
+                </a>
+            </div>
+        </div>
+    </div>
     {% else %}
     <p class="py-8 text-center text-sm text-gray-400">No events found for this organizer.</p>
     {% endif %}
 </div>
+
+<script>
+(function() {
+    function initExportDropdown() {
+        const btn = document.getElementById('exportDropdownBtn');
+        const menu = document.getElementById('exportDropdownMenu');
+        const chevron = document.getElementById('exportDropdownChevron');
+        const container = document.getElementById('exportDropdownContainer');
+
+        if (!btn || !menu) return;
+
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isHidden = menu.classList.contains('hidden');
+            if (isHidden) {
+                menu.classList.remove('hidden');
+                if (chevron) chevron.classList.add('rotate-180');
+                btn.setAttribute('aria-expanded', 'true');
+            } else {
+                menu.classList.add('hidden');
+                if (chevron) chevron.classList.remove('rotate-180');
+                btn.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!menu.classList.contains('hidden')) {
+                if (container && !container.contains(e.target)) {
+                    menu.classList.add('hidden');
+                    if (chevron) chevron.classList.remove('rotate-180');
+                    btn.setAttribute('aria-expanded', 'false');
+                }
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initExportDropdown);
+    } else {
+        initExportDropdown();
+    }
+})();
+</script>
 
 {% endblock %}
