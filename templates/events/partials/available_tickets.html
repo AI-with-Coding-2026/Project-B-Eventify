@@ -1,0 +1,1 @@
+{% if event.is_sold_out %}Sold Out{% else %}{{ event.tickets_remaining }} Available Ticket{{ event.tickets_remaining|pluralize }}{% endif %}

@@ -509,6 +509,88 @@ class AttendeeTicketBookingTests(TestCase):
             target_status_code=403,
         )
 
+    def test_event_detail_shows_plain_available_ticket_count(self):
+        self.client.force_login(self.attendee)
+
+        response = self.client.get(
+            reverse('event_detail', kwargs={'pk': self.event.pk})
+        )
+
+        self.assertContains(response, '3 Available Tickets')
+        self.assertNotContains(response, '3 / 3')
+
+    def test_event_detail_shows_singular_available_ticket(self):
+        Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=2,
+        )
+        self.client.force_login(self.other_attendee)
+
+        response = self.client.get(
+            reverse('event_detail', kwargs={'pk': self.event.pk})
+        )
+
+        self.assertContains(response, '1 Available Ticket')
+        self.assertNotContains(response, '1 Available Tickets')
+
+    def test_event_detail_shows_sold_out_instead_of_zero_available(self):
+        Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=self.event.max_tickets,
+        )
+        self.client.force_login(self.other_attendee)
+
+        response = self.client.get(
+            reverse('event_detail', kwargs={'pk': self.event.pk})
+        )
+
+        self.assertContains(response, 'Sold Out')
+        self.assertNotContains(response, '0 Available Ticket')
+        self.assertNotContains(response, '0 / 3')
+
+    def test_book_ticket_page_shows_plain_available_ticket_count(self):
+        self.client.force_login(self.attendee)
+
+        response = self.client.get(
+            reverse('book_ticket', kwargs={'pk': self.event.pk})
+        )
+
+        self.assertContains(response, '3 Available Tickets')
+        self.assertNotContains(response, '3 / 3')
+
+    def test_book_ticket_page_shows_singular_available_ticket(self):
+        Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=2,
+        )
+        self.client.force_login(self.other_attendee)
+
+        response = self.client.get(
+            reverse('book_ticket', kwargs={'pk': self.event.pk})
+        )
+
+        self.assertContains(response, '1 Available Ticket')
+        self.assertNotContains(response, '1 Available Tickets')
+
+    def test_book_ticket_page_shows_sold_out_instead_of_zero_available(self):
+        Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=self.event.max_tickets,
+        )
+        self.client.force_login(self.other_attendee)
+
+        response = self.client.get(
+            reverse('book_ticket', kwargs={'pk': self.event.pk})
+        )
+
+        self.assertContains(response, 'Sold Out')
+        self.assertNotContains(response, '0 Available Ticket')
+        self.assertNotContains(response, '0 / 3')
+
 
 class CategoryDeleteTests(TestCase):
     def setUp(self):
