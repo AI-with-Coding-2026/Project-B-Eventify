@@ -88,8 +88,7 @@ class Event(models.Model):
     )
 
     category = models.CharField(
-        max_length=20,
-        choices=CATEGORY_CHOICES,
+        max_length=120,
         default="other",
     )
 
@@ -102,25 +101,53 @@ class Event(models.Model):
     def __str__(self):
         return self.title
 
+    @classmethod
+    def get_all_category_choices(cls):
+        """Return merged category choices: hardcoded defaults + admin-created.
+
+        Admin-created Category entries are appended after the built-in
+        choices, de-duplicated by slug so the list stays clean.
+        """
+        seen = {slug for slug, _ in cls.CATEGORY_CHOICES}
+        merged = list(cls.CATEGORY_CHOICES)
+        for cat in Category.objects.all():
+            if cat.slug not in seen:
+                merged.insert(-1, (cat.slug, cat.name))  # before "Other"
+                seen.add(cat.slug)
+        return merged
+
     @property
     def category_label(self):
         custom = (self.custom_category or "").strip()
         if self.category == "other" and custom:
             return custom
-        return self.get_category_display()
+        # Check hardcoded choices first.
+        for slug, label in self.CATEGORY_CHOICES:
+            if slug == self.category:
+                return label
+        # Then check admin-created categories.
+        try:
+            return Category.objects.get(slug=self.category).name
+        except Category.DoesNotExist:
+            return self.category.replace("-", " ").title() if self.category else "Other"
 
     @property
     def serial_number(self):
         return f"#{self.pk}"
 
     @property
-    def sold_ticket_count(self):
-        total = self.tickets.aggregate(total=Sum('quantity'))['total']
-        return total or 0
+    def tickets_sold(self):
+        bookings_count = self.bookings.count()
+        tickets_count = self.tickets.aggregate(total=Sum('quantity'))['total'] or 0
+        return bookings_count + tickets_count
 
     @property
     def tickets_remaining(self):
-        return max(self.max_tickets - self.sold_ticket_count, 0)
+        return max(self.max_tickets - self.tickets_sold, 0)
+
+    @property
+    def revenue(self):
+        return self.price * self.tickets_sold
 
     @property
     def is_sold_out(self):
@@ -132,9 +159,20 @@ class Event(models.Model):
         ticket_word = 'Ticket' if count == 1 else 'Tickets'
         return f'{count} Available {ticket_word}'
 
+    @property
+    def is_expired(self):
+        from django.utils import timezone
+        return self.date < timezone.now()
+
 
 class Ticket(models.Model):
     """A ticket booked by an attendee for a specific event."""
+
+    STATUS_CHOICES = [
+        ('confirmed', 'Confirmed'),
+        ('pending', 'Pending'),
+        ('cancelled', 'Cancelled'),
+    ]
 
     event = models.ForeignKey(
         Event,

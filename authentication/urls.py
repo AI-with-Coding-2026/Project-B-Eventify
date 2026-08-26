@@ -1,7 +1,5 @@
 from django.urls import path
-
 from . import views
-
 
 urlpatterns = [
     path('register/', views.register, name='register'),
@@ -16,8 +14,28 @@ urlpatterns = [
         name='organizer_dashboard',
     ),
     path(
+        'dashboard/organizer/api/stats/',
+        views.organizer_dashboard_stats_api,
+        name='organizer_dashboard_stats_api',
+    ),
+    path(
         'dashboard/attendee/',
         views.attendee_dashboard,
         name='attendee_dashboard',
+    ),
+    path(
+        'dashboard/attendee/my-bookings/',
+        views.my_bookings,
+        name='my_bookings',
+    ),
+    path(
+        'dashboard/attendee/bookings/<int:pk>/cancel/',
+        views.cancel_booking,
+        name='cancel_booking',
+    ),
+    path(
+        'admin/users/<int:pk>/delete/',
+        views.user_delete,
+        name='user_delete',
     ),
 ]
