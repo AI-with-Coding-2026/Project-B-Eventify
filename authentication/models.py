@@ -9,6 +9,13 @@ class UserRole(models.TextChoices):
     ATTENDEE = 'attendee', 'Attendee'
 
 
+class OrganizerApprovalStatus(models.TextChoices):
+    NOT_REQUIRED = 'not_required', 'Not required'
+    PENDING = 'pending', 'Pending'
+    APPROVED = 'approved', 'Approved'
+    DENIED = 'denied', 'Denied'
+
+
 class UserManager(BaseUserManager):
     def create_user(self, username, email=None, password=None, **extra_fields):
         if not username:
@@ -20,6 +27,13 @@ class UserManager(BaseUserManager):
         if role == UserRole.ADMIN and not extra_fields.get('is_staff'):
             raise ValueError('Admin role can only be assigned to staff users.')
 
+        if 'organizer_status' not in extra_fields:
+            extra_fields['organizer_status'] = (
+                OrganizerApprovalStatus.APPROVED
+                if role == UserRole.ORGANIZER
+                else OrganizerApprovalStatus.NOT_REQUIRED
+            )
+
         user = self.model(username=username, email=email, role=role, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -29,6 +43,11 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('role', UserRole.ADMIN)
+        extra_fields.setdefault('email_verified', True)
+        extra_fields.setdefault(
+            'organizer_status',
+            OrganizerApprovalStatus.NOT_REQUIRED,
+        )
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
@@ -43,6 +62,14 @@ class User(AbstractUser):
         max_length=20,
         choices=UserRole.choices,
         default=UserRole.ATTENDEE,
+    )
+
+    email_verified = models.BooleanField(default=False)
+
+    organizer_status = models.CharField(
+        max_length=20,
+        choices=OrganizerApprovalStatus.choices,
+        default=OrganizerApprovalStatus.NOT_REQUIRED,
     )
 
     # Firebase Cloud Messaging token for push notifications
@@ -69,6 +96,31 @@ class User(AbstractUser):
     @property
     def is_attendee(self):
         return self.role == UserRole.ATTENDEE
+
+    @property
+    def is_pending_organizer(self):
+        return (
+            self.is_organizer
+            and self.organizer_status == OrganizerApprovalStatus.PENDING
+        )
+
+    @property
+    def is_denied_organizer(self):
+        return (
+            self.is_organizer
+            and self.organizer_status == OrganizerApprovalStatus.DENIED
+        )
+
+    @property
+    def is_approved_organizer(self):
+        return (
+            self.is_organizer
+            and self.organizer_status == OrganizerApprovalStatus.APPROVED
+        )
+
+    @property
+    def can_publish_events(self):
+        return self.is_admin or self.is_approved_organizer
 
     def clean(self):
         super().clean()

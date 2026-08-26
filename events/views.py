@@ -15,11 +15,12 @@ from authentication.decorators import (
     organizer_required,
     role_required,
     organizer_or_admin_required,
+    approved_organizer_required,
 )
 from authentication.models import UserRole
 from .emails import send_booking_confirmation_email
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
-from .models import Category, Event, EventBooking, Ticket
+from .models import Category, Event, EventBooking, EventPublishStatus, Ticket
 
 
 def _user_can_manage_event(user, event):
@@ -29,6 +30,16 @@ def _user_can_manage_event(user, event):
         user.role == UserRole.ORGANIZER
         and event.organizer_id == user.id
     )
+
+
+def _user_can_see_unpublished_event(user, event):
+    if event.is_published:
+        return True
+    if not user.is_authenticated:
+        return False
+    if user.is_admin:
+        return True
+    return user.role == UserRole.ORGANIZER and event.organizer_id == user.id
 
 
 def _user_has_booked_event(user, event):
@@ -129,7 +140,9 @@ def _resolve_back_navigation(request):
 
 
 def event_list(request):
-    events = Event.objects.all().order_by('date')
+    events = Event.objects.filter(
+        publish_status=EventPublishStatus.APPROVED
+    ).order_by('date')
 
     search_query = request.GET.get('search', '')
     selected_category = request.GET.get('category', '')
@@ -167,7 +180,10 @@ def event_list(request):
     filter_params.pop('page', None)
     filter_query_string = filter_params.urlencode()
 
-    featured_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')[:5]
+    featured_events = Event.objects.filter(
+        publish_status=EventPublishStatus.APPROVED,
+        date__gte=timezone.now()
+    ).order_by('date')[:5]
 
     context = {
         'events': page_obj,
@@ -189,23 +205,26 @@ def event_list(request):
 def event_detail(request, pk):
     event = get_object_or_404(Event, pk=pk)
     user = request.user
+
+    if not _user_can_see_unpublished_event(user, event):
+        raise PermissionDenied("This event is not currently published.")
+
     user_has_booked = False
 
     if user.is_authenticated:
         user_has_booked = _user_has_booked_event(user, event)
 
-
-    is_past_event = event.date < timezone.now()
-
     context = {
         'event': event,
         'can_manage': user.is_authenticated and _user_can_manage_event(user, event),
+        'can_review_event': user.is_authenticated and user.is_admin,
         'can_book': (
             user.is_authenticated
             and user.role == UserRole.ATTENDEE
             and not user_has_booked
             and not event.is_sold_out
             and not event.is_expired
+            and event.is_published
         ),
         'user_has_booked': user_has_booked,
         'is_past_event': event.is_expired,
@@ -303,7 +322,7 @@ def organizer_event_list(request):
     )
 
 
-@organizer_or_admin_required
+@approved_organizer_required
 def event_create(request):
     """Create an event and assign the logged-in organizer as owner."""
     if request.method == 'POST':
@@ -311,10 +330,18 @@ def event_create(request):
         if form.is_valid():
             event = form.save(commit=False)
             event.organizer = request.user
-            event.save()
-            messages.success(request, 'Event created successfully.')
             if request.user.is_admin:
+                event.publish_status = EventPublishStatus.APPROVED
+            else:
+                event.publish_status = EventPublishStatus.PENDING
+            event.save()
+            if request.user.is_admin:
+                messages.success(request, 'Event created successfully.')
                 return redirect('admin_dashboard')
+            messages.success(
+                request,
+                'Event submitted. It will appear in the system after an admin approves it.',
+            )
             return redirect('organizer_event_list')
     else:
         form = EventForm()

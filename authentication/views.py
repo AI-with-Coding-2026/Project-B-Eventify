@@ -1,21 +1,28 @@
 import json
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_not_required, login_required
+from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Sum, F, DecimalField
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.views.decorators.http import require_POST
 
-from events.models import Category, Event, EventBooking, Ticket
+from events.models import Category, Event, EventBooking, EventPublishStatus, Ticket
 from events.exports import export_events_excel, export_events_pdf
 
 from .decorators import admin_required, organizer_required, role_required
+from .emails import send_verification_email
 from .forms import UserRegistrationForm
-from .models import User, UserRole
+from .models import OrganizerApprovalStatus, User, UserRole
 
 
 @login_not_required
@@ -29,9 +36,28 @@ def register(request):
         form = UserRegistrationForm(request.POST)
 
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            return redirect('register_success')
+            user = form.save(commit=False)
+            user.email_verified = False
+            user.save()
+
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            verification_path = reverse(
+                'verify_email',
+                kwargs={
+                    'uidb64': uid,
+                    'token': token,
+                },
+            )
+            site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
+            verification_url = f'{site_url}{verification_path}'
+
+            try:
+                send_verification_email(user, verification_url)
+            except Exception as e:
+                print(f"Failed to send verification email: {e}")
+
+            return redirect('verification_pending')
     else:
         form = UserRegistrationForm()
 
@@ -40,6 +66,30 @@ def register(request):
         'authentication/register.html',
         {'form': form}
     )
+
+
+@login_not_required
+def verification_pending(request):
+    return render(request, 'authentication/verification_pending.html')
+
+
+@login_not_required
+def verify_email(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        return render(request, 'authentication/email_verification_invalid.html')
+
+    if user.email_verified:
+        return render(request, 'authentication/email_verification_success.html', {'user': user})
+
+    if default_token_generator.check_token(user, token):
+        user.email_verified = True
+        user.save(update_fields=['email_verified'])
+        return render(request, 'authentication/email_verification_success.html', {'user': user})
+
+    return render(request, 'authentication/email_verification_invalid.html')
 
 
 @login_not_required
@@ -127,6 +177,13 @@ def login_view(request):
         if user is None:
             messages.error(request, 'Invalid username or password')
         else:
+            if not user.is_admin and not user.email_verified:
+                messages.error(
+                    request,
+                    'Please verify your email address before logging in.',
+                )
+                return render(request, 'authentication/login.html')
+
             login(request, user)
             if user.is_admin:
                 return redirect('admin_dashboard')
@@ -316,6 +373,116 @@ def attendee_dashboard(request):
 def admin_user_list(request):
     users = User.objects.exclude(pk=request.user.pk).order_by('username')
     return render(request, 'authentication/admin_user_list.html', {'users': users})
+
+
+@admin_required
+def organizer_request_list(request):
+    pending = User.objects.filter(
+        role=UserRole.ORGANIZER,
+        organizer_status=OrganizerApprovalStatus.PENDING,
+    ).order_by('date_joined')
+    reviewed = User.objects.filter(
+        role=UserRole.ORGANIZER,
+        organizer_status__in=[
+            OrganizerApprovalStatus.APPROVED,
+            OrganizerApprovalStatus.DENIED,
+        ],
+    ).order_by('-date_joined')
+    return render(
+        request,
+        'authentication/organizer_request_list.html',
+        {
+            'pending_requests': pending,
+            'reviewed_requests': reviewed,
+        },
+    )
+
+
+@admin_required
+@require_POST
+def organizer_request_approve(request, pk):
+    organizer = get_object_or_404(
+        User,
+        pk=pk,
+        role=UserRole.ORGANIZER,
+    )
+    organizer.organizer_status = OrganizerApprovalStatus.APPROVED
+    organizer.save(update_fields=['organizer_status'])
+    messages.success(
+        request,
+        f'Organizer "{organizer.username}" was approved and can now publish events.',
+    )
+    return redirect('organizer_request_list')
+
+
+@admin_required
+@require_POST
+def organizer_request_deny(request, pk):
+    organizer = get_object_or_404(
+        User,
+        pk=pk,
+        role=UserRole.ORGANIZER,
+    )
+    organizer.organizer_status = OrganizerApprovalStatus.DENIED
+    organizer.save(update_fields=['organizer_status'])
+    messages.success(
+        request,
+        f'Organizer request from "{organizer.username}" was denied.',
+    )
+    return redirect('organizer_request_list')
+
+
+@admin_required
+def event_request_list(request):
+    pending_events = Event.objects.filter(
+        publish_status=EventPublishStatus.PENDING,
+    ).select_related('organizer').order_by('date')
+    reviewed_events = Event.objects.filter(
+        publish_status__in=[
+            EventPublishStatus.APPROVED,
+            EventPublishStatus.DENIED,
+        ],
+    ).select_related('organizer').order_by('-date')[:20]
+    return render(
+        request,
+        'authentication/event_request_list.html',
+        {
+            'pending_events': pending_events,
+            'reviewed_events': reviewed_events,
+        },
+    )
+
+
+def _redirect_after_event_review(request, event):
+    if request.POST.get('next') == 'detail':
+        return redirect('event_detail', pk=event.pk)
+    return redirect('event_request_list')
+
+
+@admin_required
+@require_POST
+def event_request_approve(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    event.publish_status = EventPublishStatus.APPROVED
+    event.save(update_fields=['publish_status'])
+    messages.success(
+        request,
+        f'Event "{event.title}" was approved and is now live in the system.',
+    )
+    return _redirect_after_event_review(request, event)
+
+
+@admin_required
+@require_POST
+def event_request_deny(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    event.publish_status = EventPublishStatus.DENIED
+    event.save(update_fields=['publish_status'])
+    messages.success(
+        request,
+        f'Event "{event.title}" was denied and will not be published.',
+    )
+    return _redirect_after_event_review(request, event)
 
 
 @role_required(UserRole.ATTENDEE)
