@@ -47,8 +47,8 @@ def render_actions_menu(obj):
 
 
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('title', 'organizer', 'date', 'price', 'category', 'actions_menu')
-    list_filter = ('category', 'date')
+    list_display = ('title', 'organizer', 'date', 'price', 'category', 'publish_status', 'actions_menu')
+    list_filter = ('category', 'date', 'publish_status')
     search_fields = ('title', 'organizer__username', 'location')
     actions = ['delete_selected_events']
 

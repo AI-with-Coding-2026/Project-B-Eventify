@@ -15,9 +15,11 @@
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Organizer</p>
             <h1 class="text-3xl font-bold text-gray-900 display">My Events</h1>
         </div>
+        {% if can_publish_events %}
         <a href="{% url 'create_event' %}" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition shrink-0">
             + Create Event
         </a>
+        {% endif %}
     </div>
 </div>
 
@@ -42,6 +44,7 @@
                 {% endif %}
                 <div class="p-5">
                     <h3 class="text-xl font-semibold text-gray-900 display group-hover:text-indigo-700 transition mb-2">{{ event.title }}</h3>
+                    <div class="mb-3">{% include "events/partials/publish_status_badge.html" %}</div>
                     {% if event.description %}
                     <p class="text-sm text-gray-600 mb-3">{{ event.description|truncatewords:20 }}</p>
                     {% else %}
@@ -73,6 +76,7 @@
                     {% endif %}
                     <div class="p-5 flex-1">
                         <h3 class="text-xl font-semibold text-gray-900 display group-hover:text-indigo-700 transition mb-2">{{ event.title }}</h3>
+                        <div class="mb-3">{% include "events/partials/publish_status_badge.html" %}</div>
                         {% if event.description %}
                         <p class="text-sm text-gray-600 mb-3">{{ event.description|truncatewords:35 }}</p>
                         {% else %}
@@ -97,7 +101,9 @@
 {% else %}
     <div class="rounded-2xl border border-indigo-100 bg-indigo-50 px-6 py-8 text-center text-indigo-700">
         You haven't created any events yet.
+        {% if can_publish_events %}
         <a href="{% url 'create_event' %}" class="block mt-3 font-semibold hover:underline">Create your first event →</a>
+        {% endif %}
     </div>
 {% endif %}
 

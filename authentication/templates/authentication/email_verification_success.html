@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Email Verified — Eventify{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow mt-8 text-center">
+    <div class="text-green-500 text-4xl mb-4">✓</div>
+
+    <h1 class="text-2xl font-bold mb-3">
+        Email verified successfully
+    </h1>
+
+    <p class="text-gray-600 mb-6">
+        Your email address has been verified. You can now log in
+        and access your Eventify account.
+    </p>
+
+    <a href="{% url 'login' %}"
+       class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">
+        Go to Login
+    </a>
+</div>
+{% endblock %}

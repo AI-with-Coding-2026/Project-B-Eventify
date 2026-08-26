@@ -9,6 +9,13 @@ class UserRole(models.TextChoices):
     ATTENDEE = 'attendee', 'Attendee'
 
 
+class OrganizerApprovalStatus(models.TextChoices):
+    NOT_REQUIRED = 'not_required', 'Not required'
+    PENDING = 'pending', 'Pending'
+    APPROVED = 'approved', 'Approved'
+    DENIED = 'denied', 'Denied'
+
+
 class UserManager(BaseUserManager):
     def create_user(self, username, email=None, password=None, **extra_fields):
         if not username:
@@ -18,24 +25,55 @@ class UserManager(BaseUserManager):
         role = extra_fields.pop('role', UserRole.ATTENDEE)
 
         if role == UserRole.ADMIN and not extra_fields.get('is_staff'):
-            raise ValueError('Admin role can only be assigned to staff users.')
+            raise ValueError(
+                'Admin role can only be assigned to staff users.'
+            )
 
-        user = self.model(username=username, email=email, role=role, **extra_fields)
+        if 'organizer_status' not in extra_fields:
+            extra_fields['organizer_status'] = (
+                OrganizerApprovalStatus.APPROVED
+                if role == UserRole.ORGANIZER
+                else OrganizerApprovalStatus.NOT_REQUIRED
+            )
+
+        user = self.model(
+            username=username,
+            email=email,
+            role=role,
+            **extra_fields
+        )
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, username, email=None, password=None, **extra_fields):
+    def create_superuser(
+        self,
+        username,
+        email=None,
+        password=None,
+        **extra_fields
+    ):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('role', UserRole.ADMIN)
+        extra_fields.setdefault(
+            'organizer_status',
+            OrganizerApprovalStatus.NOT_REQUIRED,
+        )
+        extra_fields.setdefault('email_verified', True)
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
+
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
 
-        return self.create_user(username, email, password, **extra_fields)
+        return self.create_user(
+            username,
+            email,
+            password,
+            **extra_fields
+        )
 
 
 class User(AbstractUser):
@@ -43,6 +81,22 @@ class User(AbstractUser):
         max_length=20,
         choices=UserRole.choices,
         default=UserRole.ATTENDEE,
+    )
+
+    organizer_status = models.CharField(
+        max_length=20,
+        choices=OrganizerApprovalStatus.choices,
+        default=OrganizerApprovalStatus.NOT_REQUIRED,
+    )
+
+    email_verified = models.BooleanField(default=False)
+
+    # 🔥 Firebase Cloud Messaging token (pour les notifications push)
+    fcm_token = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="FCM Token"
     )
 
     objects = UserManager()
@@ -62,12 +116,26 @@ class User(AbstractUser):
     def is_attendee(self):
         return self.role == UserRole.ATTENDEE
 
+    @property
+    def is_approved_organizer(self):
+        """Return True when this user is an approved Organizer."""
+        return (
+           self.role == UserRole.ORGANIZER
+           and self.organizer_status == OrganizerApprovalStatus.APPROVED
+    )
+
     def clean(self):
         super().clean()
+
         if self.role == UserRole.ADMIN and not self.is_staff:
-            raise ValidationError({'role': 'Admin role requires staff privileges.'})
+            raise ValidationError({
+                'role': 'Admin role requires staff privileges.'
+            })
+
         if self.is_superuser and self.role != UserRole.ADMIN:
-            raise ValidationError({'role': 'Superusers must have the Admin role.'})
+            raise ValidationError({
+                'role': 'Superusers must have the Admin role.'
+            })
 
     def save(self, *args, **kwargs):
         self.full_clean()

@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase
@@ -5,7 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from unittest.mock import ANY, patch
 
-from events.models import Event
+from events.models import Event, EventPublishStatus
 from .forms import UserRegistrationForm
 from .models import User, UserRole
 from . import views
@@ -18,8 +19,10 @@ class UserRoleModelTests(TestCase):
             'attendee1@example.com',
             'pass123',
         )
+
         self.assertEqual(user.role, UserRole.ATTENDEE)
         self.assertTrue(user.is_attendee)
+        self.assertFalse(user.email_verified)
 
     def test_create_user_as_organizer(self):
         user = User.objects.create_user(
@@ -28,8 +31,10 @@ class UserRoleModelTests(TestCase):
             'pass123',
             role=UserRole.ORGANIZER,
         )
+
         self.assertEqual(user.role, UserRole.ORGANIZER)
         self.assertTrue(user.is_organizer)
+        self.assertFalse(user.email_verified)
 
     def test_create_superuser_gets_admin_role(self):
         user = User.objects.create_superuser(
@@ -37,10 +42,12 @@ class UserRoleModelTests(TestCase):
             'admin1@example.com',
             'pass123',
         )
+
         self.assertEqual(user.role, UserRole.ADMIN)
         self.assertTrue(user.is_admin)
         self.assertTrue(user.is_staff)
         self.assertTrue(user.is_superuser)
+        self.assertTrue(user.email_verified)
 
     def test_admin_role_requires_staff(self):
         with self.assertRaises(ValueError):
@@ -57,6 +64,7 @@ class UserRoleModelTests(TestCase):
             'admin2@example.com',
             'pass123',
         )
+
         user.role = UserRole.ORGANIZER
 
         with self.assertRaises(ValidationError):
@@ -74,9 +82,13 @@ class UserRegistrationFormTests(TestCase):
                 'password2': 'strong-pass-123',
             }
         )
+
         self.assertTrue(form.is_valid())
         user = form.save()
+
         self.assertEqual(user.role, UserRole.ORGANIZER)
+        self.assertTrue(user.is_approved_organizer)
+        self.assertFalse(user.email_verified)
 
     def test_registration_form_accepts_attendee(self):
         form = UserRegistrationForm(
@@ -88,9 +100,12 @@ class UserRegistrationFormTests(TestCase):
                 'password2': 'strong-pass-123',
             }
         )
+
         self.assertTrue(form.is_valid())
         user = form.save()
+
         self.assertEqual(user.role, UserRole.ATTENDEE)
+        self.assertFalse(user.email_verified)
 
     def test_registration_form_rejects_admin_role(self):
         form = UserRegistrationForm(
@@ -102,6 +117,7 @@ class UserRegistrationFormTests(TestCase):
                 'password2': 'strong-pass-123',
             }
         )
+
         self.assertFalse(form.is_valid())
         self.assertIn('role', form.errors)
 
@@ -110,7 +126,11 @@ class RegisterViewTests(TestCase):
     def setUp(self):
         self.client = Client()
 
-    def test_register_view_creates_user_with_selected_role(self):
+    @patch('authentication.views.send_verification_email')
+    def test_register_view_creates_user_with_selected_role(
+        self,
+        mock_send_verification_email,
+    ):
         response = self.client.post(
             reverse('register'),
             {
@@ -122,10 +142,18 @@ class RegisterViewTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse('register_success'))
+        self.assertRedirects(
+            response,
+            reverse('verification_pending'),
+        )
 
         user = User.objects.get(username='vieworg')
+
         self.assertEqual(user.role, UserRole.ORGANIZER)
+        self.assertTrue(user.is_approved_organizer)
+        self.assertFalse(user.email_verified)
+
+        mock_send_verification_email.assert_called_once()
 
 
 class RoleBasedAccessControlTests(TestCase):
@@ -143,6 +171,7 @@ class RoleBasedAccessControlTests(TestCase):
             'organizer_rbac@example.com',
             'pass123',
             role=UserRole.ORGANIZER,
+            email_verified=True,
         )
 
         self.attendee = User.objects.create_user(
@@ -150,10 +179,13 @@ class RoleBasedAccessControlTests(TestCase):
             'attendee_rbac@example.com',
             'pass123',
             role=UserRole.ATTENDEE,
+            email_verified=True,
         )
 
     def test_unauthenticated_user_redirected_to_login(self):
-        response = self.client.get(reverse('organizer_dashboard'))
+        response = self.client.get(
+            reverse('organizer_dashboard')
+        )
 
         self.assertRedirects(
             response,
@@ -166,7 +198,9 @@ class RoleBasedAccessControlTests(TestCase):
             password='pass123',
         )
 
-        response = self.client.get(reverse('organizer_dashboard'))
+        response = self.client.get(
+            reverse('organizer_dashboard')
+        )
 
         self.assertEqual(response.status_code, 200)
 
@@ -183,7 +217,10 @@ class RoleBasedAccessControlTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
-        self.assertTemplateUsed(response, 'authentication/unauthorized.html')
+        self.assertTemplateUsed(
+            response,
+            'authentication/unauthorized.html',
+        )
 
     def test_attendee_can_access_attendee_dashboard(self):
         self.client.login(
@@ -191,7 +228,9 @@ class RoleBasedAccessControlTests(TestCase):
             password='pass123',
         )
 
-        response = self.client.get(reverse('attendee_dashboard'))
+        response = self.client.get(
+            reverse('attendee_dashboard')
+        )
 
         self.assertEqual(response.status_code, 200)
 
@@ -201,7 +240,9 @@ class RoleBasedAccessControlTests(TestCase):
             password='pass123',
         )
 
-        response = self.client.get(reverse('my_bookings'))
+        response = self.client.get(
+            reverse('my_bookings')
+        )
 
         self.assertEqual(response.status_code, 200)
 
@@ -218,7 +259,10 @@ class RoleBasedAccessControlTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
-        self.assertTemplateUsed(response, 'authentication/unauthorized.html')
+        self.assertTemplateUsed(
+            response,
+            'authentication/unauthorized.html',
+        )
 
     def test_admin_can_access_organizer_dashboard(self):
         self.client.login(
@@ -226,7 +270,9 @@ class RoleBasedAccessControlTests(TestCase):
             password='pass123',
         )
 
-        response = self.client.get(reverse('organizer_dashboard'))
+        response = self.client.get(
+            reverse('organizer_dashboard')
+        )
 
         self.assertEqual(response.status_code, 200)
 
@@ -236,7 +282,9 @@ class RoleBasedAccessControlTests(TestCase):
             password='pass123',
         )
 
-        response = self.client.get(reverse('attendee_dashboard'))
+        response = self.client.get(
+            reverse('attendee_dashboard')
+        )
 
         self.assertEqual(response.status_code, 200)
 
@@ -284,6 +332,7 @@ class AdminAccessTests(TestCase):
             'organizeruser@example.com',
             'strong-pass-123',
             role=UserRole.ORGANIZER,
+            email_verified=True,
         )
 
         self.attendee = User.objects.create_user(
@@ -291,12 +340,15 @@ class AdminAccessTests(TestCase):
             'attendeeuser@example.com',
             'strong-pass-123',
             role=UserRole.ATTENDEE,
+            email_verified=True,
         )
 
     def test_admin_dashboard_renders_for_admin(self):
         self.client.force_login(self.admin_user)
 
-        response = self.client.get(reverse('admin_dashboard'))
+        response = self.client.get(
+            reverse('admin_dashboard')
+        )
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Admin Dashboard')
@@ -304,10 +356,22 @@ class AdminAccessTests(TestCase):
         self.assertContains(response, 'Tickets')
         self.assertContains(response, 'Bookings')
         self.assertContains(response, 'Manage Categories')
-        self.assertNotContains(response, 'Open Django Admin Panel')
-        self.assertContains(response, reverse('user_delete', args=[self.organizer.pk]))
-        self.assertContains(response, reverse('user_delete', args=[self.attendee.pk]))
-        self.assertNotContains(response, reverse('user_delete', args=[self.admin_user.pk]))
+        self.assertNotContains(
+            response,
+            'Open Django Admin Panel',
+        )
+        self.assertContains(
+            response,
+            reverse('user_delete', args=[self.organizer.pk]),
+        )
+        self.assertContains(
+            response,
+            reverse('user_delete', args=[self.attendee.pk]),
+        )
+        self.assertNotContains(
+            response,
+            reverse('user_delete', args=[self.admin_user.pk]),
+        )
 
     def test_login_redirects_admin_to_dashboard(self):
         response = self.client.post(
@@ -318,7 +382,10 @@ class AdminAccessTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse('admin_dashboard'))
+        self.assertRedirects(
+            response,
+            reverse('admin_dashboard'),
+        )
 
     def test_admin_dashboard_denies_organizer_with_unauthorized(self):
         """Organizer accessing admin dashboard gets redirected to /unauthorized/ (403)."""
@@ -353,15 +420,22 @@ class AdminAccessTests(TestCase):
     def test_custom_admin_site_index_redirects_to_admin_dashboard(self):
         self.client.force_login(self.admin_user)
 
-        response = self.client.get(reverse('eventify_admin:index'))
+        response = self.client.get(
+            reverse('eventify_admin:index')
+        )
 
-        self.assertRedirects(response, reverse('admin_dashboard'))
+        self.assertRedirects(
+            response,
+            reverse('admin_dashboard'),
+        )
 
     def test_admin_role_can_view_users_in_custom_admin_site(self):
         self.client.force_login(self.admin_user)
 
         response = self.client.get(
-            reverse('eventify_admin:authentication_user_changelist')
+            reverse(
+                'eventify_admin:authentication_user_changelist'
+            )
         )
 
         self.assertEqual(response.status_code, 200)
@@ -418,6 +492,7 @@ class RoleDashboardAccessTests(TestCase):
             'dashboardorganizer@example.com',
             'strong-pass-123',
             role=UserRole.ORGANIZER,
+            email_verified=True,
         )
 
         self.attendee = User.objects.create_user(
@@ -425,10 +500,13 @@ class RoleDashboardAccessTests(TestCase):
             'dashboardattendee@example.com',
             'strong-pass-123',
             role=UserRole.ATTENDEE,
+            email_verified=True,
         )
 
     def test_admin_can_access_organizer_and_attendee_dashboards(self):
-        request = self.factory.get('/dashboard/organizer/')
+        request = self.factory.get(
+            '/dashboard/organizer/'
+        )
         request.user = self.admin
 
         with patch(
@@ -457,7 +535,9 @@ class RoleDashboardAccessTests(TestCase):
                 },
             )
 
-        request = self.factory.get('/dashboard/attendee/')
+        request = self.factory.get(
+            '/dashboard/attendee/'
+        )
         request.user = self.admin
 
         with patch(
@@ -476,19 +556,31 @@ class RoleDashboardAccessTests(TestCase):
             )
 
     def test_organizer_and_attendee_remain_isolated(self):
-        request = self.factory.get('/dashboard/attendee/')
+        request = self.factory.get(
+            '/dashboard/attendee/'
+        )
         request.user = self.organizer
 
         response = views.attendee_dashboard(request)
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('unauthorized'))
 
-        request = self.factory.get('/dashboard/organizer/')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            reverse('unauthorized'),
+        )
+
+        request = self.factory.get(
+            '/dashboard/organizer/'
+        )
         request.user = self.attendee
 
         response = views.organizer_dashboard(request)
+
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('unauthorized'))
+        self.assertEqual(
+            response.url,
+            reverse('unauthorized'),
+        )
 
 
 class AdminUserDeleteTests(TestCase):
@@ -500,6 +592,7 @@ class AdminUserDeleteTests(TestCase):
             role=UserRole.ADMIN,
             is_staff=True,
         )
+
         self.other_admin = User.objects.create_user(
             'otheradmin',
             'otheradmin@example.com',
@@ -507,28 +600,42 @@ class AdminUserDeleteTests(TestCase):
             role=UserRole.ADMIN,
             is_staff=True,
         )
+
         self.organizer = User.objects.create_user(
             'deleteorganizer',
             'deleteorganizer@example.com',
             'strong-pass-123',
             role=UserRole.ORGANIZER,
+            email_verified=True,
         )
+
         self.attendee = User.objects.create_user(
             'deleteattendee',
             'deleteattendee@example.com',
             'strong-pass-123',
             role=UserRole.ATTENDEE,
+            email_verified=True,
         )
 
     def test_admin_can_delete_attendee(self):
         self.client.force_login(self.admin_user)
 
         response = self.client.post(
-            reverse('user_delete', args=[self.attendee.pk]),
+            reverse(
+                'user_delete',
+                args=[self.attendee.pk],
+            )
         )
 
-        self.assertRedirects(response, reverse('admin_dashboard'))
-        self.assertFalse(User.objects.filter(pk=self.attendee.pk).exists())
+        self.assertRedirects(
+            response,
+            reverse('admin_dashboard'),
+        )
+        self.assertFalse(
+            User.objects.filter(
+                pk=self.attendee.pk
+            ).exists()
+        )
 
     def test_admin_can_delete_organizer_and_their_events(self):
         Event.objects.create(
@@ -536,57 +643,305 @@ class AdminUserDeleteTests(TestCase):
             title='Organizer Event',
             date=timezone.now(),
         )
+
         self.client.force_login(self.admin_user)
 
         response = self.client.post(
-            reverse('user_delete', args=[self.organizer.pk]),
+            reverse(
+                'user_delete',
+                args=[self.organizer.pk],
+            )
         )
 
-        self.assertRedirects(response, reverse('admin_dashboard'))
-        self.assertFalse(User.objects.filter(pk=self.organizer.pk).exists())
-        self.assertFalse(Event.objects.filter(title='Organizer Event').exists())
+        self.assertRedirects(
+            response,
+            reverse('admin_dashboard'),
+        )
+        self.assertFalse(
+            User.objects.filter(
+                pk=self.organizer.pk
+            ).exists()
+        )
+        self.assertFalse(
+            Event.objects.filter(
+                title='Organizer Event'
+            ).exists()
+        )
 
     def test_admin_cannot_delete_self(self):
         self.client.force_login(self.admin_user)
 
         response = self.client.post(
-            reverse('user_delete', args=[self.admin_user.pk]),
+            reverse(
+                'user_delete',
+                args=[self.admin_user.pk],
+            )
         )
 
-        self.assertRedirects(response, reverse('admin_dashboard'))
-        self.assertTrue(User.objects.filter(pk=self.admin_user.pk).exists())
+        self.assertRedirects(
+            response,
+            reverse('admin_dashboard'),
+        )
+        self.assertTrue(
+            User.objects.filter(
+                pk=self.admin_user.pk
+            ).exists()
+        )
 
     def test_admin_cannot_delete_another_admin(self):
         self.client.force_login(self.admin_user)
 
         response = self.client.post(
-            reverse('user_delete', args=[self.other_admin.pk]),
+            reverse(
+                'user_delete',
+                args=[self.other_admin.pk],
+            )
         )
 
-        self.assertRedirects(response, reverse('admin_dashboard'))
-        self.assertTrue(User.objects.filter(pk=self.other_admin.pk).exists())
+        self.assertRedirects(
+            response,
+            reverse('admin_dashboard'),
+        )
+        self.assertTrue(
+            User.objects.filter(
+                pk=self.other_admin.pk
+            ).exists()
+        )
 
     def test_organizer_cannot_delete_users(self):
         self.client.force_login(self.organizer)
 
         response = self.client.post(
-            reverse('user_delete', args=[self.attendee.pk]),
+            reverse(
+                'user_delete',
+                args=[self.attendee.pk],
+            )
         )
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('unauthorized'))
-        self.assertTrue(User.objects.filter(pk=self.attendee.pk).exists())
+        self.assertEqual(
+            response.url,
+            reverse('unauthorized'),
+        )
+        self.assertTrue(
+            User.objects.filter(
+                pk=self.attendee.pk
+            ).exists()
+        )
 
     def test_confirm_page_renders_for_admin(self):
         self.client.force_login(self.admin_user)
 
         response = self.client.get(
-            reverse('user_delete', args=[self.attendee.pk]),
+            reverse(
+                'user_delete',
+                args=[self.attendee.pk],
+            )
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, self.attendee.username)
+        self.assertContains(
+            response,
+            self.attendee.username,
+        )
         self.assertTemplateUsed(
             response,
             'authentication/user_confirm_delete.html',
         )
+
+
+class EventApprovalWorkflowTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            'approveadmin',
+            'approveadmin@example.com',
+            'strong-pass-123',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.organizer = User.objects.create_user(
+            'eventorg',
+            'eventorg@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+
+    def _event_form_data(self, title='Pending Concert'):
+        return {
+            'title': title,
+            'description': 'Needs admin approval',
+            'date': (timezone.now() + timedelta(days=5)).strftime('%Y-%m-%dT%H:%M'),
+            'price': '25.00',
+            'category': 'music',
+            'max_tickets': '8',
+        }
+
+    def test_organizer_can_create_event_but_it_stays_pending(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.post(
+            reverse('create_event'),
+            self._event_form_data(),
+        )
+
+        self.assertRedirects(response, reverse('my_events'))
+        event = Event.objects.get(title='Pending Concert')
+        self.assertEqual(event.organizer, self.organizer)
+        self.assertTrue(event.is_pending_publish)
+        self.assertFalse(event.is_published)
+
+    def test_pending_event_is_hidden_from_public_list(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Hidden Pending Event',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+
+        response = self.client.get(reverse('event_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, event.title)
+
+    def test_organizer_dashboard_still_allows_create_event(self):
+        self.client.force_login(self.organizer)
+
+        response = self.client.get(reverse('organizer_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '+ Create Event')
+        self.assertContains(response, 'until an admin accepts them')
+        self.assertNotContains(
+            response,
+            'You cannot create or publish events until an admin accepts your request',
+        )
+
+    def test_admin_can_view_event_requests(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Needs Review',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('event_request_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Needs Review')
+        self.assertContains(response, reverse('event_detail', args=[event.pk]))
+        self.assertContains(response, 'View details')
+        self.assertContains(response, 'Accept')
+        self.assertContains(response, 'Deny')
+
+    def test_admin_can_open_pending_event_details(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Needs Review Detail',
+            description='Full pending event copy',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.get(
+            reverse('event_detail', args=[event.pk]),
+            {'from': 'requests'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Needs Review Detail')
+        self.assertContains(response, 'Full pending event copy')
+        self.assertContains(response, 'Back to Event Requests')
+        self.assertContains(response, reverse('event_request_list'))
+        self.assertContains(response, 'Waiting for approval')
+        self.assertContains(response, 'Accept')
+        self.assertContains(response, 'Deny')
+        self.assertContains(response, reverse('event_request_approve', args=[event.pk]))
+        self.assertContains(response, reverse('event_request_deny', args=[event.pk]))
+        self.assertNotContains(response, reverse('edit_event', args=[event.pk]))
+        self.assertNotContains(response, reverse('delete_event', args=[event.pk]))
+
+    def test_admin_can_approve_event_from_detail_page(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Approve From Detail',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.post(
+            reverse('event_request_approve', args=[event.pk]),
+            {'next': 'detail'},
+        )
+
+        self.assertRedirects(response, reverse('event_detail', args=[event.pk]))
+        event.refresh_from_db()
+        self.assertTrue(event.is_published)
+
+        detail = self.client.get(reverse('event_detail', args=[event.pk]))
+        self.assertContains(detail, 'Approve From Detail')
+        self.assertNotContains(detail, 'Waiting for approval')
+        self.assertContains(detail, 'Unpublish')
+
+    def test_admin_can_approve_event(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Approve Me',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.post(
+            reverse('event_request_approve', args=[event.pk]),
+        )
+
+        self.assertRedirects(response, reverse('event_request_list'))
+        event.refresh_from_db()
+        self.assertTrue(event.is_published)
+
+        public_list = self.client.get(reverse('event_list'))
+        self.assertContains(public_list, 'Approve Me')
+
+    def test_admin_can_deny_event(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Deny Me',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.post(
+            reverse('event_request_deny', args=[event.pk]),
+        )
+
+        self.assertRedirects(response, reverse('event_request_list'))
+        event.refresh_from_db()
+        self.assertTrue(event.is_denied_publish)
+        self.assertFalse(event.is_published)
+
+        public_list = self.client.get(reverse('event_list'))
+        self.assertNotContains(public_list, 'Deny Me')
+
+    def test_organizer_cannot_approve_event(self):
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Stay Pending',
+            date=timezone.now() + timedelta(days=4),
+            publish_status=EventPublishStatus.PENDING,
+        )
+        self.client.force_login(self.organizer)
+
+        response = self.client.post(
+            reverse('event_request_approve', args=[event.pk]),
+        )
+
+        self.assertEqual(response.url, reverse('unauthorized'))
+        event.refresh_from_db()
+        self.assertTrue(event.is_pending_publish)
+
+        
+        

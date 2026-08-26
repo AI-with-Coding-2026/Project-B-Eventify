@@ -71,6 +71,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'authentication.context_processors.dashboard_link',
+                'events.context_processors.firebase_config',  # 🔥 AJOUTÉ pour Firebase
             ],
         },
     },
@@ -221,4 +222,3 @@ CSRF_TRUSTED_ORIGINS = [origin for origin in [SITE_URL] if origin.startswith('ht
 render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if render_host:
     CSRF_TRUSTED_ORIGINS.append(f'https://{render_host}')
-

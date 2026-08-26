@@ -2,106 +2,160 @@ from django.urls import path
 
 from . import views
 
+
 urlpatterns = [
-    path('', views.event_list, name='event_list'),
+    path(
+        '',
+        views.event_list,
+        name='event_list',
+    ),
+
     path(
         'my-tickets/',
         views.my_tickets,
         name='my_tickets',
     ),
+
     path(
         'organizer/',
         views.organizer_event_list,
         name='organizer_event_list',
     ),
+
     path(
         'organizer/create/',
         views.event_create,
         name='event_create',
     ),
+
     path(
         'organizer/<int:pk>/edit/',
         views.event_edit,
         name='event_edit',
     ),
+
     path(
         'organizer/<int:pk>/delete/',
         views.event_delete,
         name='event_delete',
     ),
+
     path(
         'categories/',
         views.category_list,
         name='category_list',
     ),
+
     path(
         'categories/create/',
         views.category_create,
         name='category_create',
     ),
+
     path(
         'mine/',
         views.my_events,
         name='my_events',
     ),
+
     path(
         'create/',
         views.create_event,
         name='create_event',
     ),
+
     path(
         '<int:pk>/tickets/',
         views.book_ticket,
         name='book_ticket',
     ),
+
     path(
         '<int:pk>/',
         views.event_detail,
         name='event_detail',
     ),
+
     path(
         '<int:pk>/book/',
         views.book_event,
         name='book_event',
     ),
+
     path(
         '<int:pk>/edit/',
         views.edit_event,
         name='edit_event',
     ),
+
     path(
         '<int:pk>/delete/',
         views.delete_event,
         name='delete_event',
     ),
+
     path(
         'categories/<int:pk>/edit/',
         views.category_update,
         name='category_update',
     ),
+
     path(
         'categories/<int:pk>/delete/',
         views.category_delete,
         name='category_delete',
     ),
+
     path(
         'tickets/<int:pk>/edit/',
         views.ticket_edit,
         name='ticket_edit',
     ),
+
+    # Admin ticket deletion
     path(
         'tickets/<int:pk>/delete/',
         views.ticket_delete,
         name='ticket_delete',
     ),
+
+    # Attendee ticket cancellation
+    path(
+        'tickets/<int:pk>/cancel/',
+        views.cancel_ticket,
+        name='cancel_ticket',
+    ),
+
     path(
         'bookings/<int:pk>/edit/',
         views.booking_edit,
         name='booking_edit',
     ),
+
     path(
         'bookings/<int:pk>/delete/',
         views.booking_delete,
         name='booking_delete',
     ),
+    path(
+        'admin/bookings/',
+        views.admin_booking_list,
+        name='admin_booking_list'
+    ),
+
+    # =========================================================
+    # 🎯 TASK 3: Real-Time Notification Endpoints
+    # =========================================================
+    path(
+        'api/notifications/', 
+        views.user_notifications_api, 
+        name='user_notifications_api'
+    ),
+    path(
+        'api/notifications/<int:pk>/read/', 
+        views.mark_notification_as_read, 
+        name='mark_notification_as_read'
+    ),
+        # 🔥 Firebase: Save FCM Token
+    path('api/save-fcm-token/', views.save_fcm_token, name='save_fcm_token'),
 ]

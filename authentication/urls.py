@@ -1,38 +1,145 @@
 from django.urls import path
+
 from . import views
 
+
 urlpatterns = [
-    path('register/', views.register, name='register'),
-    path('register/success/', views.register_success, name='register_success'),
-    path('', views.home, name='home'),
-    path('login/', views.login_view, name='login'),
-    path('logout/', views.logout_view, name='logout'),
-    path('unauthorized/', views.unauthorized, name='unauthorized'),
+    path(
+        'register/',
+        views.register,
+        name='register',
+    ),
+
+    # Email verification
+    path(
+        'verify-email/<uidb64>/<token>/',
+        views.verify_email,
+        name='verify_email',
+    ),
+
+    path(
+        'verification-pending/',
+        views.verification_pending,
+        name='verification_pending',
+    ),
+
+    path(
+        'register/success/',
+        views.register_success,
+        name='register_success',
+    ),
+
+    path(
+        '',
+        views.home,
+        name='home',
+    ),
+
+    path(
+        'login/',
+        views.login_view,
+        name='login',
+    ),
+
+    path(
+        'logout/',
+        views.logout_view,
+        name='logout',
+    ),
+
+    path(
+        'unauthorized/',
+        views.unauthorized,
+        name='unauthorized',
+    ),
+
+    # Organizer dashboard
     path(
         'dashboard/organizer/',
         views.organizer_dashboard,
         name='organizer_dashboard',
     ),
+
     path(
         'dashboard/organizer/api/stats/',
         views.organizer_dashboard_stats_api,
         name='organizer_dashboard_stats_api',
     ),
+
+    path(
+        'dashboard/organizer/export/excel/',
+        views.organizer_export_excel,
+        name='organizer_export_excel',
+    ),
+
+    path(
+        'dashboard/organizer/export/pdf/',
+        views.organizer_export_pdf,
+        name='organizer_export_pdf',
+    ),
+
+    # Attendee dashboard
     path(
         'dashboard/attendee/',
         views.attendee_dashboard,
         name='attendee_dashboard',
     ),
+
     path(
         'dashboard/attendee/my-bookings/',
         views.my_bookings,
         name='my_bookings',
     ),
+
     path(
         'dashboard/attendee/bookings/<int:pk>/cancel/',
         views.cancel_booking,
         name='cancel_booking',
     ),
+
+    # Admin
+    path(
+        'admin/users/',
+        views.admin_user_list,
+        name='admin_user_list',
+    ),
+
+    path(
+        'admin/event-requests/',
+        views.event_request_list,
+        name='event_request_list',
+    ),
+
+    path(
+        'admin/event-requests/<int:pk>/approve/',
+        views.event_request_approve,
+        name='event_request_approve',
+    ),
+
+    path(
+        'admin/event-requests/<int:pk>/deny/',
+        views.event_request_deny,
+        name='event_request_deny',
+    ),
+
+    path(
+        'admin/organizer-requests/<int:pk>/approve/',
+        views.organizer_request_approve,
+        name='organizer_request_approve',
+    ),
+
+    path(
+        'admin/organizer-requests/<int:pk>/deny/',
+        views.organizer_request_deny,
+        name='organizer_request_deny',
+    ),
+
+    path(
+        'admin/analytics/',
+        views.analytics_dashboard,
+        name='analytics_dashboard',
+    ),
+
     path(
         'admin/users/<int:pk>/delete/',
         views.user_delete,

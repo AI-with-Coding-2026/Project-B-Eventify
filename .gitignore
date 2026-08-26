@@ -32,4 +32,5 @@ htmlcov/
 
 # Media files
 media/
-.DS_Store
+.DS_Storefirebase-credentials.json
+firebase-credentials.json

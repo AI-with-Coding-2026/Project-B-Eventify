@@ -1,69 +1,152 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>{% block title %}Eventify{% endblock %}</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="{% static 'images/eventify_icon.png' %}">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="icon"
+        type="image/png"
+        href="{% static 'images/eventify_no_background.png' %}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{% static 'css/style.css' %}"
+    >
+
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .display { font-family: 'Inter', serif; }
-        .event-card-styled { background: #fff; border: 1px solid #e0e7ff; border-radius: 12px; overflow: hidden; transition: box-shadow 0.2s ease, transform 0.2s ease; }
-        .event-card-styled:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(79,70,229,0.12); }
-        @keyframes toast-shrink {
-            from { width: 100%; }
-            to { width: 0%; }
+        body {
+            font-family: 'Inter', sans-serif;
         }
+
+        .display {
+            font-family: 'Inter', serif;
+        }
+
+        .event-card-styled {
+            background: #fff;
+            border: 1px solid #e0e7ff;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .event-card-styled:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.12);
+        }
+
+        @keyframes toast-shrink {
+            from {
+                width: 100%;
+            }
+
+            to {
+                width: 0%;
+            }
+        }
+
         .toast-progress {
             animation: toast-shrink 5s linear forwards;
         }
 
-        a, button {
+        a,
+        button {
             text-decoration: none !important;
         }
-        
-        a:hover, button:hover {
+
+        a:hover,
+        button:hover {
             text-decoration: none !important;
         }
-        /* ── Site-wide animations ── */
+
+        /* =========================================================
+           Site-wide animations
+           ========================================================= */
+
         @keyframes fadeSlideIn {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
+
         @keyframes toastSlideIn {
-            from { opacity: 0; transform: translateX(24px); }
-            to { opacity: 1; transform: translateX(0); }
+            from {
+                opacity: 0;
+                transform: translateX(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
+
         @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(28px); }
-            to { opacity: 1; transform: translateX(0); }
+            from {
+                opacity: 0;
+                transform: translateX(28px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
+
         .animate-fade-slide {
             opacity: 0;
         }
+
         .animate-fade-slide.is-visible {
             animation: fadeSlideIn 0.5s ease-out forwards;
         }
+
         .animate-fade {
             animation: fadeIn 0.4s ease-out forwards;
             opacity: 0;
         }
+
         .animate-slide-in-right {
             opacity: 0;
         }
+
         .animate-slide-in-right.is-visible {
             animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+
         @media (prefers-reduced-motion: reduce) {
             .animate-fade-slide,
             .animate-fade-slide.is-visible,
@@ -75,34 +158,49 @@
                 transform: none !important;
             }
         }
+
         .hover-lift {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
+
         @keyframes gentleBounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-}
-.empty-state-icon {
-    animation: gentleBounce 2s ease-in-out infinite;
-    font-size: 3rem;
-    display: inline-block;
-}
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .empty-state-icon {
+            animation: gentleBounce 2s ease-in-out infinite;
+            font-size: 3rem;
+            display: inline-block;
+        }
+
         .hover-lift:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(79,70,229,0.12);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.12);
         }
+
         .btn-press {
             transition: transform 0.1s ease;
         }
+
         .btn-press:active {
             transform: scale(0.96);
         }
+
         .toast-message {
             animation: toastSlideIn 0.35s ease-out forwards;
         }
+
         #page-progress {
             position: fixed;
-            top: 0; left: 0;
+            top: 0;
+            left: 0;
             height: 3px;
             background: #4f46e5;
             z-index: 9999;
@@ -110,7 +208,10 @@
             transition: width 0.3s ease, opacity 0.3s ease;
         }
 
-        /* ── Ticket Card: Base (Horizontal - List View) ── */
+        /* =========================================================
+           TICKET CARD - HORIZONTAL
+           ========================================================= */
+
         .ticket-card {
             display: flex;
             align-items: stretch;
@@ -121,9 +222,10 @@
             position: relative;
             transition: box-shadow 0.25s ease, transform 0.25s ease;
         }
+
         .ticket-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 12px 32px rgba(79,70,229,0.14);
+            box-shadow: 0 12px 32px rgba(79, 70, 229, 0.14);
         }
 
         .ticket-card-image {
@@ -133,19 +235,21 @@
             overflow: hidden;
             border-radius: 15px 0 0 15px;
         }
+
         .ticket-card-image--wide {
             width: 200px;
             min-height: 160px;
         }
 
-        /* ── Full Image Display Fix ── */
+        /* Full Image Display Fix */
+
         .ticket-card-image img,
         .event-card-styled img {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Prevents cropping and keeps full image aspect ratio */
+            object-fit: contain;
             object-position: center;
-            background-color: #f8fafc; /* Subtle background fill for uncropped margins */
+            background-color: #f8fafc;
         }
 
         .ticket-card-body {
@@ -155,52 +259,69 @@
             flex-direction: column;
             min-width: 0;
         }
+
         .ticket-card-body--wide {
             padding: 20px 24px;
         }
 
-        /* Vertical perforation for horizontal tickets (Fewer, cleaner dashes) */
+        /* =========================================================
+           HORIZONTAL TICKET PERFORATION
+           ========================================================= */
+
         .ticket-card-perforation {
             width: 0;
             flex-shrink: 0;
             position: relative;
             margin: 0;
             border-left: 2px dashed transparent;
-            background-image: linear-gradient(to bottom, #d1d5db 55%, transparent 45%);
+            background-image: linear-gradient(
+                to bottom,
+                #d1d5db 55%,
+                transparent 45%
+            );
             background-size: 2px 22px;
             background-repeat: repeat-y;
             background-position: center;
         }
-        /* Top half-circle cutout */
+
+        /* TOP HALF-CIRCLE */
+
         .ticket-card-perforation::before {
             content: '';
             position: absolute;
             top: -1px;
-            left: -9px;
-            width: 18px;
-            height: 9px;
+            left: -10px;
+            width: 20px;
+            height: 10px;
             background: #f3f4f6;
             border: 1px solid #e0e7ff;
             border-top: none;
-            border-radius: 0 0 9px 9px;
-            z-index: 2;
+            border-radius: 0 0 10px 10px;
+            z-index: 10;
+            pointer-events: none;
         }
-        /* Bottom half-circle cutout */
+
+        /* BOTTOM HALF-CIRCLE */
+
         .ticket-card-perforation::after {
             content: '';
             position: absolute;
             bottom: -1px;
-            left: -9px;
-            width: 18px;
-            height: 9px;
+            left: -10px;
+            width: 20px;
+            height: 10px;
             background: #f3f4f6;
             border: 1px solid #e0e7ff;
             border-bottom: none;
-            border-radius: 9px 9px 0 0;
-            z-index: 2;
+            border-radius: 10px 10px 0 0;
+            z-index: 10;
+            pointer-events: none;
         }
 
-        /* Darker Right-Side Stub (Neutral Grey) */
+        /* =========================================================
+           RIGHT SIDE GREY TICKET STUB
+           ========================================================= */
+
         .ticket-card-stub {
             width: 120px;
             flex-shrink: 0;
@@ -221,18 +342,10 @@
             border-left: 1px solid #e2e8f0;
         }
 
-        /* ── Full Image Display Fix ── */
-        .ticket-card-image img,
-        .event-card-styled img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* Prevents cropping and keeps full image aspect ratio */
-            object-position: center;
-            background-color: #f8fafc; /* Subtle background fill for uncropped margins */
-        }
+        /* =========================================================
+           VERTICAL TICKET
+           ========================================================= */
 
-
-        /* ── Ticket Card: Vertical (Grid View - Normal Tickets) ── */
         .ticket-card-vert {
             display: flex;
             flex-direction: column;
@@ -244,75 +357,112 @@
             height: 100%;
             transition: box-shadow 0.25s ease, transform 0.25s ease;
         }
+
         .ticket-card-vert:hover {
             transform: translateY(-3px);
-            box-shadow: 0 12px 32px rgba(79,70,229,0.14);
+            box-shadow: 0 12px 32px rgba(79, 70, 229, 0.14);
         }
+
         .ticket-card-vert-image {
             width: 100%;
             height: 160px;
             overflow: hidden;
             border-radius: 15px 15px 0 0;
         }
+
         .ticket-card-vert-body {
             padding: 16px;
             display: flex;
             flex-direction: column;
             flex: 1;
         }
-        /* Horizontal perforation for vertical tickets (Fewer, cleaner dashes) */
+
+        /* =========================================================
+           VERTICAL TICKET DIVIDER
+           Left + right half-circle notches.
+           ========================================================= */
+
         .ticket-card-vert-perforation {
             height: 2px;
             width: 100%;
             position: relative;
-            background-image: linear-gradient(to right, #d1d5db 55%, transparent 45%);
+            background-image: linear-gradient(
+                to right,
+                #d1d5db 55%,
+                transparent 45%
+            );
             background-size: 22px 2px;
             background-repeat: repeat-x;
             background-position: center;
         }
-        /* Left half-circle cutout */
+
+        /* LEFT HALF-CIRCLE */
+
         .ticket-card-vert-perforation::before {
             content: '';
             position: absolute;
             left: -1px;
-            top: -9px;
-            width: 9px;
-            height: 18px;
+            top: -10px;
+            width: 10px;
+            height: 20px;
             background: #f3f4f6;
             border: 1px solid #e0e7ff;
             border-left: none;
-            border-radius: 0 9px 9px 0;
-            z-index: 2;
+            border-radius: 0 10px 10px 0;
+            z-index: 10;
+            pointer-events: none;
         }
-        /* Right half-circle cutout */
+
+        /* RIGHT HALF-CIRCLE */
+
         .ticket-card-vert-perforation::after {
             content: '';
             position: absolute;
             right: -1px;
-            top: -9px;
-            width: 9px;
-            height: 18px;
+            top: -10px;
+            width: 10px;
+            height: 20px;
             background: #f3f4f6;
             border: 1px solid #e0e7ff;
             border-right: none;
-            border-radius: 9px 0 0 9px;
-            z-index: 2;
+            border-radius: 10px 0 0 10px;
+            z-index: 10;
+            pointer-events: none;
         }
-        /* Darker Bottom Stub (Neutral Grey) */
+
+        /* =========================================================
+           GREY BOTTOM TICKET AREA
+           ========================================================= */
+
         .ticket-card-vert-stub {
-            background: #efefef;
+            background: #efefef !important;
             padding: 14px 16px;
             border-radius: 0 0 15px 15px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            width: 100%;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            min-height: 80px;
         }
 
-        /* Mobile Adjustments for Horizontal Tickets */
+        .ticket-card-vert-body + .ticket-card-vert-stub {
+            background: #efefef !important;
+        }
+
+        /* =========================================================
+           MOBILE
+           ========================================================= */
+
         @media (max-width: 640px) {
+
             .ticket-card {
                 flex-direction: column;
             }
+
             .ticket-card-image,
             .ticket-card-image--wide {
                 width: 100%;
@@ -320,32 +470,46 @@
                 max-height: 180px;
                 border-radius: 15px 15px 0 0;
             }
+
             .ticket-card-perforation {
                 height: 2px;
                 width: 100%;
-                background-image: linear-gradient(to right, #d1d5db 55%, transparent 45%);
+                background-image: linear-gradient(
+                    to right,
+                    #d1d5db 55%,
+                    transparent 45%
+                );
                 background-size: 22px 2px;
                 background-repeat: repeat-x;
             }
+
+            /* Mobile left notch */
+
             .ticket-card-perforation::before {
                 left: -1px;
-                top: -9px;
-                width: 9px;
-                height: 18px;
-                border-radius: 0 9px 9px 0;
+                top: -10px;
+                width: 10px;
+                height: 20px;
+                background: #f3f4f6;
+                border-radius: 0 10px 10px 0;
                 border: 1px solid #e0e7ff;
                 border-left: none;
             }
+
+            /* Mobile right notch */
+
             .ticket-card-perforation::after {
                 right: -1px;
                 left: auto;
-                top: -9px;
-                width: 9px;
-                height: 18px;
-                border-radius: 9px 0 0 9px;
+                top: -10px;
+                width: 10px;
+                height: 20px;
+                background: #f3f4f6;
+                border-radius: 10px 0 0 10px;
                 border: 1px solid #e0e7ff;
                 border-right: none;
             }
+
             .ticket-card-stub,
             .ticket-card--wide .ticket-card-stub {
                 width: 100%;
@@ -354,7 +518,17 @@
                 border-radius: 0 0 15px 15px;
                 border-left: none;
                 padding: 12px 16px;
-                background: #efefef;
+                background: #efefef !important;
+            }
+
+            /* Keep complete vertical bottom area grey on mobile */
+
+            .ticket-card-vert-stub {
+                width: 100%;
+                background: #efefef !important;
+                border-radius: 0 0 15px 15px;
+                flex: 1;
+                min-height: 80px;
             }
         }
 
@@ -366,155 +540,414 @@
         }
     </style>
 </head>
+
 <body class="min-h-screen bg-gray-100 antialiased flex flex-col">
 
     <div id="page-progress"></div>
 
+    <!-- =========================================================
+         NAVIGATION
+         ========================================================= -->
+
     <nav class="bg-indigo-600 text-white shadow">
+
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+
             {% if user.is_authenticated %}
+
                 {% if user.is_admin %}
-                    <a href="{% url 'admin_dashboard' %}" class="flex items-center hover:opacity-90 transition">
+
+                    <a
+                        href="{% url 'admin_dashboard' %}"
+                        class="flex items-center hover:opacity-90 transition"
+                    >
+
                 {% elif user.is_organizer %}
-                    <a href="{% url 'organizer_dashboard' %}" class="flex items-center hover:opacity-90 transition">
+
+                    <a
+                        href="{% url 'organizer_dashboard' %}"
+                        class="flex items-center hover:opacity-90 transition"
+                    >
+
                 {% else %}
-                    <a href="{% url 'attendee_dashboard' %}" class="flex items-center hover:opacity-90 transition">
+
+                    <a
+                        href="{% url 'attendee_dashboard' %}"
+                        class="flex items-center hover:opacity-90 transition"
+                    >
+
                 {% endif %}
+
             {% else %}
-                <a href="{% url 'home' %}" class="flex items-center hover:opacity-90 transition">
+
+                <a
+                    href="{% url 'home' %}"
+                    class="flex items-center hover:opacity-90 transition"
+                >
+
             {% endif %}
-                <img src="{% static 'images/eventify_no_background.png' %}" alt="Eventify" class="h-16 w-auto object-contain">
+
+                <img
+                    src="{% static 'images/eventify_no_background.png' %}"
+                    alt="Eventify"
+                    class="h-16 w-auto object-contain"
+                >
+
             </a>
-            <button class="md:hidden text-2xl focus:outline-none" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+
+            <button
+                class="md:hidden text-2xl focus:outline-none"
+                onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+            >
                 ☰
             </button>
-            <div class="hidden md:flex items-center gap-6 font-medium">
-                <a href="{% url 'event_list' %}" class="hover:text-indigo-200 transition">Events</a>
-                {% if user.is_authenticated %}
-                    <a href="{% url 'logout' %}" class="hover:text-indigo-200 transition">Log out</a>
-                {% else %}
-                    <a href="{% url 'login' %}" class="hover:text-indigo-200 transition">Log in</a>
-                {% endif %}
-            </div>
-        </div>
-        <div id="mobile-menu" class="hidden md:hidden bg-indigo-700 px-4 py-3 space-y-2">
-            <a href="{% url 'event_list' %}" class="block hover:text-indigo-200 py-1 transition">Events</a>
-            {% if user.is_authenticated %}
-                <a href="{% url 'logout' %}" class="block hover:text-indigo-200 py-1 transition">Log out</a>
-            {% else %}
-                <a href="{% url 'login' %}" class="block hover:text-indigo-200 py-1 transition">Log in</a>
-            {% endif %}
-        </div>
-    </nav>
 
-    <main class="flex-grow max-w-6xl mx-auto w-full px-4 py-8 animate-fade">
-        {% if messages %}
-            <div id="toast-container" class="space-y-3">
-                {% for message in messages %}
-                    <div
-                        class="toast-message relative overflow-hidden mb-1 px-4 py-3 rounded-lg text-sm shadow-sm
-                        {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-200
-                        {% elif message.tags == 'error' %}bg-red-100 text-red-700 border border-red-200
-                        {% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-800 border border-yellow-200
-                        {% else %}bg-blue-100 text-blue-800 border border-blue-200{% endif %}"
-                        data-auto-dismiss="5000"
-                    >
-                        {{ message }}
-                        <div class="toast-progress absolute bottom-0 left-0 h-1
-                            {% if message.tags == 'success' %}bg-green-500
-                            {% elif message.tags == 'error' %}bg-red-500
-                            {% elif message.tags == 'warning' %}bg-yellow-500
-                            {% else %}bg-blue-500{% endif %}">
+            <!-- =========================================================
+                 DESKTOP MENU WITH NOTIFICATION BELL
+                 ========================================================= -->
+
+            <div class="hidden md:flex items-center gap-6 font-medium">
+
+                <a
+                    href="{% url 'event_list' %}"
+                    class="hover:text-indigo-200 transition"
+                >
+                    Events
+                </a>
+
+                {% if user.is_authenticated %}
+
+                    <!-- 🎯 TASK 3: Notification Bell (Desktop) -->
+                    <div class="relative inline-block" id="notification-dropdown-container">
+                        <button id="notification-bell-btn" class="relative p-1 text-white hover:text-indigo-200 transition focus:outline-none flex items-center">
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span id="notification-badge" class="hidden absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full animate-pulse">0</span>
+                        </button>
+                        <div id="notification-menu" class="hidden absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl divide-y divide-gray-100 overflow-hidden z-50">
+                            <div class="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-700">Recent Notifications</div>
+                            <div id="notification-list-box" class="max-h-60 overflow-y-auto divide-y divide-gray-50">
+                                <div class="px-4 py-4 text-center text-xs text-gray-400">No new notifications.</div>
+                            </div>
                         </div>
                     </div>
-                {% endfor %}
+
+                    <a
+                        href="{% url 'logout' %}"
+                        class="hover:text-indigo-200 transition"
+                    >
+                        Log out
+                    </a>
+
+                {% else %}
+
+                    <a
+                        href="{% url 'login' %}"
+                        class="hover:text-indigo-200 transition"
+                    >
+                        Log in
+                    </a>
+
+                {% endif %}
+
             </div>
+
+        </div>
+
+        <!-- =========================================================
+             MOBILE MENU WITH NOTIFICATION BELL
+             ========================================================= -->
+
+        <div
+            id="mobile-menu"
+            class="hidden md:hidden bg-indigo-700 px-4 py-3 space-y-2"
+        >
+
+            <a
+                href="{% url 'event_list' %}"
+                class="block hover:text-indigo-200 py-1 transition"
+            >
+                Events
+            </a>
+
+            {% if user.is_authenticated %}
+
+                <!-- 🎯 TASK 3: Notification Bell (Mobile) -->
+                <div class="relative inline-block" id="notification-dropdown-container-mobile">
+                    <button id="notification-bell-btn-mobile" class="relative p-1 text-white hover:text-indigo-200 transition focus:outline-none flex items-center">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <span id="notification-badge-mobile" class="hidden absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full animate-pulse">0</span>
+                    </button>
+                    <div id="notification-menu-mobile" class="hidden absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl divide-y divide-gray-100 overflow-hidden z-50">
+                        <div class="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-700">Recent Notifications</div>
+                        <div id="notification-list-box-mobile" class="max-h-60 overflow-y-auto divide-y divide-gray-50">
+                            <div class="px-4 py-4 text-center text-xs text-gray-400">No new notifications.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <a
+                    href="{% url 'logout' %}"
+                    class="block hover:text-indigo-200 py-1 transition"
+                >
+                    Log out
+                </a>
+
+            {% else %}
+
+                <a
+                    href="{% url 'login' %}"
+                    class="block hover:text-indigo-200 py-1 transition"
+                >
+                    Log in
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    </nav>
+
+    <!-- =========================================================
+         MAIN CONTENT
+         ========================================================= -->
+
+    <main class="flex-grow max-w-6xl mx-auto w-full px-4 py-8 animate-fade">
+
+        {% if messages %}
+
+            <div id="toast-container" class="space-y-3">
+
+                {% for message in messages %}
+
+                    <div
+                        class="toast-message relative overflow-hidden mb-1 px-4 py-3 rounded-lg text-sm shadow-sm
+                        {% if message.tags == 'success' %}
+                            bg-green-100 text-green-800 border border-green-200
+                        {% elif message.tags == 'error' %}
+                            bg-red-100 text-red-700 border border-red-200
+                        {% elif message.tags == 'warning' %}
+                            bg-yellow-100 text-yellow-800 border border-yellow-200
+                        {% else %}
+                            bg-blue-100 text-blue-800 border border-blue-200
+                        {% endif %}"
+                        data-auto-dismiss="5000"
+                    >
+
+                        {{ message }}
+
+                        <div
+                            class="toast-progress absolute bottom-0 left-0 h-1
+                            {% if message.tags == 'success' %}
+                                bg-green-500
+                            {% elif message.tags == 'error' %}
+                                bg-red-500
+                            {% elif message.tags == 'warning' %}
+                                bg-yellow-500
+                            {% else %}
+                                bg-blue-500
+                            {% endif %}"
+                        ></div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
         {% endif %}
 
         {% block content %}{% endblock %}
+
     </main>
 
+    <!-- =========================================================
+         FOOTER
+         ========================================================= -->
+
     <footer class="bg-white border-t mt-auto">
+
         <div class="max-w-6xl mx-auto px-4 py-4 text-center text-sm text-gray-500">
+
             &copy; 2026 Eventify. All rights reserved.
+
         </div>
+
     </footer>
 
+    <!-- =========================================================
+         CONFETTI
+         ========================================================= -->
+
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
     <script>
+
+        /* =========================================================
+           AUTO DISMISS MESSAGES
+           ========================================================= */
+
         document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+
             var ms = parseInt(el.dataset.autoDismiss, 10);
+
             setTimeout(function () {
-                el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+
+                el.style.transition =
+                    'opacity 0.3s ease, transform 0.3s ease';
+
                 el.style.opacity = '0';
+
                 el.style.transform = 'translateY(-4px)';
-                setTimeout(function () { el.remove(); }, 300);
+
+                setTimeout(function () {
+                    el.remove();
+                }, 300);
+
             }, ms);
+
         });
 
-        {% if messages %}
-    {% for message in messages %}
-        {% if message.tags == 'success' and 'booked' in message.message|lower %}
-            if (typeof confetti === 'function') {
-                confetti({
-                    particleCount: 120,
-                    spread: 90,
-                    origin: { y: 0.6 }
-                });
-            }
-        {% endif %}
-    {% endfor %}
-{% endif %}
 
-        var progressBar = document.getElementById('page-progress');
+        /* =========================================================
+           BOOKING CONFETTI
+           ========================================================= */
+
+        {% if messages %}
+
+            {% for message in messages %}
+
+                {% if message.tags == 'success' and 'booked' in message.message|lower %}
+
+                    if (typeof confetti === 'function') {
+
+                        confetti({
+                            particleCount: 120,
+                            spread: 90,
+                            origin: {
+                                y: 0.6
+                            }
+                        });
+
+                    }
+
+                {% endif %}
+
+            {% endfor %}
+
+        {% endif %}
+
+
+        /* =========================================================
+           PAGE PROGRESS BAR
+           ========================================================= */
+
+        var progressBar =
+            document.getElementById('page-progress');
+
         if (progressBar) {
+
             progressBar.style.width = '30%';
+
             setTimeout(function () {
                 progressBar.style.width = '70%';
             }, 150);
+
             window.addEventListener('load', function () {
+
                 setTimeout(function () {
+
                     progressBar.style.width = '100%';
+
                     setTimeout(function () {
                         progressBar.style.opacity = '0';
                     }, 300);
+
                 }, 200);
+
             });
+
         }
 
-        // Global Split-Flap 3D Flip Clock Controller
-        function updateFlipCard(cardEl, newValue) {
-            if (!cardEl) return;
-            var valStr = String(newValue).padStart(2, '0');
-            var topSpan = cardEl.querySelector('.card-top span');
-            var bottomSpan = cardEl.querySelector('.card-bottom span');
-            var flipTopSpan = cardEl.querySelector('.card-flip-top span');
-            var flipBottomSpan = cardEl.querySelector('.card-flip-bottom span');
 
-            var currentVal = topSpan ? topSpan.textContent.trim() : '';
+        /* =========================================================
+           GLOBAL SPLIT-FLAP 3D FLIP CLOCK CONTROLLER
+           ========================================================= */
+
+        function updateFlipCard(cardEl, newValue) {
+
+            if (!cardEl) return;
+
+            var valStr =
+                String(newValue).padStart(2, '0');
+
+            var topSpan =
+                cardEl.querySelector('.card-top span');
+
+            var bottomSpan =
+                cardEl.querySelector('.card-bottom span');
+
+            var flipTopSpan =
+                cardEl.querySelector('.card-flip-top span');
+
+            var flipBottomSpan =
+                cardEl.querySelector('.card-flip-bottom span');
+
+            var currentVal =
+                topSpan ? topSpan.textContent.trim() : '';
+
             if (currentVal === valStr) return;
 
             cardEl.classList.remove('animate-flip');
-            void cardEl.offsetWidth; // Force DOM reflow
 
-            if (topSpan) topSpan.textContent = valStr;
-            if (flipTopSpan) flipTopSpan.textContent = currentVal || valStr;
-            if (bottomSpan) bottomSpan.textContent = currentVal || valStr;
-            if (flipBottomSpan) flipBottomSpan.textContent = valStr;
+            void cardEl.offsetWidth;
+
+            if (topSpan)
+                topSpan.textContent = valStr;
+
+            if (flipTopSpan)
+                flipTopSpan.textContent = currentVal || valStr;
+
+            if (bottomSpan)
+                bottomSpan.textContent = currentVal || valStr;
+
+            if (flipBottomSpan)
+                flipBottomSpan.textContent = valStr;
 
             cardEl.classList.add('animate-flip');
 
             setTimeout(function () {
-                if (bottomSpan) bottomSpan.textContent = valStr;
-                if (flipTopSpan) flipTopSpan.textContent = valStr;
+
+                if (bottomSpan)
+                    bottomSpan.textContent = valStr;
+
+                if (flipTopSpan)
+                    flipTopSpan.textContent = valStr;
+
                 cardEl.classList.remove('animate-flip');
+
             }, 580);
         }
 
+
+        /* =========================================================
+           PARSE FLIP CLOCK TARGET DATE
+           ========================================================= */
+
         function parseFlipClockTargetDate(dateStr) {
+
             if (!dateStr) return NaN;
-            var m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+
+            var m =
+                String(dateStr).match(
+                    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/
+                );
+
             if (m) {
+
                 return new Date(
                     parseInt(m[1], 10),
                     parseInt(m[2], 10) - 1,
@@ -523,43 +956,85 @@
                     parseInt(m[5], 10),
                     m[6] ? parseInt(m[6], 10) : 0
                 ).getTime();
+
             }
+
             return new Date(dateStr).getTime();
         }
 
+
+        /* =========================================================
+           INITIALIZE FLIP CLOCK
+           ========================================================= */
+
         function initFlipClock(clockEl) {
-            if (!clockEl || clockEl.dataset.initialized) return;
+
+            if (!clockEl || clockEl.dataset.initialized)
+                return;
+
             clockEl.dataset.initialized = 'true';
 
-            var cardHours = clockEl.querySelector('[data-unit="hours"]');
-            var cardMinutes = clockEl.querySelector('[data-unit="minutes"]');
-            var cardSeconds = clockEl.querySelector('[data-unit="seconds"]');
+            var cardHours =
+                clockEl.querySelector('[data-unit="hours"]');
+
+            var cardMinutes =
+                clockEl.querySelector('[data-unit="minutes"]');
+
+            var cardSeconds =
+                clockEl.querySelector('[data-unit="seconds"]');
+
 
             function tick() {
-                var targetStr = clockEl.getAttribute('data-target-date');
+
+                var targetStr =
+                    clockEl.getAttribute('data-target-date');
+
                 if (!targetStr) {
+
                     updateFlipCard(cardHours, '00');
                     updateFlipCard(cardMinutes, '00');
                     updateFlipCard(cardSeconds, '00');
+
                     return;
                 }
 
-                var targetTime = parseFlipClockTargetDate(targetStr);
-                if (isNaN(targetTime)) return;
+                var targetTime =
+                    parseFlipClockTargetDate(targetStr);
 
-                var now = new Date().getTime();
-                var diff = targetTime - now;
+                if (isNaN(targetTime))
+                    return;
+
+                var now =
+                    new Date().getTime();
+
+                var diff =
+                    targetTime - now;
 
                 if (diff <= 0) {
+
                     updateFlipCard(cardHours, '00');
                     updateFlipCard(cardMinutes, '00');
                     updateFlipCard(cardSeconds, '00');
+
                     return;
                 }
 
-                var totalHours = Math.floor(diff / (1000 * 60 * 60));
-                var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                var seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                var totalHours =
+                    Math.floor(
+                        diff / (1000 * 60 * 60)
+                    );
+
+                var minutes =
+                    Math.floor(
+                        (diff % (1000 * 60 * 60)) /
+                        (1000 * 60)
+                    );
+
+                var seconds =
+                    Math.floor(
+                        (diff % (1000 * 60)) /
+                        1000
+                    );
 
                 updateFlipCard(cardHours, totalHours);
                 updateFlipCard(cardMinutes, minutes);
@@ -567,53 +1042,210 @@
             }
 
             tick();
+
             setInterval(tick, 1000);
         }
 
+
+        /* =========================================================
+           SETUP ALL FLIP CLOCKS
+           ========================================================= */
+
         function setupAllFlipClocks() {
-            document.querySelectorAll('.flip-clock-wrapper').forEach(initFlipClock);
+
+            document
+                .querySelectorAll('.flip-clock-wrapper')
+                .forEach(initFlipClock);
+
         }
 
-        // IntersectionObserver for scroll-triggered slide and fade animations
+
+        /* =========================================================
+           SCROLL ANIMATIONS
+           ========================================================= */
+
         function initScrollAnimations() {
-            var elements = document.querySelectorAll('.animate-slide-in-right:not(.is-visible), .animate-fade-slide:not(.is-visible)');
-            if (!elements.length) return;
+
+            var elements =
+                document.querySelectorAll(
+                    '.animate-slide-in-right:not(.is-visible), .animate-fade-slide:not(.is-visible)'
+                );
+
+            if (!elements.length)
+                return;
 
             if (!('IntersectionObserver' in window)) {
+
                 elements.forEach(function (el) {
                     el.classList.add('is-visible');
                 });
+
                 return;
             }
 
-            var observer = new IntersectionObserver(function (entries, obs) {
-                entries.forEach(function (entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('is-visible');
-                        obs.unobserve(entry.target);
+            var observer =
+                new IntersectionObserver(
+                    function (entries, obs) {
+
+                        entries.forEach(function (entry) {
+
+                            if (entry.isIntersecting) {
+
+                                entry.target.classList.add('is-visible');
+
+                                obs.unobserve(entry.target);
+                            }
+
+                        });
+
+                    },
+                    {
+                        threshold: 0.1,
+                        rootMargin: '0px 0px -20px 0px'
                     }
-                });
-            }, {
-                threshold: 0.1,
-                rootMargin: '0px 0px -20px 0px'
-            });
+                );
 
             elements.forEach(function (el) {
                 observer.observe(el);
             });
         }
 
+
+        /* =========================================================
+           INITIALIZE
+           ========================================================= */
+
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function () {
-                setupAllFlipClocks();
-                initScrollAnimations();
-            });
+
+            document.addEventListener(
+                'DOMContentLoaded',
+                function () {
+
+                    setupAllFlipClocks();
+                    initScrollAnimations();
+
+                }
+            );
+
         } else {
+
             setupAllFlipClocks();
             initScrollAnimations();
+
         }
 
-        window.addEventListener('pageshow', initScrollAnimations);
+
+        window.addEventListener(
+            'pageshow',
+            initScrollAnimations
+        );
+
     </script>
+
+    <!-- =========================================================
+         TASK 3: Real-Time Notification System
+         ========================================================= -->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- Desktop ---
+            const bellBtn = document.getElementById('notification-bell-btn');
+            const menu = document.getElementById('notification-menu');
+            const badge = document.getElementById('notification-badge');
+            const listBox = document.getElementById('notification-list-box');
+
+            // --- Mobile ---
+            const bellBtnMobile = document.getElementById('notification-bell-btn-mobile');
+            const menuMobile = document.getElementById('notification-menu-mobile');
+            const badgeMobile = document.getElementById('notification-badge-mobile');
+            const listBoxMobile = document.getElementById('notification-list-box-mobile');
+
+            function fetchNotifications() {
+                fetch('/events/api/notifications/')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Mise à jour du badge desktop
+                        if (data.unread_count > 0) {
+                            if (badge) {
+                                badge.textContent = data.unread_count;
+                                badge.classList.remove('hidden');
+                            }
+                            if (badgeMobile) {
+                                badgeMobile.textContent = data.unread_count;
+                                badgeMobile.classList.remove('hidden');
+                            }
+                        } else {
+                            if (badge) badge.classList.add('hidden');
+                            if (badgeMobile) badgeMobile.classList.add('hidden');
+                        }
+
+                        // Afficher la liste desktop
+                        renderNotificationList(listBox, data);
+                        // Afficher la liste mobile
+                        renderNotificationList(listBoxMobile, data);
+                    });
+            }
+
+            function renderNotificationList(container, data) {
+                if (!container) return;
+                if (data.notifications && data.notifications.length > 0) {
+                    container.innerHTML = '';
+                    data.notifications.forEach(item => {
+                        const readClass = item.is_read ? 'bg-white' : 'bg-indigo-50/60 font-medium';
+                        const el = document.createElement('div');
+                        el.className = `p-3 text-left text-xs transition text-gray-700 cursor-pointer ${readClass} hover:bg-gray-50`;
+                        el.innerHTML = `
+                            <div class="flex justify-between items-start gap-1">
+                                <p class="font-bold text-gray-900">${item.title}</p>
+                                <span class="text-[9px] text-gray-400 whitespace-nowrap">${item.created_at}</span>
+                            </div>
+                            <p class="text-gray-500 mt-0.5">${item.message}</p>
+                        `;
+                        if (!item.is_read) {
+                            el.addEventListener('click', () => {
+                                fetch(`/events/api/notifications/${item.id}/read/`, {
+                                    method: 'POST',
+                                    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                                }).then(() => fetchNotifications());
+                            });
+                        }
+                        container.appendChild(el);
+                    });
+                } else {
+                    container.innerHTML = '<div class="px-4 py-4 text-center text-xs text-gray-400">No notifications found.</div>';
+                }
+            }
+
+            // Événements desktop
+            if (bellBtn && menu) {
+                bellBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    menu.classList.toggle('hidden');
+                    fetchNotifications();
+                });
+                document.addEventListener('click', function () {
+                    if (menu) menu.classList.add('hidden');
+                });
+            }
+
+            // Événements mobile
+            if (bellBtnMobile && menuMobile) {
+                bellBtnMobile.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    menuMobile.classList.toggle('hidden');
+                    fetchNotifications();
+                });
+                document.addEventListener('click', function () {
+                    if (menuMobile) menuMobile.classList.add('hidden');
+                });
+            }
+
+            // Premier chargement et rafraîchissement toutes les 15 secondes
+            fetchNotifications();
+            setInterval(fetchNotifications, 15000);
+        });
+    </script>
+
 </body>
+
 </html>
