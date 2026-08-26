@@ -57,12 +57,9 @@ class EventForm(forms.ModelForm):
     categories = forms.ModelMultipleChoiceField(
         queryset=Category.objects.all(),
         required=True,
-        widget=forms.SelectMultiple(
-            attrs={
-                "class": INPUT_CLASSES,
-                "size": "5",
-            }
-        ),
+        widget=forms.CheckboxSelectMultiple,
+        label="Categories",
+        help_text="Select one or more categories for this event.",
     )
 
     max_tickets = forms.IntegerField(

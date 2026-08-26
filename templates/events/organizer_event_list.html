@@ -57,6 +57,17 @@
             </div>
             {% endif %}
             <div class="p-5">
+                <div class="flex flex-wrap items-center gap-1.5 mb-2">
+                    {% for cat in event.categories.all %}
+                        <span class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                            {{ cat.name }}
+                        </span>
+                    {% empty %}
+                        <span class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                            Uncategorized
+                        </span>
+                    {% endfor %}
+                </div>
                 <h3 class="text-xl font-semibold text-gray-900 display group-hover:text-indigo-700 transition mb-2">{{ event.title }}</h3>
                 {% if event.description %}
                 <p class="text-sm text-gray-600 mb-3">{{ event.description|truncatewords:20 }}</p>
@@ -93,6 +104,17 @@
                 </div>
                 {% endif %}
                 <div class="p-5 flex-1">
+                    <div class="flex flex-wrap items-center gap-1.5 mb-2">
+                        {% for cat in event.categories.all %}
+                            <span class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                {{ cat.name }}
+                            </span>
+                        {% empty %}
+                            <span class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                                Uncategorized
+                            </span>
+                        {% endfor %}
+                    </div>
                     <h3 class="text-xl font-semibold text-gray-900 display group-hover:text-indigo-700 transition mb-2">{{ event.title }}</h3>
                     {% if event.description %}
                     <p class="text-sm text-gray-600 mb-3">{{ event.description|truncatewords:35 }}</p>

@@ -87,6 +87,24 @@
         </div>
     </form>
 
+    <!-- Category Quick-Filter Bar -->
+    <div class="mb-6 flex items-center gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-none animate-fade-slide">
+        <a
+            href="{% url 'event_list' %}{% if search_query %}?search={{ search_query }}{% endif %}{% if location %}&location={{ location }}{% endif %}"
+            class="shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition {% if not selected_category %}bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-200{% else %}bg-white border border-indigo-100 text-gray-700 hover:bg-indigo-50 hover:border-indigo-300{% endif %}"
+        >
+            All Events
+        </a>
+        {% for cat in categories %}
+            <a
+                href="{% url 'event_list' %}?category={{ cat.slug }}{% if search_query %}&search={{ search_query }}{% endif %}{% if location %}&location={{ location }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}"
+                class="shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition {% if selected_category == cat.slug %}bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-200{% else %}bg-white border border-indigo-100 text-gray-700 hover:bg-indigo-50 hover:border-indigo-300{% endif %}"
+            >
+                {{ cat.name }}
+            </a>
+        {% endfor %}
+    </div>
+
     <div class="flex items-center justify-between mb-6">
         <p class="text-sm text-gray-500">{{ events.paginator.count }} event{{ events.paginator.count|pluralize }}</p>
 
@@ -112,7 +130,11 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                 </svg>
             </div>
-            <p class="text-gray-400 display">No events found matching your filters.</p>
+            <p class="text-gray-600 font-medium display mb-1">No events found matching your filters.</p>
+            <p class="text-xs text-gray-400 mb-4">Try adjusting your keywords, price range, or category filter.</p>
+            <a href="{% url 'event_list' %}" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-semibold hover:bg-indigo-100 transition shadow-sm border border-indigo-100">
+                ↺ Reset All Filters
+            </a>
         </div>
         {% endfor %}
     </div>
@@ -129,7 +151,11 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                 </svg>
             </div>
-            <p class="text-gray-400 display">No events found matching your filters.</p>
+            <p class="text-gray-600 font-medium display mb-1">No events found matching your filters.</p>
+            <p class="text-xs text-gray-400 mb-4">Try adjusting your keywords, price range, or category filter.</p>
+            <a href="{% url 'event_list' %}" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-semibold hover:bg-indigo-100 transition shadow-sm border border-indigo-100">
+                ↺ Reset All Filters
+            </a>
         </div>
         {% endfor %}
     </div>

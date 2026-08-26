@@ -15,10 +15,24 @@
 
         <!-- Middle: Event info -->
         <div class="ticket-card-vert-body">
-            <div class="flex flex-nowrap items-center gap-2 mb-2">
-                <span class="min-w-0 truncate inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700">
-                    {{ event.category_label }}
-                </span>
+            <div class="flex flex-nowrap items-center justify-between gap-1.5 mb-2">
+                <div class="flex flex-wrap items-center gap-1 min-w-0">
+                    {% for cat in event.categories.all %}
+                        {% if forloop.counter <= 2 %}
+                        <span class="truncate inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                            {{ cat.name }}
+                        </span>
+                        {% elif forloop.counter == 3 %}
+                        <span class="shrink-0 inline-block text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600">
+                            +{{ event.categories.count|add:"-2" }}
+                        </span>
+                        {% endif %}
+                    {% empty %}
+                        <span class="truncate inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                            Uncategorized
+                        </span>
+                    {% endfor %}
+                </div>
                 <span class="shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400">
                     {{ event.serial_number }}
                 </span>
