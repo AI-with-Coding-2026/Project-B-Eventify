@@ -374,21 +374,22 @@
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
             {% if user.is_authenticated %}
                 {% if user.is_admin %}
-                    <a href="{% url 'admin_dashboard' %}" class="flex items-center hover:opacity-90 transition">
+                    <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-2.5 hover:opacity-95 transition">
                 {% elif user.is_organizer %}
-                    <a href="{% url 'organizer_dashboard' %}" class="flex items-center hover:opacity-90 transition">
+                    <a href="{% url 'organizer_dashboard' %}" class="flex items-center gap-2.5 hover:opacity-95 transition">
                 {% else %}
-                    <a href="{% url 'attendee_dashboard' %}" class="flex items-center hover:opacity-90 transition">
+                    <a href="{% url 'attendee_dashboard' %}" class="flex items-center gap-2.5 hover:opacity-95 transition">
                 {% endif %}
             {% else %}
-                <a href="{% url 'home' %}" class="flex items-center hover:opacity-90 transition">
+                <a href="{% url 'home' %}" class="flex items-center gap-2.5 hover:opacity-95 transition">
             {% endif %}
-                <div class="rounded-xl bg-white px-3 py-1.5 shadow-sm">
+                <div class="rounded-xl bg-white px-3 py-1.5 shadow-sm flex items-center gap-2">
                     <img
                         src="{% static 'images/eventify_no_background.png' %}"
                         alt="Eventify"
-                        class="h-12 w-auto object-contain"
+                        class="h-8 w-auto object-contain"
                     >
+                    <span class="text-indigo-600 font-extrabold text-xl tracking-tight">Eventify</span>
                 </div>
             </a>
             <button class="md:hidden text-2xl focus:outline-none" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
