@@ -9,9 +9,11 @@ from events.models import Category, Event, EventBooking, Ticket
 from .decorators import admin_required, role_required
 from .forms import UserRegistrationForm
 from .models import User, UserRole
+import json
 from decimal import Decimal
 
-from django.db.models import Count
+from django.db.models import Count, IntegerField, Sum, Value
+from django.db.models.functions import Coalesce
 
 @login_not_required
 def register(request):
@@ -106,13 +108,23 @@ def organizer_dashboard(request):
     """Show ticket sales performance for events owned by the logged-in organizer."""
     my_events = (
         Event.objects.filter(organizer=request.user)
-        .annotate(tickets_sold=Count('bookings'))
+        .annotate(
+            tickets_sold=Coalesce(
+                Sum('tickets__quantity'),
+                Value(0),
+                output_field=IntegerField(),
+            )
+        )
         .order_by('-date')
     )
 
     total_tickets_sold = 0
+    total_tickets_remaining = 0
     total_revenue = Decimal('0.00')
     event_stats = []
+    chart_labels = []
+    chart_tickets_sold = []
+    chart_revenue = []
 
     for event in my_events:
         sold = event.tickets_sold
@@ -120,7 +132,12 @@ def organizer_dashboard(request):
         revenue = event.price * sold
 
         total_tickets_sold += sold
+        total_tickets_remaining += remaining
         total_revenue += revenue
+
+        chart_labels.append(event.title)
+        chart_tickets_sold.append(sold)
+        chart_revenue.append(float(revenue))
 
         event_stats.append({
             'event': event,
@@ -129,10 +146,21 @@ def organizer_dashboard(request):
             'revenue': revenue,
         })
 
+    upcoming_events = (
+        Event.objects.filter(organizer=request.user, date__gte=timezone.now())
+        .order_by('date')[:3]
+    )
+
     return render(request, 'authentication/organizer_dashboard.html', {
         'event_stats': event_stats,
+        'total_events': len(event_stats),
         'total_tickets_sold': total_tickets_sold,
+        'total_tickets_remaining': total_tickets_remaining,
         'total_revenue': total_revenue,
+        'upcoming_events': upcoming_events,
+        'chart_labels_json': json.dumps(chart_labels),
+        'chart_tickets_sold_json': json.dumps(chart_tickets_sold),
+        'chart_revenue_json': json.dumps(chart_revenue),
     })
 
 

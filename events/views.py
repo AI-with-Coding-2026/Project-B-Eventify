@@ -189,6 +189,17 @@ def book_ticket(request, pk):
         if quantity < 1:
             quantity = 1
 
+        remaining = event.tickets_remaining
+        if remaining <= 0:
+            messages.error(request, 'This event is fully booked.')
+            return redirect('event_detail', pk=pk)
+        if quantity > remaining:
+            messages.error(
+                request,
+                f'Only {remaining} ticket{"s" if remaining != 1 else ""} remaining.',
+            )
+            return redirect('book_ticket', pk=pk)
+
         Ticket.objects.create(
             event=event,
             attendee=request.user,

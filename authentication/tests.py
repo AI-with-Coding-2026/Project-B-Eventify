@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 from unittest.mock import ANY, patch
 
-from events.models import Event, EventBooking
+from events.models import Event, Ticket
 
 from .forms import UserRegistrationForm
 from .models import User, UserRole
@@ -531,10 +531,10 @@ class OrganizerDashboardSalesTests(TestCase):
             max_tickets=20,
         )
 
-        EventBooking.objects.create(user=self.attendee_one, event=self.event_a)
-        EventBooking.objects.create(user=self.attendee_two, event=self.event_a)
-        EventBooking.objects.create(user=self.attendee_one, event=self.event_b)
-        EventBooking.objects.create(user=self.attendee_one, event=self.other_event)
+        Ticket.objects.create(attendee=self.attendee_one, event=self.event_a, quantity=1)
+        Ticket.objects.create(attendee=self.attendee_two, event=self.event_a, quantity=1)
+        Ticket.objects.create(attendee=self.attendee_one, event=self.event_b, quantity=1)
+        Ticket.objects.create(attendee=self.attendee_one, event=self.other_event, quantity=1)
 
     def test_organizer_sees_only_their_event_sales(self):
         self.client.login(username='sales_organizer', password='pass123')

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Sum
 from django.utils.text import slugify
 
 
@@ -113,9 +114,13 @@ class Event(models.Model):
         return f"#{self.pk}"
 
     @property
+    def sold_ticket_count(self):
+        total = self.tickets.aggregate(total=Sum('quantity'))['total']
+        return total or 0
+
+    @property
     def tickets_remaining(self):
-        booked = self.bookings.count()
-        return max(self.max_tickets - booked, 0)
+        return max(self.max_tickets - self.sold_ticket_count, 0)
 
     @property
     def is_sold_out(self):
