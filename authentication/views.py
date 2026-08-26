@@ -49,6 +49,14 @@ def register_success(request):
 
 @login_not_required
 def home(request):
+    if request.user.is_authenticated:
+        if request.user.is_admin:
+            return redirect('admin_dashboard')
+        elif request.user.is_organizer:
+            return redirect('organizer_dashboard')
+        elif request.user.is_attendee:
+            return redirect('attendee_dashboard')
+
     featured_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')[:5]
     return render(request, 'authentication/home.html', {'featured_events': featured_events})
 
@@ -270,11 +278,37 @@ def organizer_export_pdf(request):
 
 @role_required(UserRole.ATTENDEE)
 def attendee_dashboard(request):
-    upcoming_events = Event.objects.filter(
-        date__gte=timezone.now()
-    ).order_by('date')[:3]
+    now = timezone.now()
+    featured_events = Event.objects.filter(date__gte=now).order_by('date')[:5]
+
+    tickets = (
+        Ticket.objects.filter(attendee=request.user)
+        .select_related('event')
+    )
+    legacy_bookings = (
+        EventBooking.objects.filter(user=request.user)
+        .select_related('event')
+    )
+
+    upcoming_tickets = list(
+        tickets.filter(event__date__gte=now).order_by('event__date')
+    )
+    upcoming_legacy = [
+        b for b in legacy_bookings.filter(event__date__gte=now).order_by('event__date')
+        if not any(t.event_id == b.event_id for t in upcoming_tickets)
+    ]
+
+    upcoming_bookings = sorted(
+        upcoming_tickets + upcoming_legacy,
+        key=lambda x: x.event.date,
+    )
+    next_booking = upcoming_bookings[0] if upcoming_bookings else None
+
     return render(request, 'authentication/attendee_dashboard.html', {
-        'upcoming_events': upcoming_events,
+        'featured_events': featured_events,
+        'upcoming_events': featured_events,
+        'upcoming_bookings': upcoming_bookings,
+        'next_booking': next_booking,
     })
 
 
