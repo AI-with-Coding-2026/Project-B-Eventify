@@ -86,16 +86,38 @@ def attendee_required(view_func):
     return role_required(UserRole.ATTENDEE)(view_func)
 
 def organizer_or_admin_required(view_func):
-    """سماح للـ Admin والـ Organizer معاً بالوصول."""
+    """Allow Admin users or Organizer users to access the view."""
     @wraps(view_func)
     def wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
             from django.contrib.auth.views import redirect_to_login
             return redirect_to_login(request.get_full_path(), login_url="login")
         
-        # السماح للـ Admin أو الـ Organizer
         if request.user.role == UserRole.ADMIN or request.user.role == UserRole.ORGANIZER:
             return view_func(request, *args, **kwargs)
             
         return redirect('unauthorized')
+    return wrapped_view
+
+
+def approved_organizer_required(view_func):
+    """
+    Allow Admin users or approved Organizer users to access the view.
+    """
+    @login_required(login_url='login')
+    @wraps(view_func)
+    def wrapped_view(request, *args, **kwargs):
+        user = request.user
+
+        if user.role == UserRole.ADMIN:
+            return view_func(request, *args, **kwargs)
+
+        if (
+            user.role == UserRole.ORGANIZER
+            and getattr(user, 'is_approved_organizer', False)
+        ):
+            return view_func(request, *args, **kwargs)
+
+        return redirect('unauthorized')
+
     return wrapped_view

@@ -175,7 +175,8 @@
             border-radius: 15px 0 0 15px;
         }
         .ticket-card-image--wide {
-            width: 220px;
+            width: 230px;
+            min-width: 230px;
             height: 100%;
             min-height: 100%;
             max-height: 100%;
@@ -371,52 +372,73 @@
         }
 
         /* Mobile Adjustments for Horizontal Tickets */
-        @media (max-width: 640px) {
-            .ticket-card {
-                flex-direction: column;
+        @media (max-width: 768px) {
+            .ticket-card,
+            .ticket-card--wide {
+                flex-direction: column !important;
+                height: auto !important;
+                min-height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
             }
             .ticket-card-image,
             .ticket-card-image--wide {
-                width: 100%;
-                min-height: 140px;
-                max-height: 180px;
-                border-radius: 15px 15px 0 0;
+                width: 100% !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+                height: 180px !important;
+                min-height: 180px !important;
+                max-height: 180px !important;
+                border-radius: 15px 15px 0 0 !important;
+            }
+            .ticket-card-body,
+            .ticket-card-body--wide {
+                padding: 16px !important;
+                width: 100% !important;
+                flex: 1 1 auto !important;
             }
             .ticket-card-perforation {
-                height: 2px;
-                width: 100%;
-                background-image: linear-gradient(to right, #d1d5db 55%, transparent 45%);
-                background-size: 22px 2px;
-                background-repeat: repeat-x;
+                width: 100% !important;
+                height: 2px !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                background-image: linear-gradient(to right, #d1d5db 55%, transparent 45%) !important;
+                background-size: 22px 2px !important;
+                background-repeat: repeat-x !important;
+                background-position: center !important;
             }
             .ticket-card-perforation::before {
-                left: -1px;
-                top: -9px;
-                width: 9px;
-                height: 18px;
-                border-radius: 0 9px 9px 0;
-                border: 1px solid #e0e7ff;
-                border-left: none;
+                left: -1px !important;
+                top: -9px !important;
+                width: 9px !important;
+                height: 18px !important;
+                border-radius: 0 9px 9px 0 !important;
+                border: 1px solid #e0e7ff !important;
+                border-left: none !important;
+                border-top: 1px solid #e0e7ff !important;
             }
             .ticket-card-perforation::after {
-                right: -1px;
-                left: auto;
-                top: -9px;
-                width: 9px;
-                height: 18px;
-                border-radius: 9px 0 0 9px;
-                border: 1px solid #e0e7ff;
-                border-right: none;
+                right: -1px !important;
+                left: auto !important;
+                top: -9px !important;
+                width: 9px !important;
+                height: 18px !important;
+                border-radius: 9px 0 0 9px !important;
+                border: 1px solid #e0e7ff !important;
+                border-right: none !important;
+                border-top: 1px solid #e0e7ff !important;
             }
             .ticket-card-stub,
             .ticket-card--wide .ticket-card-stub {
-                width: 100%;
-                flex-direction: row;
-                justify-content: space-between;
-                border-radius: 0 0 15px 15px;
-                border-left: none;
-                padding: 12px 16px;
-                background: #efefef;
+                width: 100% !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                border-radius: 0 0 15px 15px !important;
+                border-left: none !important;
+                border-top: 1px solid #e2e8f0 !important;
+                padding: 14px 18px !important;
+                background: #f8fafc !important;
             }
         }
 

@@ -122,10 +122,11 @@ class RegisterViewTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse('register_success'))
+        self.assertRedirects(response, reverse('verification_pending'))
 
         user = User.objects.get(username='vieworg')
         self.assertEqual(user.role, UserRole.ORGANIZER)
+        self.assertFalse(user.email_verified)
 
 
 class RoleBasedAccessControlTests(TestCase):
@@ -143,6 +144,7 @@ class RoleBasedAccessControlTests(TestCase):
             'organizer_rbac@example.com',
             'pass123',
             role=UserRole.ORGANIZER,
+            email_verified=True,
         )
 
         self.attendee = User.objects.create_user(
@@ -150,6 +152,7 @@ class RoleBasedAccessControlTests(TestCase):
             'attendee_rbac@example.com',
             'pass123',
             role=UserRole.ATTENDEE,
+            email_verified=True,
         )
 
     def test_unauthenticated_user_redirected_to_login(self):

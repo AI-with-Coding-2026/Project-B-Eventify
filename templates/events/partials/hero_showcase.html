@@ -3,8 +3,8 @@
 <div id="epic-hero-showcase" class="w-full mb-10 select-none" data-autoplay-duration="5500">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch">
 
-        <!-- Main Featured Stage (Left, 8-9 cols) -->
-        <div id="hero-main-stage" class="lg:col-span-8 xl:col-span-9 relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gray-950 border border-gray-800 shadow-2xl min-h-[420px] sm:min-h-[480px] flex flex-col justify-end p-6 sm:p-10 transition-all">
+        <!-- Main Featured Stage (Left, 8-9 cols on desktop, full width on mobile) -->
+        <div id="hero-main-stage" class="col-span-12 lg:col-span-8 xl:col-span-9 relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gray-950 border border-gray-800 shadow-2xl min-h-[440px] sm:min-h-[480px] flex flex-col justify-end p-6 sm:p-10 transition-all">
 
             <!-- Background Image Slides -->
             {% for event in featured_events %}
@@ -20,8 +20,8 @@
                 </div>
                 {% endif %}
                 <!-- Balanced gradient overlays for comfortable text readability -->
-                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent"></div>
-                <div class="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent"></div>
             </div>
             {% endfor %}
 
@@ -57,30 +57,43 @@
                 </p>
 
                 <!-- Price and Action Buttons -->
-                <div class="pt-2 flex flex-wrap items-center gap-4">
-                    <div>
-                        <span class="block text-[10px] uppercase font-bold tracking-wider text-gray-400">Tickets from</span>
-                        <span id="hero-price" class="text-2xl font-black text-white">
-                            {% if featured_events.0.price > 0 %}${{ featured_events.0.price }}{% else %}Free{% endif %}
-                        </span>
+                <div class="pt-2 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div>
+                            <span class="block text-[10px] uppercase font-bold tracking-wider text-gray-400">Tickets from</span>
+                            <span id="hero-price" class="text-2xl font-black text-white">
+                                {% if featured_events.0.price > 0 %}${{ featured_events.0.price }}{% else %}Free{% endif %}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <a id="hero-book-btn" href="{% if user.is_authenticated %}{% url 'book_ticket' featured_events.0.pk %}{% else %}{% url 'register' %}{% endif %}"
+                               class="inline-flex items-center justify-center px-6 py-2.5 sm:py-3 rounded-xl text-sm font-bold bg-white text-gray-950 hover:bg-gray-100 hover:scale-[1.02] active:scale-[0.98] transition shadow-lg">
+                                {% if user.is_authenticated %}Book Ticket{% else %}Sign Up to Book{% endif %}
+                            </a>
+                            <a id="hero-detail-btn" href="{% if user.is_authenticated %}{% url 'event_detail' featured_events.0.pk %}{% else %}{% url 'register' %}{% endif %}"
+                               class="inline-flex items-center justify-center px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-sm font-bold bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/10 transition">
+                                View Details
+                            </a>
+                        </div>
                     </div>
 
-                    <div class="flex items-center gap-3">
-                        <a id="hero-book-btn" href="{% url 'book_ticket' featured_events.0.pk %}"
-                           class="inline-flex items-center justify-center px-6 py-3 rounded-xl text-sm font-bold bg-white text-gray-950 hover:bg-gray-100 hover:scale-[1.02] active:scale-[0.98] transition shadow-lg">
-                            Book Ticket
-                        </a>
-                        <a id="hero-detail-btn" href="{% url 'event_detail' featured_events.0.pk %}"
-                           class="inline-flex items-center justify-center px-5 py-3 rounded-xl text-sm font-bold bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/10 transition">
-                            View Details
-                        </a>
+                    <!-- Mobile 5-Point Indicator Dots (Inside Card Bottom on Mobile) -->
+                    <div class="flex lg:hidden items-center gap-2 pt-2" id="hero-mobile-dots">
+                        {% for event in featured_events %}
+                        <button type="button"
+                                class="hero-dot-btn h-2 rounded-full transition-all duration-300 {% if forloop.first %}w-6 bg-white shadow-sm ring-1 ring-white/60{% else %}w-2 bg-white/30 hover:bg-white/50{% endif %}"
+                                data-index="{{ forloop.counter0 }}"
+                                aria-label="Go to slide {{ forloop.counter }}">
+                        </button>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Event Queue with Progress Timer (Right, 3-4 cols) -->
-        <div class="lg:col-span-4 xl:col-span-3 flex flex-col justify-between space-y-2">
+        <!-- Event Queue with Progress Timer (Right, 3-4 cols - Desktop Only) -->
+        <div class="hidden lg:flex lg:col-span-4 xl:col-span-3 flex-col justify-between space-y-2">
             <div class="px-2 pb-1 flex items-center justify-between">
                 <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Upcoming Events</span>
                 <span class="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Nearest first</span>
@@ -98,8 +111,8 @@
                         data-location="{{ event.location|default:'TBA' }}"
                         data-price="{% if event.price > 0 %}${{ event.price }}{% else %}Free{% endif %}"
                         data-description="{{ event.description|default:'Join us for this exciting upcoming event.'|truncatewords:20 }}"
-                        data-book-url="{% url 'book_ticket' event.pk %}"
-                        data-detail-url="{% url 'event_detail' event.pk %}">
+                        data-book-url="{% if user.is_authenticated %}{% url 'book_ticket' event.pk %}{% else %}{% url 'register' %}{% endif %}"
+                        data-detail-url="{% if user.is_authenticated %}{% url 'event_detail' event.pk %}{% else %}{% url 'register' %}{% endif %}">
 
                     <!-- Dynamic Event Photo Background (Active Card takes natural unzoomed photo colors) -->
                     <div class="card-bg-layer absolute inset-0 overflow-hidden pointer-events-none rounded-xl z-0">
@@ -151,10 +164,11 @@
 
         const mainStage = document.getElementById('hero-main-stage');
         const queueItems = container.querySelectorAll('.queue-item');
+        const dotBtns = container.querySelectorAll('.hero-dot-btn');
         const bgSlides = container.querySelectorAll('.hero-bg-slide');
         const DURATION = parseInt(container.dataset.autoplayDuration, 10) || 5500;
 
-        if (queueItems.length <= 1) return;
+        if (bgSlides.length <= 1) return;
 
         // Stage elements
         const elCategory = document.getElementById('hero-category');
@@ -188,16 +202,16 @@
             });
 
             // 2. Update Content Info with quick transition
-            elCategory.textContent = item.dataset.category || 'Event';
-            elDateText.textContent = item.dataset.date || '';
-            elLocationText.textContent = item.dataset.location || 'TBA';
-            elTitle.textContent = item.dataset.title || '';
-            elDesc.textContent = item.dataset.description || '';
-            elPrice.textContent = item.dataset.price || 'Free';
-            elBookBtn.href = item.dataset.bookUrl || '#';
-            elDetailBtn.href = item.dataset.detailUrl || '#';
+            if (elCategory) elCategory.textContent = item.dataset.category || 'Event';
+            if (elDateText) elDateText.textContent = item.dataset.date || '';
+            if (elLocationText) elLocationText.textContent = item.dataset.location || 'TBA';
+            if (elTitle) elTitle.textContent = item.dataset.title || '';
+            if (elDesc) elDesc.textContent = item.dataset.description || '';
+            if (elPrice) elPrice.textContent = item.dataset.price || 'Free';
+            if (elBookBtn) elBookBtn.href = item.dataset.bookUrl || '#';
+            if (elDetailBtn) elDetailBtn.href = item.dataset.detailUrl || '#';
 
-            // 3. Update Queue Items styling
+            // 3. Update Queue Items styling (Desktop)
             queueItems.forEach(function (btn, i) {
                 const bar = btn.querySelector('.queue-progress-bar');
                 const img = btn.querySelector('.card-bg-img');
@@ -228,6 +242,15 @@
                 }
             });
 
+            // 4. Update Mobile Dots styling
+            dotBtns.forEach(function (dot, i) {
+                if (i === index) {
+                    dot.className = 'hero-dot-btn h-2 rounded-full transition-all duration-300 w-6 bg-white shadow-sm ring-1 ring-white/60';
+                } else {
+                    dot.className = 'hero-dot-btn h-2 rounded-full transition-all duration-300 w-2 bg-white/30 hover:bg-white/50';
+                }
+            });
+
             // Restart timer
             startTime = performance.now();
         }
@@ -248,18 +271,17 @@
                 }
 
                 if (progress >= 1) {
-                    const nextIndex = (currentIndex + 1) % queueItems.length;
+                    const nextIndex = (currentIndex + 1) % bgSlides.length;
                     setActiveSlide(nextIndex);
                 }
             } else {
-                // Keep startTime sliding forward while paused so duration doesn't jump
-                startTime = now - (parseFloat((queueItems[currentIndex].querySelector('.queue-progress-bar') || {}).style.width || 0) / 100 * DURATION);
+                startTime = now - (parseFloat(((queueItems[currentIndex] || {}).querySelector ? (queueItems[currentIndex].querySelector('.queue-progress-bar') || {}).style.width : 0) || 0) / 100 * DURATION);
             }
 
             animationFrameId = requestAnimationFrame(tick);
         }
 
-        // Click handler on queue items
+        // Click handler on desktop queue items
         queueItems.forEach(function (item) {
             item.addEventListener('click', function () {
                 const idx = parseInt(this.dataset.index, 10);
@@ -267,10 +289,69 @@
             });
         });
 
-        // Pause timer ONLY when hovering over the main big card stage
+        // Click handler on mobile dots
+        dotBtns.forEach(function (dot) {
+            dot.addEventListener('click', function () {
+                const idx = parseInt(this.dataset.index, 10);
+                setActiveSlide(idx);
+            });
+        });
+
+        // Pause timer on hover
         if (mainStage) {
             mainStage.addEventListener('mouseenter', function () { isPaused = true; });
             mainStage.addEventListener('mouseleave', function () { isPaused = false; });
+
+            // Touch swipe gestures for mobile sliding
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchEndX = 0;
+            let touchEndY = 0;
+            let isSwiping = false;
+
+            mainStage.addEventListener('touchstart', function (e) {
+                if (e.touches && e.touches.length === 1) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    touchEndX = touchStartX;
+                    touchEndY = touchStartY;
+                    isSwiping = true;
+                    isPaused = true;
+                }
+            }, { passive: true });
+
+            mainStage.addEventListener('touchmove', function (e) {
+                if (!isSwiping || !e.touches || e.touches.length !== 1) return;
+                touchEndX = e.touches[0].clientX;
+                touchEndY = e.touches[0].clientY;
+            }, { passive: true });
+
+            mainStage.addEventListener('touchend', function () {
+                if (!isSwiping) return;
+                isSwiping = false;
+                isPaused = false;
+
+                const deltaX = touchEndX - touchStartX;
+                const deltaY = touchEndY - touchStartY;
+
+                // Trigger slide change if horizontal swipe is dominant and exceeds 35px threshold
+                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 35) {
+                    if (deltaX < 0) {
+                        // Swiped Left -> Next Slide
+                        const nextIdx = (currentIndex + 1) % bgSlides.length;
+                        setActiveSlide(nextIdx);
+                    } else {
+                        // Swiped Right -> Previous Slide
+                        const prevIdx = (currentIndex - 1 + bgSlides.length) % bgSlides.length;
+                        setActiveSlide(prevIdx);
+                    }
+                }
+            }, { passive: true });
+
+            mainStage.addEventListener('touchcancel', function () {
+                isSwiping = false;
+                isPaused = false;
+            }, { passive: true });
         }
 
         // Start loop

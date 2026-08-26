@@ -1,0 +1,18 @@
+Subject: Your Eventify Booking Cancellation - {{ event.title }}
+
+Hello {{ attendee.username }},
+
+This email confirms that your booking for "{{ event.title }}" has been cancelled.
+
+Cancellation Details:
+- Event: {{ event.title }}
+{% if event.date %}- Event Date: {{ event.date|date:"F d, Y, h:i A" }}
+{% endif %}- Tickets Cancelled: {{ cancelled_quantity }}
+{% if remaining_quantity > 0 %}- Remaining Tickets: {{ remaining_quantity }}
+{% else %}- Status: Entire booking cancelled
+{% endif %}
+
+Discover more events: {{ browse_events_url }}
+
+Best regards,
+Eventify Team

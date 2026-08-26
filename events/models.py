@@ -4,6 +4,12 @@ from django.db.models import Sum
 from django.utils.text import slugify
 
 
+class EventPublishStatus(models.TextChoices):
+    PENDING = 'pending', 'Pending'
+    APPROVED = 'approved', 'Approved'
+    DENIED = 'denied', 'Denied'
+
+
 class Category(models.Model):
     # Category name must be unique to avoid duplicates (e.g., Music, Sports)
     name = models.CharField(
@@ -96,6 +102,12 @@ class Event(models.Model):
         max_length=80,
         blank=True,
         verbose_name="Custom category",
+    )
+
+    publish_status = models.CharField(
+        max_length=20,
+        choices=EventPublishStatus.choices,
+        default=EventPublishStatus.APPROVED,
     )
 
     def __str__(self):
@@ -191,6 +203,18 @@ class Event(models.Model):
             if cleaned:
                 bullets.append(cleaned)
         return bullets or [self.description.strip()]
+
+    @property
+    def is_published(self):
+        return self.publish_status == EventPublishStatus.APPROVED
+
+    @property
+    def is_pending_publish(self):
+        return self.publish_status == EventPublishStatus.PENDING
+
+    @property
+    def is_denied_publish(self):
+        return self.publish_status == EventPublishStatus.DENIED
 
 
 
