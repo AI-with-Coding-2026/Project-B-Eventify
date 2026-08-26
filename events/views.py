@@ -209,6 +209,8 @@ def event_list(request):
 
     filter_query_string = filter_params.urlencode()
 
+    featured_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')[:5]
+
     context = {
         'events': page_obj,
         'page_obj': page_obj,
@@ -222,6 +224,7 @@ def event_list(request):
         'filter_query_string': filter_query_string,
         'past_events': past_events,
         'selling_fast_threshold': selling_fast_threshold,
+        'featured_events': featured_events,
     }
 
     return render(

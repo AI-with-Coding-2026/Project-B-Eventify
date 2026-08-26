@@ -841,82 +841,61 @@
 
         }
 
-
-        /* =========================================================
-           GLOBAL SPLIT-FLAP 3D FLIP CLOCK CONTROLLER
-           ========================================================= */
-
-        function updateFlipCard(cardEl, newValue) {
-
+        // Global Split-Flap 3D Flip Clock Controller
+        function updateFlipCard(cardEl, newValue, padLength) {
             if (!cardEl) return;
+            var valNum = parseInt(newValue, 10) || 0;
+            var valStr;
 
-            var valStr =
-                String(newValue).padStart(2, '0');
+            if (cardEl.dataset.unit === 'days') {
+                if (valNum >= 100) {
+                    valStr = String(valNum);
+                    cardEl.classList.add('flip-card-wide');
+                } else {
+                    valStr = String(valNum).padStart(2, '0');
+                    cardEl.classList.remove('flip-card-wide');
+                }
+            } else {
+                var targetLen = padLength || 2;
+                valStr = String(newValue).padStart(targetLen, '0');
+            }
 
-            var topSpan =
-                cardEl.querySelector('.card-top span');
+            var topSpan = cardEl.querySelector('.card-top span');
+            var bottomSpan = cardEl.querySelector('.card-bottom span');
+            var flipTopSpan = cardEl.querySelector('.card-flip-top span');
+            var flipBottomSpan = cardEl.querySelector('.card-flip-bottom span');
 
-            var bottomSpan =
-                cardEl.querySelector('.card-bottom span');
-
-            var flipTopSpan =
-                cardEl.querySelector('.card-flip-top span');
-
-            var flipBottomSpan =
-                cardEl.querySelector('.card-flip-bottom span');
-
-            var currentVal =
-                topSpan ? topSpan.textContent.trim() : '';
-
+            var currentVal = topSpan ? topSpan.textContent.trim() : '';
             if (currentVal === valStr) return;
 
             cardEl.classList.remove('animate-flip');
+            void cardEl.offsetWidth; // Force DOM reflow
 
-            void cardEl.offsetWidth;
+            if (topSpan) topSpan.textContent = valStr;
+            if (flipTopSpan) flipTopSpan.textContent = currentVal || valStr;
+            if (bottomSpan) bottomSpan.textContent = currentVal || valStr;
+            if (flipBottomSpan) flipBottomSpan.textContent = valStr;
 
-            if (topSpan)
-                topSpan.textContent = valStr;
-
-            if (flipTopSpan)
-                flipTopSpan.textContent = currentVal || valStr;
-
-            if (bottomSpan)
-                bottomSpan.textContent = currentVal || valStr;
-
-            if (flipBottomSpan)
-                flipBottomSpan.textContent = valStr;
+            if (cardEl.dataset.unit === 'seconds') {
+                if (topSpan) topSpan.style.color = '#ef4444';
+                if (flipTopSpan) flipTopSpan.style.color = '#ef4444';
+                if (bottomSpan) bottomSpan.style.color = '#ef4444';
+                if (flipBottomSpan) flipBottomSpan.style.color = '#ef4444';
+            }
 
             cardEl.classList.add('animate-flip');
 
             setTimeout(function () {
-
-                if (bottomSpan)
-                    bottomSpan.textContent = valStr;
-
-                if (flipTopSpan)
-                    flipTopSpan.textContent = valStr;
-
+                if (bottomSpan) bottomSpan.textContent = valStr;
+                if (flipTopSpan) flipTopSpan.textContent = valStr;
                 cardEl.classList.remove('animate-flip');
-
             }, 580);
         }
 
-
-        /* =========================================================
-           PARSE FLIP CLOCK TARGET DATE
-           ========================================================= */
-
         function parseFlipClockTargetDate(dateStr) {
-
             if (!dateStr) return NaN;
-
-            var m =
-                String(dateStr).match(
-                    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/
-                );
-
+            var m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
             if (m) {
-
                 return new Date(
                     parseInt(m[1], 10),
                     parseInt(m[2], 10) - 1,
@@ -925,93 +904,55 @@
                     parseInt(m[5], 10),
                     m[6] ? parseInt(m[6], 10) : 0
                 ).getTime();
-
             }
-
             return new Date(dateStr).getTime();
         }
 
-
-        /* =========================================================
-           INITIALIZE FLIP CLOCK
-           ========================================================= */
-
         function initFlipClock(clockEl) {
-
-            if (!clockEl || clockEl.dataset.initialized)
-                return;
-
+            if (!clockEl || clockEl.dataset.initialized) return;
             clockEl.dataset.initialized = 'true';
 
-            var cardHours =
-                clockEl.querySelector('[data-unit="hours"]');
-
-            var cardMinutes =
-                clockEl.querySelector('[data-unit="minutes"]');
-
-            var cardSeconds =
-                clockEl.querySelector('[data-unit="seconds"]');
-
+            var cardDays = clockEl.querySelector('[data-unit="days"]');
+            var cardHours = clockEl.querySelector('[data-unit="hours"]');
+            var cardMinutes = clockEl.querySelector('[data-unit="minutes"]');
+            var cardSeconds = clockEl.querySelector('[data-unit="seconds"]');
 
             function tick() {
-
-                var targetStr =
-                    clockEl.getAttribute('data-target-date');
-
+                var targetStr = clockEl.getAttribute('data-target-date');
                 if (!targetStr) {
-
-                    updateFlipCard(cardHours, '00');
-                    updateFlipCard(cardMinutes, '00');
-                    updateFlipCard(cardSeconds, '00');
-
+                    if (cardDays) updateFlipCard(cardDays, 0);
+                    updateFlipCard(cardHours, '00', 2);
+                    updateFlipCard(cardMinutes, '00', 2);
+                    updateFlipCard(cardSeconds, '00', 2);
                     return;
                 }
 
-                var targetTime =
-                    parseFlipClockTargetDate(targetStr);
+                var targetTime = parseFlipClockTargetDate(targetStr);
+                if (isNaN(targetTime)) return;
 
-                if (isNaN(targetTime))
-                    return;
-
-                var now =
-                    new Date().getTime();
-
-                var diff =
-                    targetTime - now;
+                var now = new Date().getTime();
+                var diff = targetTime - now;
 
                 if (diff <= 0) {
-
-                    updateFlipCard(cardHours, '00');
-                    updateFlipCard(cardMinutes, '00');
-                    updateFlipCard(cardSeconds, '00');
-
+                    if (cardDays) updateFlipCard(cardDays, 0);
+                    updateFlipCard(cardHours, '00', 2);
+                    updateFlipCard(cardMinutes, '00', 2);
+                    updateFlipCard(cardSeconds, '00', 2);
                     return;
                 }
 
-                var totalHours =
-                    Math.floor(
-                        diff / (1000 * 60 * 60)
-                    );
+                var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                var seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-                var minutes =
-                    Math.floor(
-                        (diff % (1000 * 60 * 60)) /
-                        (1000 * 60)
-                    );
-
-                var seconds =
-                    Math.floor(
-                        (diff % (1000 * 60)) /
-                        1000
-                    );
-
-                updateFlipCard(cardHours, totalHours);
-                updateFlipCard(cardMinutes, minutes);
-                updateFlipCard(cardSeconds, seconds);
+                if (cardDays) updateFlipCard(cardDays, days);
+                updateFlipCard(cardHours, hours, 2);
+                updateFlipCard(cardMinutes, minutes, 2);
+                updateFlipCard(cardSeconds, seconds, 2);
             }
 
             tick();
-
             setInterval(tick, 1000);
         }
 
