@@ -5,8 +5,7 @@
 {% block content %}
 <div class="mb-4">
     <a href="{% if user.is_authenticated %}{% if user.is_admin %}{% url 'admin_dashboard' %}{% elif user.is_organizer %}{% url 'organizer_dashboard' %}{% else %}{% url 'attendee_dashboard' %}{% endif %}{% else %}/{% endif %}"
-       onclick="if (document.referrer && document.referrer.indexOf(window.location.host) !== -1) { event.preventDefault(); history.back(); }"
-       class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
+              class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
         ← Back
     </a>
 </div>
@@ -15,6 +14,10 @@
     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Discover</p>
     <h1 class="text-3xl font-bold text-gray-900 display">Upcoming Events</h1>
 </div>
+
+{% if not search_query and not selected_category and not max_price and not start_date and not end_date %}
+    {% include "events/partials/hero_showcase.html" with featured_events=featured_events %}
+{% endif %}
 
 <div class="pb-12">
     <form method="get" class="hover-lift animate-fade-slide bg-white rounded-xl shadow-sm border border-indigo-100 p-5 mb-6">        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">

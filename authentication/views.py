@@ -1,14 +1,19 @@
+import json
+from decimal import Decimal
+
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_not_required, login_required
 from django.db.models import Sum, F, DecimalField
 from django.db.models.functions import Coalesce
-from django.contrib.auth.decorators import login_not_required
-from django.contrib.auth import authenticate, login, logout
-from django.contrib import messages
-from django.shortcuts import redirect, render, get_object_or_404
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from events.models import Category, Event, EventBooking, Ticket
+from events.exports import export_events_excel, export_events_pdf
 
-from .decorators import admin_required, role_required
+from .decorators import admin_required, organizer_required, role_required
 from .forms import UserRegistrationForm
 from .models import User, UserRole
 
@@ -44,7 +49,8 @@ def register_success(request):
 
 @login_not_required
 def home(request):
-    return render(request, 'authentication/home.html')
+    featured_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')[:5]
+    return render(request, 'authentication/home.html', {'featured_events': featured_events})
 
 
 @admin_required
@@ -64,7 +70,12 @@ def admin_dashboard(request):
         'attendees': attendees.order_by('username'),
         'events': Event.objects.select_related('organizer').order_by('date'),
         'tickets': Ticket.objects.select_related('attendee', 'event').order_by('-booked_at'),
-        'bookings': EventBooking.objects.select_related('user', 'event').order_by('-booked_at'),
+        'bookings': sorted(
+    list(Ticket.objects.select_related('attendee', 'event')) +
+    list(EventBooking.objects.select_related('user', 'event')),
+    key=lambda b: b.booked_at,
+    reverse=True,
+),
         'categories': Category.objects.order_by('name'),
         'upcoming_events': upcoming_events,
     }
@@ -128,13 +139,133 @@ def unauthorized(request):
 
 
 @role_required(UserRole.ORGANIZER)
+
+@organizer_required
 def organizer_dashboard(request):
-    upcoming_events = Event.objects.filter(
-        date__gte=timezone.now()
-    ).order_by('date')[:3]
-    return render(request, 'authentication/organizer_dashboard.html', {
+    """Dashboard showing ticket sales performance, revenue, and charts for the organizer's events."""
+    events = Event.objects.filter(organizer=request.user).order_by('-date')
+    upcoming_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')[:3]
+
+    total_events = events.count()
+    total_tickets_sold = sum(event.tickets_sold for event in events)
+    total_tickets_remaining = sum(event.tickets_remaining for event in events)
+    total_revenue = sum((event.revenue for event in events), Decimal('0.00'))
+
+    # Chronological order for chart rendering (oldest to newest)
+    chart_events = list(reversed(list(events)))
+    chart_labels = [e.title for e in chart_events]
+    chart_tickets_sold = [e.tickets_sold for e in chart_events]
+    chart_tickets_remaining = [e.tickets_remaining for e in chart_events]
+    chart_revenue = [float(e.revenue) for e in chart_events]
+
+    context = {
         'upcoming_events': upcoming_events,
+        'events': events,
+        'total_events': total_events,
+        'total_tickets_sold': total_tickets_sold,
+        'total_tickets_remaining': total_tickets_remaining,
+        'total_revenue': total_revenue,
+        'chart_labels_json': json.dumps(chart_labels),
+        'chart_tickets_sold_json': json.dumps(chart_tickets_sold),
+        'chart_tickets_remaining_json': json.dumps(chart_tickets_remaining),
+        'chart_revenue_json': json.dumps(chart_revenue),
+    }
+    return render(request, 'authentication/organizer_dashboard.html', context)
+
+
+@organizer_required
+def organizer_dashboard_stats_api(request):
+    """JSON API endpoint returning live statistics and chart data for the organizer's events."""
+    events = Event.objects.filter(organizer=request.user).order_by('-date')
+
+    upcoming_events = Event.objects.filter(
+    date__gte=timezone.now()
+    ).order_by('date')[:3]
+
+    total_events = events.count()
+    total_tickets_sold = sum(event.tickets_sold for event in events)
+    total_tickets_remaining = sum(event.tickets_remaining for event in events)
+    total_revenue = float(sum((event.revenue for event in events), Decimal('0.00')))
+
+    chart_events = list(reversed(list(events)))
+    chart_labels = [e.title for e in chart_events]
+    chart_tickets_sold = [e.tickets_sold for e in chart_events]
+    chart_tickets_remaining = [e.tickets_remaining for e in chart_events]
+    chart_revenue = [float(e.revenue) for e in chart_events]
+
+    events_data = [
+        {
+            'pk': e.pk,
+            'title': e.title,
+            'price': str(e.price),
+            'tickets_sold': e.tickets_sold,
+            'tickets_remaining': e.tickets_remaining,
+            'max_tickets': e.max_tickets,
+            'revenue': float(e.revenue),
+            'is_sold_out': e.is_sold_out,
+        }
+        for e in events
+    ]
+
+    return JsonResponse({
+        'total_events': total_events,
+        'total_tickets_sold': total_tickets_sold,
+        'total_tickets_remaining': total_tickets_remaining,
+        'total_revenue': total_revenue,
+        'chart_labels': chart_labels,
+        'chart_tickets_sold': chart_tickets_sold,
+        'chart_tickets_remaining': chart_tickets_remaining,
+        'chart_revenue': chart_revenue,
+        'events': events_data,
     })
+
+
+@login_required
+def organizer_export_excel(request):
+    """Download Excel (.xlsx) export of event analytics for organizers or admins."""
+    if not (request.user.is_organizer or request.user.is_admin):
+        return redirect('unauthorized')
+
+    if request.user.is_admin:
+        organizer_id = request.GET.get('organizer')
+        if organizer_id:
+            events = Event.objects.filter(organizer_id=organizer_id).order_by('-date')
+        else:
+            events = Event.objects.all().order_by('-date')
+    else:
+        events = Event.objects.filter(organizer=request.user).order_by('-date')
+
+    return export_events_excel(events, user=request.user)
+
+
+@login_required
+def organizer_export_pdf(request):
+    """Download styled PDF analytics report with revenue metrics, charts, and key stats."""
+    if not (request.user.is_organizer or request.user.is_admin):
+        return redirect('unauthorized')
+
+    if request.user.is_admin:
+        organizer_id = request.GET.get('organizer')
+        if organizer_id:
+            events = Event.objects.filter(organizer_id=organizer_id).order_by('-date')
+        else:
+            events = Event.objects.all().order_by('-date')
+    else:
+        events = Event.objects.filter(organizer=request.user).order_by('-date')
+
+    total_events = events.count()
+    total_tickets_sold = sum(event.tickets_sold for event in events)
+    total_tickets_remaining = sum(event.tickets_remaining for event in events)
+    total_revenue = sum((event.revenue for event in events), Decimal('0.00'))
+
+    return export_events_pdf(
+        events=events,
+        total_events=total_events,
+        total_tickets_sold=total_tickets_sold,
+        total_tickets_remaining=total_tickets_remaining,
+        total_revenue=total_revenue,
+        user=request.user,
+    )
 
 
 @role_required(UserRole.ATTENDEE)
@@ -258,6 +389,34 @@ def analytics_dashboard(request):
         events_qs = events_qs.filter(organizer_id=organizer_id)
     total_events = events_qs.count()
 
+    filtered_events = list(events_qs.select_related('organizer').annotate(
+        event_tickets_sold=Coalesce(Sum('tickets__quantity'), 0),
+        event_revenue=Coalesce(
+            Sum(
+                F('tickets__quantity') * F('price'),
+                output_field=DecimalField(),
+            ),
+            0,
+            output_field=DecimalField(),
+        ),
+    ).order_by('-date', 'title'))
+    total_rev_float = float(total_revenue) if total_revenue else 0.0
+    event_chart_data = [
+        {
+            'id': event.pk,
+            'title': event.title,
+            'organizer': event.organizer.username if event.organizer else '—',
+            'category': event.category_label,
+            'date': event.date.strftime('%b %d, %Y') if event.date else 'TBA',
+            'location': event.location or 'TBA',
+            'price': float(event.price),
+            'revenue': float(event.event_revenue),
+            'tickets': event.event_tickets_sold,
+            'percentage': round((float(event.event_revenue) / total_rev_float * 100), 1) if total_rev_float > 0 else 0,
+        }
+        for event in filtered_events
+    ]
+
     organizers = User.objects.filter(role=UserRole.ORGANIZER).order_by('username')
 
     context = {
@@ -265,6 +424,8 @@ def analytics_dashboard(request):
         'total_bookings': total_bookings,
         'total_tickets_sold': total_tickets_sold,
         'total_events': total_events,
+        'filtered_events': filtered_events,
+        'event_chart_data': event_chart_data,
         'organizers': organizers,
         'selected_organizer': organizer_id,
     }

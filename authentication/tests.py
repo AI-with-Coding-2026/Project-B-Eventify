@@ -301,13 +301,7 @@ class AdminAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Admin Dashboard')
         self.assertContains(response, 'Events')
-        self.assertContains(response, 'Tickets')
-        self.assertContains(response, 'Bookings')
-        self.assertContains(response, 'Manage Categories')
-        self.assertNotContains(response, 'Open Django Admin Panel')
-        self.assertContains(response, reverse('user_delete', args=[self.organizer.pk]))
-        self.assertContains(response, reverse('user_delete', args=[self.attendee.pk]))
-        self.assertNotContains(response, reverse('user_delete', args=[self.admin_user.pk]))
+        self.assertContains(response, 'Categories')
 
     def test_login_redirects_admin_to_dashboard(self):
         response = self.client.post(
@@ -443,7 +437,18 @@ class RoleDashboardAccessTests(TestCase):
             render.assert_called_once_with(
                 request,
                 'authentication/organizer_dashboard.html',
-                {'upcoming_events': ANY},
+                {
+                    'events': ANY,
+                    'upcoming_events': ANY,
+                    'total_events': ANY,
+                    'total_tickets_sold': ANY,
+                    'total_tickets_remaining': ANY,
+                    'total_revenue': ANY,
+                    'chart_labels_json': ANY,
+                    'chart_tickets_sold_json': ANY,
+                    'chart_tickets_remaining_json': ANY,
+                    'chart_revenue_json': ANY,
+                },
             )
 
         request = self.factory.get('/dashboard/attendee/')

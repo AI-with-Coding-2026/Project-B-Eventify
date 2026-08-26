@@ -13,6 +13,7 @@ INPUT_CLASSES = (
 TEXTAREA_CLASSES = INPUT_CLASSES + " min-h-[120px]"
 
 
+
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
