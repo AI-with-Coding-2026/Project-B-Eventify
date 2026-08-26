@@ -11,7 +11,7 @@
             <div class="hero-bg-slide absolute inset-0 transition-opacity duration-700 ease-in-out {% if forloop.first %}opacity-100 z-10{% else %}opacity-0 z-0{% endif %}"
                  data-slide-index="{{ forloop.counter0 }}">
                 {% if event.image %}
-                <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-full object-cover transform scale-105 transition-transform duration-7000 ease-out">
+                <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-full object-cover blur-[1.2px] scale-105 transform transition-transform duration-7000 ease-out">
                 {% else %}
                 <div class="w-full h-full bg-gradient-to-br from-indigo-950 via-gray-900 to-purple-950 flex items-center justify-center">
                     <svg class="w-24 h-24 text-indigo-500/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -19,9 +19,9 @@
                     </svg>
                 </div>
                 {% endif %}
-                <!-- Subtle, high-transparency gradient overlays allowing the picture to be bright and clear -->
-                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent"></div>
-                <div class="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent"></div>
+                <!-- Balanced gradient overlays for comfortable text readability -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent"></div>
             </div>
             {% endfor %}
 
@@ -32,8 +32,8 @@
                     <span id="hero-category" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-indigo-600 text-white shadow-sm">
                         {{ featured_events.0.category_label }}
                     </span>
-                    <span id="hero-date-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-md text-white border border-white/10">
-                        <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <span id="hero-date-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs text-gray-300 bg-black/40 backdrop-blur-sm border border-white/5">
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <span id="hero-date-text">{{ featured_events.0.date|date:"M d, Y · g:i A" }}</span>

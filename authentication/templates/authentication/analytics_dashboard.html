@@ -43,11 +43,34 @@
             <h2 class="text-lg font-semibold display">Event Performance</h2>
             <p class="text-sm text-gray-500">Choose all events or an individual event to inspect details</p>
         </div>
-        <div class="flex items-center gap-2">
-            <label for="event-selector" class="text-xs font-semibold text-gray-600 shrink-0">Select Event:</label>
-            <select id="event-selector" class="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                <option value="all">All Events (Overview)</option>
-            </select>
+        <!-- Animated Custom Pop-up Event Selector -->
+        <div class="relative flex items-center gap-2">
+            <span class="text-xs font-semibold text-gray-500 shrink-0">Select Event:</span>
+            
+            <div class="relative inline-block text-left">
+                <button type="button" id="event-popup-btn"
+                    class="inline-flex items-center justify-between gap-2 min-w-[200px] sm:min-w-[230px] px-3.5 py-1.5 text-xs font-semibold text-gray-800 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl shadow-2xs hover:shadow-xs transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 cursor-pointer">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span id="event-popup-dot" class="w-2.5 h-2.5 rounded-full bg-indigo-600 shrink-0"></span>
+                        <span id="event-popup-label" class="truncate font-bold text-gray-900">All Events (Overview)</span>
+                    </div>
+                    <svg id="event-popup-chevron" class="w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                    </svg>
+                </button>
+
+                <!-- Animated Pop-up Modal Menu -->
+                <div id="event-popup-menu"
+                    class="absolute right-0 top-full mt-2 w-72 max-w-[90vw] bg-white rounded-2xl border border-gray-100 shadow-xl p-2 z-50 transition-all duration-200 ease-out origin-top-right transform opacity-0 scale-95 -translate-y-2 pointer-events-none">
+                    <div class="px-2.5 py-1.5 border-b border-gray-100 mb-1 flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Select Event</span>
+                        <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{{ filtered_events|length }} Events</span>
+                    </div>
+                    <div id="event-popup-options" class="max-h-60 overflow-y-auto custom-scrollbar space-y-1 p-0.5">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -156,9 +179,15 @@
     (function () {
         const chartData = JSON.parse(document.getElementById('event-chart-data').textContent);
         const chartCanvas = document.getElementById('event-performance-chart');
-        const eventSelector = document.getElementById('event-selector');
         const legendContainer = document.getElementById('event-legend-bar');
         const detailsCard = document.getElementById('event-details-card');
+
+        const popupBtn = document.getElementById('event-popup-btn');
+        const popupMenu = document.getElementById('event-popup-menu');
+        const popupChevron = document.getElementById('event-popup-chevron');
+        const popupLabel = document.getElementById('event-popup-label');
+        const popupDot = document.getElementById('event-popup-dot');
+        const popupOptions = document.getElementById('event-popup-options');
 
         if (!chartData || chartData.length === 0 || !chartCanvas) return;
 
@@ -188,20 +217,104 @@
         const elLinkWrap = document.getElementById('detail-link-wrap');
         const elLink = document.getElementById('detail-link');
 
-        // Populate dropdown options
-        chartData.forEach(function (ev, idx) {
-            const opt = document.createElement('option');
-            opt.value = String(idx);
-            opt.textContent = ev.title;
-            eventSelector.appendChild(opt);
+        let isPopupOpen = false;
+
+        function toggleEventPopup(open) {
+            isPopupOpen = (open !== undefined) ? open : !isPopupOpen;
+            if (isPopupOpen) {
+                popupMenu.classList.remove('opacity-0', 'scale-95', '-translate-y-2', 'pointer-events-none');
+                popupMenu.classList.add('opacity-100', 'scale-100', 'translate-y-0', 'pointer-events-auto');
+                if (popupChevron) popupChevron.classList.add('rotate-180');
+            } else {
+                popupMenu.classList.add('opacity-0', 'scale-95', '-translate-y-2', 'pointer-events-none');
+                popupMenu.classList.remove('opacity-100', 'scale-100', 'translate-y-0', 'pointer-events-auto');
+                if (popupChevron) popupChevron.classList.remove('rotate-180');
+            }
+        }
+
+        if (popupBtn) {
+            popupBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                toggleEventPopup();
+            });
+        }
+
+        document.addEventListener('click', function (e) {
+            if (popupMenu && !popupMenu.contains(e.target) && popupBtn && !popupBtn.contains(e.target)) {
+                toggleEventPopup(false);
+            }
         });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && isPopupOpen) {
+                toggleEventPopup(false);
+            }
+        });
+
+        function renderPopupOptions(selectedVal) {
+            if (!popupOptions) return;
+            popupOptions.innerHTML = '';
+
+            // 1. "All Events (Overview)" option
+            const allBtn = document.createElement('button');
+            allBtn.type = 'button';
+            const isAllSelected = selectedVal === 'all';
+            allBtn.className = 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ' +
+                (isAllSelected ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-gray-700 hover:bg-gray-50');
+            allBtn.innerHTML = `
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 shrink-0"></span>
+                    <span class="truncate">All Events (Overview)</span>
+                </div>
+                ${isAllSelected ? '<svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>' : ''}
+            `;
+            allBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (popupLabel) popupLabel.textContent = 'All Events (Overview)';
+                if (popupDot) popupDot.style.backgroundColor = '#4f46e5';
+                updateDetails('all');
+                renderPopupOptions('all');
+                toggleEventPopup(false);
+            });
+            popupOptions.appendChild(allBtn);
+
+            // 2. Individual Event Options
+            chartData.forEach(function (ev, idx) {
+                const optBtn = document.createElement('button');
+                optBtn.type = 'button';
+                const isSelected = selectedVal === String(idx);
+                const color = palette[idx % palette.length];
+                optBtn.className = 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ' +
+                    (isSelected ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-gray-700 hover:bg-gray-50');
+                optBtn.innerHTML = `
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${color};"></span>
+                        <span class="truncate">${ev.title}</span>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[10px] text-gray-400 font-medium">$${Number(ev.revenue).toFixed(0)}</span>
+                        ${isSelected ? '<svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>' : ''}
+                    </div>
+                `;
+                optBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    if (popupLabel) popupLabel.textContent = ev.title;
+                    if (popupDot) popupDot.style.backgroundColor = color;
+                    updateDetails(String(idx));
+                    renderPopupOptions(String(idx));
+                    toggleEventPopup(false);
+                });
+                popupOptions.appendChild(optBtn);
+            });
+        }
 
         // Populate reference legend pills under the chart
         chartData.forEach(function (ev, idx) {
             const color = palette[idx % palette.length];
-            const pill = document.createElement('div');
+            const pill = document.createElement('button');
+            pill.type = 'button';
             pill.id = 'legend-pill-' + idx;
-            pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs text-gray-700 bg-gray-50 border border-gray-200 transition';
+            pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition cursor-pointer';
 
             const dot = document.createElement('span');
             dot.className = 'w-2 h-2 rounded-full shrink-0';
@@ -212,6 +325,13 @@
             label.className = 'truncate max-w-[130px] font-medium';
             label.textContent = ev.title;
             pill.appendChild(label);
+
+            pill.addEventListener('click', function () {
+                if (popupLabel) popupLabel.textContent = ev.title;
+                if (popupDot) popupDot.style.backgroundColor = color;
+                updateDetails(String(idx));
+                renderPopupOptions(String(idx));
+            });
 
             legendContainer.appendChild(pill);
         });
@@ -288,16 +408,16 @@
                 const pill = document.getElementById('legend-pill-' + i);
                 if (!pill) return;
                 if (val === 'all') {
-                    pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs text-gray-700 bg-gray-50 border border-gray-200 transition';
+                    pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition cursor-pointer';
                 } else if (i === Number(val)) {
-                    pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-300 shadow-xs transition';
+                    pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-300 shadow-xs transition cursor-pointer';
                 } else {
-                    pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs text-gray-400 bg-gray-50/60 border border-gray-100 opacity-50 transition';
+                    pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs text-gray-400 bg-gray-50/60 border border-gray-100 opacity-50 transition cursor-pointer';
                 }
             });
         }
 
-        // Initialize Chart.js with hover tooltips disabled and click selection enabled
+        // Initialize Chart.js
         const chart = new Chart(chartCanvas, {
             type: 'doughnut',
             data: {
@@ -322,49 +442,160 @@
                 onClick: function (event, elements) {
                     if (elements && elements.length > 0) {
                         const clickedIndex = String(elements[0].index);
-                        eventSelector.value = clickedIndex;
+                        const ev = chartData[elements[0].index];
+                        if (ev && popupLabel && popupDot) {
+                            popupLabel.textContent = ev.title;
+                            popupDot.style.backgroundColor = palette[elements[0].index % palette.length];
+                        }
                         updateDetails(clickedIndex);
+                        renderPopupOptions(clickedIndex);
                     }
                 }
             }
         });
 
-        eventSelector.addEventListener('change', function () {
-            updateDetails(this.value);
-        });
-
-        // Initialize with "all" overview
+        // Initialize options & overview
+        renderPopupOptions('all');
         updateDetails('all');
     })();
 </script>
 {% endif %}
 
-<div class="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100" data-datagrid-wrapper>
-    <div class="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center mb-4">
-        <div>
-            <h2 class="text-lg font-semibold display">Filtered Events</h2>
-            <span class="text-sm text-gray-500"><strong data-datagrid-count>{{ total_events }}</strong> event{{ total_events|pluralize }}</span>
+<div class="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[420px]" data-datagrid-wrapper>
+    <div class="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center mb-5">
+        <!-- Left Side: Title & Search Bar (Left-aligned) -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900 display">Filtered Events</h2>
+                <span class="text-xs text-gray-500"><strong data-datagrid-count>{{ total_events }}</strong> event{{ total_events|pluralize }}</span>
+            </div>
+
+            <!-- Search Bar on the Left -->
+            <div class="relative w-full sm:w-72">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                    </svg>
+                </span>
+                <input
+                    type="search"
+                    data-datagrid-search
+                    placeholder="Search events..."
+                    class="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-gray-50/80 hover:bg-gray-50 focus:bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition-all duration-200 shadow-2xs"
+                >
+            </div>
         </div>
-        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <label>
-                <span class="sr-only">Search in column</span>
-                <select data-datagrid-search-column
-                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 sm:w-36">
-                    <option value="-1">All columns</option>
-                    <option value="0">Event</option>
-                    <option value="1">Organizer</option>
-                    <option value="2">Category</option>
-                    <option value="3">Date</option>
-                    <option value="4">Location</option>
-                    <option value="5">Price</option>
-                    <option value="6">Revenue</option>
-                </select>
-            </label>
-            <label class="w-full sm:w-64">
-                <span class="sr-only">Search filtered events</span>
-                <input type="search" data-datagrid-search placeholder="Search events..."
-                    class="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-            </label>
+
+        <!-- Right Side: Filter Toggle with Animated Popover -->
+        <div class="relative inline-block text-left self-end md:self-auto" id="filterPopupContainer">
+            <button
+                type="button"
+                id="filterPopupToggleBtn"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 shadow-2xs hover:shadow-xs transition duration-200 cursor-pointer"
+                aria-expanded="false"
+                aria-haspopup="true"
+            >
+                <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/>
+                </svg>
+                <span>Filter</span>
+                <span id="activeFilterBadge" class="hidden w-2 h-2 rounded-full bg-indigo-600"></span>
+                <svg class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200" id="filterPopupChevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                </svg>
+            </button>
+
+            <!-- Animated Filter Popover Modal -->
+            <div
+                id="filterPopupMenu"
+                class="hidden absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 z-50 transform origin-top-right transition-all duration-200 opacity-0 scale-95 -translate-y-2"
+            >
+                <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/>
+                        </svg>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-900">Filter Options</h4>
+                    </div>
+                    <button type="button" id="resetFiltersBtn" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer">
+                        Reset All
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Column Target Filter with Animated Pop-up -->
+                    <div id="col-wrapper" class="relative z-30">
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Search Target Column:</label>
+                        <select data-datagrid-search-column class="hidden">
+                            <option value="-1" selected>All columns</option>
+                            <option value="0">Event Title</option>
+                            <option value="1">Organizer</option>
+                            <option value="2">Category</option>
+                            <option value="3">Date</option>
+                            <option value="4">Location</option>
+                            <option value="5">Price</option>
+                            <option value="6">Revenue</option>
+                        </select>
+
+                        <div class="relative">
+                            <button type="button" id="col-popup-btn"
+                                class="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-gray-700 bg-gray-50/90 hover:bg-gray-100/80 border border-gray-200 rounded-xl transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 cursor-pointer">
+                                <span id="col-popup-label" class="truncate font-semibold text-gray-800">All columns</span>
+                                <svg id="col-popup-chevron" class="w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </button>
+
+                            <!-- Animated Column Sub-Popup -->
+                            <div id="col-popup-menu"
+                                class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl border border-gray-100 shadow-2xl p-1.5 z-50 transition-all duration-200 ease-out origin-top transform opacity-0 scale-95 -translate-y-1 ring-1 ring-black/5">
+                                <div id="col-popup-options" class="max-h-40 overflow-y-auto overscroll-contain custom-scrollbar space-y-0.5">
+                                    <!-- Column Options rendered by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category Quick Filter with Animated Pop-up -->
+                    {% if categories %}
+                    <div id="cat-wrapper" class="relative z-20">
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Category:</label>
+                        <select id="categoryQuickFilter" class="hidden">
+                            <option value="" selected>All Categories</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <div class="relative">
+                            <button type="button" id="cat-popup-btn"
+                                class="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-gray-700 bg-gray-50/90 hover:bg-gray-100/80 border border-gray-200 rounded-xl transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 cursor-pointer">
+                                <span id="cat-popup-label" class="truncate font-semibold text-gray-800">All Categories</span>
+                                <svg id="cat-popup-chevron" class="w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </button>
+
+                            <!-- Animated Category Sub-Popup -->
+                            <div id="cat-popup-menu"
+                                class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl border border-gray-100 shadow-2xl p-1.5 z-50 transition-all duration-200 ease-out origin-top transform opacity-0 scale-95 -translate-y-1 ring-1 ring-black/5">
+                                <div id="cat-popup-options" class="max-h-40 overflow-y-auto overscroll-contain custom-scrollbar space-y-0.5">
+                                    <!-- Category Options rendered by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Apply Button -->
+                    <div class="relative z-10 pt-1">
+                        <button type="button" id="closeFilterPopupBtn"
+                            class="w-full inline-flex items-center justify-center py-2.5 px-4 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer">
+                            Apply & Close
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -455,43 +686,313 @@
 
 <script>
 (function() {
-    function initExportDropdown() {
-        const btn = document.getElementById('exportDropdownBtn');
-        const menu = document.getElementById('exportDropdownMenu');
-        const chevron = document.getElementById('exportDropdownChevron');
-        const container = document.getElementById('exportDropdownContainer');
+    function initDropdowns() {
+        // Export Dropdown
+        const expBtn = document.getElementById('exportDropdownBtn');
+        const expMenu = document.getElementById('exportDropdownMenu');
+        const expChevron = document.getElementById('exportDropdownChevron');
+        const expContainer = document.getElementById('exportDropdownContainer');
 
-        if (!btn || !menu) return;
+        if (expBtn && expMenu) {
+            expBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isHidden = expMenu.classList.contains('hidden');
+                if (isHidden) {
+                    expMenu.classList.remove('hidden');
+                    if (expChevron) expChevron.classList.add('rotate-180');
+                    expBtn.setAttribute('aria-expanded', 'true');
+                } else {
+                    expMenu.classList.add('hidden');
+                    if (expChevron) expChevron.classList.remove('rotate-180');
+                    expBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
 
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const isHidden = menu.classList.contains('hidden');
-            if (isHidden) {
-                menu.classList.remove('hidden');
-                if (chevron) chevron.classList.add('rotate-180');
-                btn.setAttribute('aria-expanded', 'true');
-            } else {
-                menu.classList.add('hidden');
-                if (chevron) chevron.classList.remove('rotate-180');
-                btn.setAttribute('aria-expanded', 'false');
+        // Filter Popup with Animation
+        const filterBtn = document.getElementById('filterPopupToggleBtn');
+        const filterMenu = document.getElementById('filterPopupMenu');
+        const filterChevron = document.getElementById('filterPopupChevron');
+        const filterContainer = document.getElementById('filterPopupContainer');
+        const closeFilterBtn = document.getElementById('closeFilterPopupBtn');
+        const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+        const columnSelect = document.querySelector('[data-datagrid-search-column]');
+        const searchInput = document.querySelector('[data-datagrid-search]');
+        const categoryFilter = document.getElementById('categoryQuickFilter');
+        const activeFilterBadge = document.getElementById('activeFilterBadge');
+
+        // 1. Column Sub-Popup Logic
+        const colWrapper = document.getElementById('col-wrapper');
+        const catWrapper = document.getElementById('cat-wrapper');
+        const colBtn = document.getElementById('col-popup-btn');
+        const colMenu = document.getElementById('col-popup-menu');
+        const colChevron = document.getElementById('col-popup-chevron');
+        const colLabel = document.getElementById('col-popup-label');
+        const colOptionsContainer = document.getElementById('col-popup-options');
+
+        const colOptions = [
+            { value: '-1', label: 'All columns' },
+            { value: '0', label: 'Event Title' },
+            { value: '1', label: 'Organizer' },
+            { value: '2', label: 'Category' },
+            { value: '3', label: 'Date' },
+            { value: '4', label: 'Location' },
+            { value: '5', label: 'Price' },
+            { value: '6', label: 'Revenue' }
+        ];
+
+        function openColSubMenu() {
+            if (!colMenu) return;
+            if (colWrapper) colWrapper.style.zIndex = '50';
+            if (catWrapper) catWrapper.style.zIndex = '20';
+            colMenu.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                colMenu.classList.remove('opacity-0', 'scale-95', '-translate-y-1');
+                colMenu.classList.add('opacity-100', 'scale-100', 'translate-y-0');
+            });
+            if (colChevron) colChevron.classList.add('rotate-180');
+        }
+
+        function closeColSubMenu() {
+            if (!colMenu || colMenu.classList.contains('hidden')) return;
+            colMenu.classList.remove('opacity-100', 'scale-100', 'translate-y-0');
+            colMenu.classList.add('opacity-0', 'scale-95', '-translate-y-1');
+            setTimeout(() => {
+                colMenu.classList.add('hidden');
+                if (colWrapper) colWrapper.style.zIndex = '30';
+            }, 180);
+            if (colChevron) colChevron.classList.remove('rotate-180');
+        }
+
+        function renderColOptions(selectedVal) {
+            if (!colOptionsContainer) return;
+            colOptionsContainer.innerHTML = '';
+            colOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                const isSelected = String(selectedVal) === String(opt.value);
+                btn.className = 'w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ' +
+                    (isSelected ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-gray-700 bg-white hover:bg-indigo-50/70');
+                btn.innerHTML = `
+                    <span>${opt.label}</span>
+                    ${isSelected ? '<svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>' : ''}
+                `;
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (colLabel) colLabel.textContent = opt.label;
+                    if (columnSelect) {
+                        columnSelect.value = opt.value;
+                        columnSelect.dispatchEvent(new Event('change'));
+                    }
+                    renderColOptions(opt.value);
+                    closeColSubMenu();
+                });
+                colOptionsContainer.appendChild(btn);
+            });
+        }
+
+        if (colBtn && colMenu) {
+            colBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeCatSubMenu();
+                if (colMenu.classList.contains('hidden')) {
+                    openColSubMenu();
+                } else {
+                    closeColSubMenu();
+                }
+            });
+        }
+
+        // 2. Category Sub-Popup Logic
+        const catBtn = document.getElementById('cat-popup-btn');
+        const catMenu = document.getElementById('cat-popup-menu');
+        const catChevron = document.getElementById('cat-popup-chevron');
+        const catLabel = document.getElementById('cat-popup-label');
+        const catOptionsContainer = document.getElementById('cat-popup-options');
+
+        function openCatSubMenu() {
+            if (!catMenu) return;
+            if (catWrapper) catWrapper.style.zIndex = '50';
+            if (colWrapper) colWrapper.style.zIndex = '20';
+            catMenu.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                catMenu.classList.remove('opacity-0', 'scale-95', '-translate-y-1');
+                catMenu.classList.add('opacity-100', 'scale-100', 'translate-y-0');
+            });
+            if (catChevron) catChevron.classList.add('rotate-180');
+        }
+
+        function closeCatSubMenu() {
+            if (!catMenu || catMenu.classList.contains('hidden')) return;
+            catMenu.classList.remove('opacity-100', 'scale-100', 'translate-y-0');
+            catMenu.classList.add('opacity-0', 'scale-95', '-translate-y-1');
+            setTimeout(() => {
+                catMenu.classList.add('hidden');
+                if (catWrapper) catWrapper.style.zIndex = '20';
+            }, 180);
+            if (catChevron) catChevron.classList.remove('rotate-180');
+        }
+
+        function renderCatOptions(selectedVal) {
+            if (!catOptionsContainer || !categoryFilter) return;
+            catOptionsContainer.innerHTML = '';
+            
+            Array.from(categoryFilter.options).forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                const isSelected = String(selectedVal) === String(opt.value);
+                btn.className = 'w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ' +
+                    (isSelected ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-gray-700 bg-white hover:bg-indigo-50/70');
+                btn.innerHTML = `
+                    <span>${opt.textContent}</span>
+                    ${isSelected ? '<svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>' : ''}
+                `;
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (catLabel) catLabel.textContent = opt.textContent;
+                    if (categoryFilter) {
+                        categoryFilter.value = opt.value;
+                        categoryFilter.dispatchEvent(new Event('change'));
+                    }
+                    renderCatOptions(opt.value);
+                    closeCatSubMenu();
+                });
+                catOptionsContainer.appendChild(btn);
+            });
+        }
+
+        if (catBtn && catMenu) {
+            catBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeColSubMenu();
+                if (catMenu.classList.contains('hidden')) {
+                    openCatSubMenu();
+                } else {
+                    closeCatSubMenu();
+                }
+            });
+        }
+
+        renderColOptions('-1');
+        if (categoryFilter) renderCatOptions('');
+
+        function openFilterMenu() {
+            if (!filterMenu) return;
+            filterMenu.classList.remove('hidden');
+            // Trigger transition
+            requestAnimationFrame(() => {
+                filterMenu.classList.remove('opacity-0', 'scale-95', '-translate-y-2');
+                filterMenu.classList.add('opacity-100', 'scale-100', 'translate-y-0');
+            });
+            if (filterChevron) filterChevron.classList.add('rotate-180');
+            filterBtn.setAttribute('aria-expanded', 'true');
+        }
+
+        function closeFilterMenu() {
+            if (!filterMenu) return;
+            closeColSubMenu();
+            closeCatSubMenu();
+            filterMenu.classList.remove('opacity-100', 'scale-100', 'translate-y-0');
+            filterMenu.classList.add('opacity-0', 'scale-95', '-translate-y-2');
+            setTimeout(() => {
+                filterMenu.classList.add('hidden');
+            }, 200);
+            if (filterChevron) filterChevron.classList.remove('rotate-180');
+            filterBtn.setAttribute('aria-expanded', 'false');
+        }
+
+        function updateFilterBadge() {
+            const hasColumnFilter = columnSelect && columnSelect.value !== '-1';
+            const hasCategoryFilter = categoryFilter && categoryFilter.value !== '';
+            if (activeFilterBadge) {
+                if (hasColumnFilter || hasCategoryFilter) {
+                    activeFilterBadge.classList.remove('hidden');
+                } else {
+                    activeFilterBadge.classList.add('hidden');
+                }
             }
-        });
+        }
 
+        if (filterBtn && filterMenu) {
+            filterBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (filterMenu.classList.contains('hidden')) {
+                    openFilterMenu();
+                } else {
+                    closeFilterMenu();
+                }
+            });
+
+            if (closeFilterBtn) {
+                closeFilterBtn.addEventListener('click', closeFilterMenu);
+            }
+
+            if (columnSelect) {
+                columnSelect.addEventListener('change', function() {
+                    updateFilterBadge();
+                    if (searchInput) {
+                        searchInput.dispatchEvent(new Event('input'));
+                    }
+                });
+            }
+
+            if (categoryFilter) {
+                categoryFilter.addEventListener('change', function() {
+                    updateFilterBadge();
+                    if (searchInput) {
+                        searchInput.value = categoryFilter.value;
+                        if (columnSelect) {
+                            columnSelect.value = categoryFilter.value ? '2' : '-1';
+                            if (colLabel) {
+                                const found = colOptions.find(o => o.value === columnSelect.value);
+                                if (found) colLabel.textContent = found.label;
+                                renderColOptions(columnSelect.value);
+                            }
+                        }
+                        searchInput.dispatchEvent(new Event('input'));
+                    }
+                });
+            }
+
+            if (resetFiltersBtn) {
+                resetFiltersBtn.addEventListener('click', function() {
+                    if (columnSelect) columnSelect.value = '-1';
+                    if (categoryFilter) categoryFilter.value = '';
+                    if (colLabel) colLabel.textContent = 'All columns';
+                    if (catLabel) catLabel.textContent = 'All Categories';
+                    renderColOptions('-1');
+                    if (categoryFilter) renderCatOptions('');
+                    if (searchInput) {
+                        searchInput.value = '';
+                        searchInput.dispatchEvent(new Event('input'));
+                    }
+                    updateFilterBadge();
+                    closeFilterMenu();
+                });
+            }
+        }
+
+        // Click outside closes dropdowns
         document.addEventListener('click', function(e) {
-            if (!menu.classList.contains('hidden')) {
-                if (container && !container.contains(e.target)) {
-                    menu.classList.add('hidden');
-                    if (chevron) chevron.classList.remove('rotate-180');
-                    btn.setAttribute('aria-expanded', 'false');
+            if (expMenu && !expMenu.classList.contains('hidden')) {
+                if (expContainer && !expContainer.contains(e.target)) {
+                    expMenu.classList.add('hidden');
+                    if (expChevron) expChevron.classList.remove('rotate-180');
+                    if (expBtn) expBtn.setAttribute('aria-expanded', 'false');
+                }
+            }
+            if (filterMenu && !filterMenu.classList.contains('hidden')) {
+                if (filterContainer && !filterContainer.contains(e.target)) {
+                    closeFilterMenu();
                 }
             }
         });
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initExportDropdown);
+        document.addEventListener('DOMContentLoaded', initDropdowns);
     } else {
-        initExportDropdown();
+        initDropdowns();
     }
 })();
 </script>

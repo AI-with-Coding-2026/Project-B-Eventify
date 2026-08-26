@@ -368,34 +368,48 @@ def my_bookings(request):
 
 @role_required(UserRole.ATTENDEE)
 def cancel_booking(request, pk):
-    ticket = get_object_or_404(Ticket, pk=pk, attendee=request.user)
+    ticket = Ticket.objects.filter(pk=pk, attendee=request.user).first()
+    legacy_booking = None
+    if not ticket:
+        legacy_booking = EventBooking.objects.filter(pk=pk, user=request.user).first()
+        if not legacy_booking:
+            messages.info(request, 'This booking has already been cancelled.')
+            return redirect('attendee_dashboard')
 
     if request.method == 'POST':
-        try:
-            cancel_quantity = int(request.POST.get('cancel_quantity', ticket.quantity))
-        except (TypeError, ValueError):
-            cancel_quantity = ticket.quantity
+        if ticket:
+            try:
+                cancel_quantity = int(request.POST.get('cancel_quantity', ticket.quantity))
+            except (TypeError, ValueError):
+                cancel_quantity = ticket.quantity
 
-        if cancel_quantity < 1 or cancel_quantity > ticket.quantity:
-            messages.error(request, 'Invalid ticket quantity to cancel.')
-            return redirect('cancel_booking', pk=pk)
+            if cancel_quantity < 1 or cancel_quantity > ticket.quantity:
+                messages.error(request, 'Invalid ticket quantity to cancel.')
+                return redirect('cancel_booking', pk=pk)
 
-        if cancel_quantity >= ticket.quantity:
-            ticket.delete()
+            if cancel_quantity >= ticket.quantity:
+                EventBooking.objects.filter(user=ticket.attendee, event=ticket.event).delete()
+                ticket.delete()
+                messages.success(request, 'Booking cancelled successfully.')
+            else:
+                ticket.quantity -= cancel_quantity
+                ticket.save()
+                messages.success(
+                    request,
+                    f'Cancelled {cancel_quantity} ticket(s). {ticket.quantity} remaining.',
+                )
+        elif legacy_booking:
+            Ticket.objects.filter(attendee=legacy_booking.user, event=legacy_booking.event).delete()
+            legacy_booking.delete()
             messages.success(request, 'Booking cancelled successfully.')
-        else:
-            ticket.quantity -= cancel_quantity
-            ticket.save()
-            messages.success(
-                request,
-                f'Cancelled {cancel_quantity} ticket(s). {ticket.quantity} remaining.',
-            )
 
-        return redirect('my_bookings')
+        return redirect('attendee_dashboard')
 
+    booking_obj = ticket if ticket else legacy_booking
+    quantity = getattr(booking_obj, 'quantity', 1)
     return render(request, 'authentication/booking_confirm_cancel.html', {
-        'ticket': ticket,
-        'quantity_range': range(1, ticket.quantity + 1),
+        'ticket': booking_obj,
+        'quantity_range': range(1, quantity + 1),
     })
 
 @admin_required
@@ -452,6 +466,7 @@ def analytics_dashboard(request):
     ]
 
     organizers = User.objects.filter(role=UserRole.ORGANIZER).order_by('username')
+    categories = sorted({event.category_label for event in filtered_events if event.category_label})
 
     context = {
         'total_revenue': total_revenue,
@@ -461,6 +476,7 @@ def analytics_dashboard(request):
         'filtered_events': filtered_events,
         'event_chart_data': event_chart_data,
         'organizers': organizers,
+        'categories': categories,
         'selected_organizer': organizer_id,
     }
     return render(request, 'authentication/analytics_dashboard.html', context)

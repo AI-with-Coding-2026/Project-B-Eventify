@@ -382,7 +382,7 @@ class AttendeeTicketBookingTests(TestCase):
             {'quantity': 2},
         )
 
-        self.assertRedirects(response, reverse('my_bookings'))
+        self.assertRedirects(response, reverse('attendee_dashboard'))
         ticket = Ticket.objects.get(
             event=self.event,
             attendee=self.attendee,

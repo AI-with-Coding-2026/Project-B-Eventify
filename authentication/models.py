@@ -45,6 +45,14 @@ class User(AbstractUser):
         default=UserRole.ATTENDEE,
     )
 
+    # Firebase Cloud Messaging token for push notifications
+    fcm_token = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="FCM Token"
+    )
+
     objects = UserManager()
 
     def __str__(self):

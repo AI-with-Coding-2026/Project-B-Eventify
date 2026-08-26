@@ -3,22 +3,22 @@
 {% block title %}My Events | Eventify{% endblock %}
 
 {% block content %}
-<div class="mb-4">
-    <a href="{% url 'organizer_dashboard' %}"
-        class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
-        ← Back to Dashboard
-    </a>
-</div>
-
-<div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-8 sm:py-10 mb-8">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div class="ml-4 sm:ml-6">
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Organizer</p>
-            <h1 class="text-3xl font-bold text-gray-900 display">My Events</h1>
-        </div>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 animate-fade-slide mb-8">
+    <div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 display">My Events</h1>
+        <p class="text-sm text-gray-500 mt-1">Manage and monitor all the events you've created.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
         <a href="{% url 'event_create' %}"
-            class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition shrink-0">
+            class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm transition shrink-0">
             + Create Event
+        </a>
+        <a href="{% url 'organizer_dashboard' %}"
+            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 shadow-2xs hover:shadow-xs transition duration-200 group">
+            <svg class="w-3.5 h-3.5 text-indigo-500 group-hover:-translate-x-0.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+            </svg>
+            <span>Back to Dashboard</span>
         </a>
     </div>
 </div>

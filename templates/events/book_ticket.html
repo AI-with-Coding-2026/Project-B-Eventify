@@ -3,99 +3,159 @@
 {% block title %}Book Ticket | Eventify{% endblock %}
 
 {% block content %}
-<div class="mb-4">
-    <a href="{% url 'event_detail' event.pk %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition">
-        ← Back to Event
-    </a>
-</div>
+<div class="max-w-4xl mx-auto space-y-6">
 
-<div class="page-hero border-b border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 -mx-4 px-4 py-10 mb-8">
-    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Booking</p>
-    <h1 class="text-3xl font-bold text-gray-900 display">Book Ticket</h1>
-</div>
-
-<div class="pb-12">
-    <div class="mx-auto max-w-3xl px-4">
-        <div class="rounded-2xl border border-indigo-100 bg-white shadow-sm overflow-hidden mb-6">
-            <div class="bg-indigo-50 px-6 py-8 sm:px-8">
-                <div class="grid gap-6 sm:grid-cols-2 sm:items-start">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-900 display mb-3">{{ event.title }}</h2>
-                        <div class="grid sm:grid-cols-2 gap-4 text-sm text-gray-600">
-                            <p><strong class="text-gray-900">Date:</strong> {{ event.date|date:"M d, Y — g:i A" }}</p>
-                            <p><strong class="text-gray-900">Price per ticket:</strong> ${{ event.price }}</p>
-                            <p><strong class="text-gray-900">Category:</strong> {{ event.category_label }}</p>
-                            <p><strong class="text-gray-900">Tickets available:</strong> {{ event.tickets_remaining }} / {{ event.max_tickets }}</p>
-                        </div>
-                        {% if event.description %}
-                        <div class="mt-4 p-4 bg-white rounded-lg border border-indigo-100">
-                            <p class="text-gray-700 whitespace-pre-line">{{ event.description }}</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="sm:justify-self-end w-full">
-                        {% if event.image %}
-                        <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-56 sm:h-64 object-cover rounded-xl bg-gray-50">
-                        {% else %}
-                        <div class="w-full h-56 sm:h-64 rounded-xl bg-white/70 flex items-center justify-center text-indigo-400 text-sm">
-                            No image available
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            {% if event.is_sold_out %}
-            <div class="p-6 sm:p-8">
-                <p class="rounded-lg border border-red-200 bg-red-50 p-4 font-semibold text-red-700">This event is sold out.</p>
-            </div>
-            {% else %}
-            <form method="post" class="p-6 sm:p-8">
-                {% csrf_token %}
-                <div class="mb-6">
-                    <label for="quantity" class="block text-sm font-semibold text-gray-900 mb-2">
-                        How many tickets would you like to book?
-                    </label>
-                    <input
-                        id="quantity"
-                        type="number"
-                        name="quantity"
-                        value="1"
-                        min="1"
-                        max="{{ event.tickets_remaining }}"
-                        data-unit-price="{{ event.price }}"
-                        required
-                        class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                    >
-                    <p class="mt-2 text-xs text-gray-500">Maximum: {{ event.tickets_remaining }} ticket{{ event.tickets_remaining|pluralize }}</p>
-                </div>
-
-                <div class="mb-6 rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3">
-                    <p class="text-sm text-gray-700">
-                        <strong class="text-gray-900">Total:</strong>
-                        $<span id="booking-total">{{ event.price }}</span>
-                    </p>
-                </div>
-
-                <div class="flex flex-col gap-3 sm:flex-row">
-                    <button
-                        type="submit"
-                        class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200"
-                    >
-                        Confirm Booking
-                    </button>
-                    <a
-                        href="{% url 'event_detail' event.pk %}"
-                        class="inline-flex items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 px-6 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100"
-                    >
-                        Cancel
-                    </a>
-                </div>
-            </form>
-            {% endif %}
-        </div>
+    <!-- Back Button -->
+    <div>
+        <a href="{% url 'event_detail' event.pk %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 shadow-2xs hover:shadow-xs transition duration-200 group">
+            <svg class="w-3.5 h-3.5 text-indigo-500 group-hover:-translate-x-0.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+            </svg>
+            <span>Back to Event</span>
+        </a>
     </div>
+
+    <!-- Main Card Container (Matching screenshot) -->
+    <div class="rounded-3xl border border-indigo-100/80 bg-[#f0f4ff]/70 p-6 sm:p-8 shadow-sm">
+
+        <!-- Top Section: 2 Columns (Info & 2x2 Grid on Left, Image Card on Right) -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+
+            <!-- Left: Title & 2x2 Metric Cards (7 cols) -->
+            <div class="md:col-span-7 flex flex-col justify-between space-y-4">
+                <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-tight display">
+                    {{ event.title }}
+                </h1>
+
+                <!-- 2x2 Metric Cards Grid -->
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <!-- Date Card -->
+                    <div class="rounded-2xl border border-indigo-100/60 bg-white p-3.5 sm:p-4 shadow-2xs flex flex-col justify-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">DATE</span>
+                        <span class="text-xs sm:text-sm font-bold text-gray-900 mt-1 truncate">{{ event.date|date:"M d, Y · g:i A" }}</span>
+                    </div>
+
+                    <!-- Price Card -->
+                    <div class="rounded-2xl border border-indigo-100/60 bg-white p-3.5 sm:p-4 shadow-2xs flex flex-col justify-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">PRICE</span>
+                        <span class="text-xs sm:text-sm font-bold text-indigo-600 mt-1">
+                            {% if event.price > 0 %}${{ event.price }}{% else %}Free{% endif %}
+                        </span>
+                    </div>
+
+                    <!-- Category Card -->
+                    <div class="rounded-2xl border border-indigo-100/60 bg-white p-3.5 sm:p-4 shadow-2xs flex flex-col justify-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">CATEGORY</span>
+                        <span class="text-xs sm:text-sm font-bold text-gray-900 mt-1 truncate">{{ event.category_label }}</span>
+                    </div>
+
+                    <!-- Tickets Available Card -->
+                    <div class="rounded-2xl border border-indigo-100/60 bg-white p-3.5 sm:p-4 shadow-2xs flex flex-col justify-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">TICKETS AVAILABLE</span>
+                        <span class="text-xs sm:text-sm font-bold text-gray-900 mt-1">
+                            {{ event.tickets_remaining }} / {{ event.max_tickets }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Image Card (5 cols) -->
+            <div class="md:col-span-5 flex">
+                <div class="w-full h-full min-h-[190px] rounded-2xl overflow-hidden border border-gray-900/10 bg-gray-950 flex items-center justify-center shadow-sm">
+                    {% if event.image %}
+                    <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-indigo-950 text-indigo-400 text-sm font-bold">
+                        {{ event.title|slice:":2"|upper }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Middle Section: EVENT HIGHLIGHTS & DETAILS (Bulleted Box) -->
+        <div class="mt-6 pt-2">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-indigo-700 mb-2.5">
+                EVENT HIGHLIGHTS & DETAILS
+            </h2>
+
+            <div class="rounded-2xl border border-indigo-100/60 bg-white p-4 sm:p-5 shadow-2xs">
+                {% if event.description_bullets %}
+                <ul class="space-y-3">
+                    {% for bullet in event.description_bullets %}
+                    <li class="flex items-start gap-3 text-sm text-gray-700 leading-relaxed">
+                        <span class="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-0.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                        </span>
+                        <span class="flex-1">{{ bullet }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-sm text-gray-400 italic">No description details provided for this event.</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom Section: Booking Form Card -->
+    <div class="rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-sm">
+        {% if event.is_sold_out %}
+        <div class="rounded-2xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">
+            This event is sold out.
+        </div>
+        {% else %}
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-4">
+                <label for="quantity" class="block font-bold text-gray-900 text-base mb-2">
+                    How many tickets would you like to book?
+                </label>
+                <input
+                    id="quantity"
+                    type="number"
+                    name="quantity"
+                    value="1"
+                    min="1"
+                    max="{{ event.tickets_remaining }}"
+                    data-unit-price="{{ event.price }}"
+                    required
+                    class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition"
+                >
+                <p class="mt-1.5 text-xs text-gray-500">Maximum: {{ event.tickets_remaining }} ticket{{ event.tickets_remaining|pluralize }}</p>
+            </div>
+
+            <!-- Total Banner -->
+            <div class="rounded-xl bg-indigo-50/80 border border-indigo-100/80 px-4 py-3.5 mb-6">
+                <p class="text-sm font-bold text-gray-900">
+                    Total: <span class="font-black text-gray-900">$<span id="booking-total">{{ event.price }}</span></span>
+                </p>
+            </div>
+
+            <!-- Buttons Row -->
+            <div class="flex flex-wrap items-center gap-3">
+                <button
+                    type="submit"
+                    class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200"
+                >
+                    Confirm Booking
+                </button>
+                <a
+                    href="{% url 'event_detail' event.pk %}"
+                    class="inline-flex items-center justify-center rounded-xl bg-indigo-50 px-6 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition"
+                >
+                    Cancel
+                </a>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+
 </div>
+
 <script>
     (function () {
         var quantityInput = document.getElementById('quantity');
