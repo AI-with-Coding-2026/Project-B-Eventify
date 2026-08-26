@@ -488,11 +488,11 @@ def export_events_pdf(events, total_events, total_tickets_sold, total_tickets_re
         d_bar.add(Rect(0, 0, 430, 135, fillColor=colors.HexColor("#F8FAFC"), strokeColor=colors.HexColor("#E2E8F0"), strokeWidth=1, rx=6, ry=6))
         d_bar.add(String(12, 120, "Tickets Sold vs Capacity", fontName='Helvetica-Bold', fontSize=8, fillColor=colors.HexColor("#0F172A")))
 
-        # Y-Axis Label (Purple, top of Y axis - moved left)
-        d_bar.add(String(6, 100, "Tickets", fontName='Helvetica-Bold', fontSize=7, fillColor=color_primary))
+        # Y-Axis Label (Lighter purple, top of Y axis - moved left)
+        d_bar.add(String(6, 100, "Tickets", fontName='Helvetica-Bold', fontSize=7, fillColor=colors.HexColor("#6366F1")))
 
-        # X-Axis Label (Purple, right end of X axis)
-        d_bar.add(String(316, 14, "Events", fontName='Helvetica-Bold', fontSize=7, fillColor=color_primary))
+        # X-Axis Label (Lighter purple, right end of X axis)
+        d_bar.add(String(316, 14, "Events", fontName='Helvetica-Bold', fontSize=7, fillColor=colors.HexColor("#6366F1")))
 
         bc = VerticalBarChart()
         bc.x = 46
