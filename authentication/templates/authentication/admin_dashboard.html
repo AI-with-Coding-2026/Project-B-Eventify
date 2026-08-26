@@ -71,13 +71,14 @@
                                         class="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline">
                                         {{ event.title }}
                                     </a>
+
                                     {% if event.description %}
-                                    <p class="mt-1 max-w-xs truncate text-xs text-gray-500">{{
-                                        event.description|truncatewords:12 }}</p>
+                                        <p class="mt-1 max-w-xs truncate text-xs text-gray-500">{{ event.description|truncatewords:12 }}</p>
                                     {% endif %}
                                 </div>
                             </div>
                         </td>
+
                         <td class="whitespace-nowrap px-4 py-4">{{ event.date|date:"M d, Y" }}</td>
                         <td class="whitespace-nowrap px-4 py-4">{{ event.location|default:"TBA" }}</td>
                         <td class="whitespace-nowrap px-4 py-4">${{ event.price }}</td>
@@ -138,6 +139,7 @@
                                 </div>
                             </div>
                         </td>
+
                         <td class="whitespace-nowrap px-4 py-4">{{ event.organizer|default:"-" }}</td>
                         <td class="whitespace-nowrap px-4 py-4">{{ event.date|date:"M d, Y" }}</td>
                         <td class="whitespace-nowrap px-4 py-4">{{ event.location|default:"TBA" }}</td>
