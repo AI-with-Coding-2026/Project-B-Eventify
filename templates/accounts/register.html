@@ -29,7 +29,31 @@
 
                 {{ field }}
 
-                {% if field.help_text %}
+                {% if field.name == 'password1' %}
+                <div id="password-requirements" class="mt-2.5 p-3 bg-gray-50/80 rounded-xl border border-gray-100 text-xs space-y-1.5 transition-all">
+                    <div class="font-semibold text-gray-700 text-[11px] uppercase tracking-wider mb-1.5">Password Requirements:</div>
+                    <div class="pwd-req flex items-center gap-2 text-gray-500 transition-colors duration-200" id="req-length">
+                        <span class="req-icon flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 transition-all">○</span>
+                        <span class="req-text">At least 8 characters</span>
+                    </div>
+                    <div class="pwd-req flex items-center gap-2 text-gray-500 transition-colors duration-200" id="req-upper">
+                        <span class="req-icon flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 transition-all">○</span>
+                        <span class="req-text">At least one uppercase (capitalized) letter (A-Z)</span>
+                    </div>
+                    <div class="pwd-req flex items-center gap-2 text-gray-500 transition-colors duration-200" id="req-lower">
+                        <span class="req-icon flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 transition-all">○</span>
+                        <span class="req-text">At least one lowercase letter (a-z)</span>
+                    </div>
+                    <div class="pwd-req flex items-center gap-2 text-gray-500 transition-colors duration-200" id="req-number">
+                        <span class="req-icon flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 transition-all">○</span>
+                        <span class="req-text">At least one number (0-9)</span>
+                    </div>
+                    <div class="pwd-req flex items-center gap-2 text-gray-500 transition-colors duration-200" id="req-special">
+                        <span class="req-icon flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 transition-all">○</span>
+                        <span class="req-text">At least one special character (!@#$%^&*...)</span>
+                    </div>
+                </div>
+                {% elif field.help_text %}
                     <div class="help-text">
                         {{ field.help_text|safe }}
                     </div>
@@ -56,4 +80,71 @@
         </a>
     </p>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordInput = document.getElementById('id_password1') || document.querySelector('input[type="password"]');
+    if (!passwordInput) return;
+
+    const reqs = {
+        length: {
+            el: document.getElementById('req-length'),
+            test: val => val.length >= 8
+        },
+        upper: {
+            el: document.getElementById('req-upper'),
+            test: val => /[A-Z]/.test(val)
+        },
+        lower: {
+            el: document.getElementById('req-lower'),
+            test: val => /[a-z]/.test(val)
+        },
+        number: {
+            el: document.getElementById('req-number'),
+            test: val => /[0-9]/.test(val)
+        },
+        special: {
+            el: document.getElementById('req-special'),
+            test: val => /[^A-Za-z0-9]/.test(val)
+        }
+    };
+
+    function updateRequirements() {
+        const val = passwordInput.value;
+        const isTyping = val.length > 0;
+
+        for (const [key, rule] of Object.entries(reqs)) {
+            if (!rule.el) continue;
+            const icon = rule.el.querySelector('.req-icon');
+            const passed = rule.test(val);
+
+            if (!isTyping) {
+                // Neutral state (not red when empty)
+                rule.el.className = 'pwd-req flex items-center gap-2 text-gray-500 transition-colors duration-200';
+                if (icon) {
+                    icon.className = 'req-icon flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 transition-all';
+                    icon.textContent = '○';
+                }
+            } else if (passed) {
+                // Green / Valid state
+                rule.el.className = 'pwd-req flex items-center gap-2 text-emerald-600 font-medium transition-colors duration-200';
+                if (icon) {
+                    icon.className = 'req-icon flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 transition-all';
+                    icon.textContent = '✓';
+                }
+            } else {
+                // Red / Invalid state (active only when user starts writing)
+                rule.el.className = 'pwd-req flex items-center gap-2 text-rose-600 font-medium transition-colors duration-200';
+                if (icon) {
+                    icon.className = 'req-icon flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 transition-all';
+                    icon.textContent = '✕';
+                }
+            }
+        }
+    }
+
+    passwordInput.addEventListener('input', updateRequirements);
+    updateRequirements();
+});
+</script>
 {% endblock %}

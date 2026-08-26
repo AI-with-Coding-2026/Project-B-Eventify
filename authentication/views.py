@@ -18,6 +18,7 @@ from django.views.decorators.http import require_POST
 
 from events.models import Category, Event, EventBooking, EventPublishStatus, Ticket
 from events.exports import export_events_excel, export_events_pdf
+from events.emails import send_booking_cancellation_email
 
 from .decorators import admin_required, organizer_required, role_required
 from .emails import send_verification_email
@@ -545,6 +546,8 @@ def cancel_booking(request, pk):
 
     if request.method == 'POST':
         if ticket:
+            event = ticket.event
+            attendee = ticket.attendee
             try:
                 cancel_quantity = int(request.POST.get('cancel_quantity', ticket.quantity))
             except (TypeError, ValueError):
@@ -557,18 +560,33 @@ def cancel_booking(request, pk):
             if cancel_quantity >= ticket.quantity:
                 EventBooking.objects.filter(user=ticket.attendee, event=ticket.event).delete()
                 ticket.delete()
+                remaining = 0
                 messages.success(request, 'Booking cancelled successfully.')
             else:
                 ticket.quantity -= cancel_quantity
                 ticket.save()
+                remaining = ticket.quantity
                 messages.success(
                     request,
                     f'Cancelled {cancel_quantity} ticket(s). {ticket.quantity} remaining.',
                 )
+
+            try:
+                send_booking_cancellation_email(attendee, event, cancel_quantity, remaining)
+            except Exception as e:
+                print(f"Failed to send booking cancellation email: {e}")
+
         elif legacy_booking:
+            event = legacy_booking.event
+            attendee = legacy_booking.user
+            quantity = getattr(legacy_booking, 'quantity', 1)
             Ticket.objects.filter(attendee=legacy_booking.user, event=legacy_booking.event).delete()
             legacy_booking.delete()
             messages.success(request, 'Booking cancelled successfully.')
+            try:
+                send_booking_cancellation_email(attendee, event, quantity, 0)
+            except Exception as e:
+                print(f"Failed to send booking cancellation email: {e}")
 
         return redirect('attendee_dashboard')
 

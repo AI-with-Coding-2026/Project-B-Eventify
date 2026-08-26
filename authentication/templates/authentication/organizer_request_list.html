@@ -69,12 +69,12 @@
                         <td class="py-3.5 pr-4 text-gray-600">{{ organizer.email|default:"—" }}</td>
                         <td class="py-3.5 pr-4">
                             {% if organizer.is_approved_organizer %}
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Approved
+                            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                                Approved
                             </span>
                             {% else %}
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 border border-rose-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> Denied
+                            <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 border border-rose-200">
+                                Denied
                             </span>
                             {% endif %}
                         </td>

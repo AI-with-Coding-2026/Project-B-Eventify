@@ -49,8 +49,8 @@ def send_verification_email(user, verification_url):
     api_key = os.environ.get("BREVO_API_KEY")
     if not api_key:
         print("==================================================")
-        print("⚠️ BREVO_API_KEY not set. Verification link:")
-        print(f"🔗 {verification_url}")
+        print("[WARNING] BREVO_API_KEY not set. Verification link:")
+        print(f"Verification URL: {verification_url}")
         print("==================================================")
         return None
 
