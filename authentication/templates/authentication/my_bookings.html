@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}My Bookings | Eventify{% endblock %}
+{% block title %}Past Bookings | Eventify{% endblock %}
 
 {% block content %}
 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -14,255 +14,83 @@
     </a>
 </div>
 
-<div class="page-hero -mx-4 px-4 py-6 mb-6 bg-white">
+<div class="page-hero -mx-4 px-4 py-6 mb-6 bg-white border-b border-gray-100">
     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 mb-2">Attendee</p>
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 class="text-3xl font-bold text-gray-900 display">My Bookings</h1>
-        <span class="inline-flex rounded-full bg-indigo-100 px-4 py-1 text-sm font-semibold text-indigo-700">
-            {{ total_bookings }} booking{{ total_bookings|pluralize }}
+        <h1 class="text-3xl font-bold text-gray-900 display">Past Bookings</h1>
+        <span class="inline-flex rounded-full bg-gray-100 px-4 py-1 text-sm font-semibold text-gray-700">
+            {{ past_bookings|length }} past event{{ past_bookings|length|pluralize }}
         </span>
     </div>
 </div>
 
-<!-- Container for both sections -->
-<div class="space-y-6">
+<div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 animate-fade-slide">
+    <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+        <h2 class="text-xl font-bold text-gray-900 display flex items-center gap-2">
+            <span>Booking History</span>
+        </h2>
+        <span class="text-xs font-medium text-gray-500">{{ past_bookings|length }} past booking{{ past_bookings|length|pluralize }}</span>
+    </div>
 
-    <!-- Upcoming Bookings Section -->
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
-            <h2 class="text-lg font-semibold text-gray-900 display flex items-center gap-2">
-                <span>Upcoming Bookings</span>
-                <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
-                    {{ upcoming_bookings|length }}
-                </span>
-            </h2>
-
-            {% if upcoming_bookings %}
-            {% with next_b=next_booking|default:upcoming_bookings.0 %}
-            <div id="next-event-badge" class="inline-flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 text-indigo-900 text-xs shadow-sm">
-                <div class="text-left">
-                    <div class="text-xs">
-                        <span class="font-semibold text-indigo-600">Next Event:</span>
-                        <strong id="next-event-title" class="font-bold text-gray-900 ml-1">{{ next_b.event.title }}</strong>
-                    </div>
-                    <div id="next-event-date" class="text-[11px] text-gray-500 font-normal">
-                        {{ next_b.event.date|date:"M d, Y - g:i A" }}
-                    </div>
-                </div>
-
-                <div class="shrink-0 ml-1">
-                    {% include "events/partials/flip_countdown.html" with target_date=next_b.event.date|date:'Y-m-d\TH:i:s' %}
-                </div>
-            </div>
-
-            <script id="upcoming-bookings-data" type="application/json">
-            [
-                {% for booking in upcoming_bookings %}
-                {
-                    "title": "{{ booking.event.title|escapejs }}",
-                    "target_date": "{{ booking.event.date|date:'Y-m-d\TH:i:s' }}",
-                    "formatted_date": "{{ booking.event.date|date:'M d, Y - g:i A' }}"
-                }{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ]
-            </script>
-            {% endwith %}
-            {% endif %}
-        </div>
-
-        <div class="space-y-3">
-            {% for booking in upcoming_bookings %}
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 transition hover:bg-white hover:shadow-sm gap-4">
-                <div class="flex-1">
-                    <h3 class="font-semibold text-gray-900 text-base mb-1">{{ booking.event.title }}</h3>
-                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-                        <span class="inline-flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                            </svg>
-                            {{ booking.event.date|date:"M d, Y - h:i A" }}
-                        </span>
-                        {% if booking.event.location %}
-                        <span class="inline-flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 0115 0z"/>
-                            </svg>
-                            {{ booking.event.location }}
-                        </span>
-                        {% endif %}
-                        <span class="inline-flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
-                            </svg>
-                            {{ booking.quantity|default:1 }} ticket{{ booking.quantity|default:1|pluralize }}
-                        </span>
-                        {% if booking.event.price %}
-                        <span class="inline-flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            ${{ booking.event.price }}
-                        </span>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                <!-- الحاوية اليمينية بعد التنظيف وإزالة التكرار -->
-                <div class="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {{ booking.get_status_display|default:"Confirmed" }}
+    <div class="space-y-4">
+        {% for booking in past_bookings %}
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 bg-gray-50/70 hover:bg-gray-50 rounded-2xl border border-gray-100 transition gap-4">
+            <div class="flex-1 min-w-0">
+                <h3 class="font-bold text-gray-800 text-base mb-2 truncate">{{ booking.event.title }}</h3>
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-gray-500">
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                        </svg>
+                        {{ booking.event.date|date:"M d, Y - g:i A" }}
                     </span>
-                    <p class="text-xs text-gray-400">Booked {{ booking.booked_at|date:"M d, Y" }}</p>
-                    <div class="flex items-center gap-3 mt-1">
-                        <a href="{% url 'event_detail' booking.event.pk %}"
-                            class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs transition">
-                            View Event
-                        </a>
-                        <a href="{% url 'cancel_booking' booking.pk %}" class="text-xs font-semibold text-red-600 hover:underline mt-1 inline-block">
-                            Cancel Booking
-                        </a>
-                    </div>
+                    {% if booking.event.location %}
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 0115 0z"/>
+                        </svg>
+                        {{ booking.event.location }}
+                    </span>
+                    {% endif %}
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
+                        </svg>
+                        {{ booking.quantity|default:1 }} ticket{{ booking.quantity|default:1|pluralize }}
+                    </span>
+                    {% if booking.event.price %}
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        ${{ booking.event.price }}
+                    </span>
+                    {% endif %}
                 </div>
             </div>
-            {% empty %}
-            <div class="text-center py-8 border-2 border-dashed border-gray-100 rounded-xl animate-fade-slide">
-                <div class="empty-state-icon mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                    </svg>
-                </div>
-                <p class="text-gray-400 mb-2">You have no upcoming bookings.</p>
-                <a href="{% url 'event_list' %}" class="text-sm font-semibold text-indigo-600">
-                    Browse events to book
+            <div class="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 shrink-0">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-700">
+                    Past Event
+                </span>
+                <p class="text-xs text-gray-400">Booked {{ booking.booked_at|date:"M d, Y" }}</p>
+                <a href="{% url 'event_detail' booking.event.pk %}"
+                    class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs transition mt-1">
+                    View Event
                 </a>
             </div>
-            {% endfor %}
         </div>
-    </div>
-
-    <!-- Past Bookings Section -->
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-indigo-100">
-        <h2 class="text-lg font-semibold text-gray-900 display mb-4 flex items-center justify-between">
-            <span>Past Bookings</span>
-            <span class="text-xs font-medium text-gray-500">{{ past_bookings|length }} past</span>
-        </h2>
-        <div class="space-y-4">
-            {% for booking in past_bookings %}
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50/50 rounded-xl border border-gray-100 opacity-80 transition hover:opacity-100 gap-4">
-                <div class="flex-1">
-                    <h3 class="font-medium text-gray-700 text-base mb-1">{{ booking.event.title }}</h3>
-                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-                        <span class="inline-flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                            </svg>
-                            {{ booking.event.date|date:"M d, Y" }}
-                        </span>
-                        {% if booking.event.location %}
-                        <span class="inline-flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 0115 0z"/>
-                            </svg>
-                            {{ booking.event.location }}
-                        </span>
-                        {% endif %}
-                        <span class="inline-flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
-                            </svg>
-                            {{ booking.quantity|default:1 }} ticket{{ booking.quantity|default:1|pluralize }}
-                        </span>
-                    </div>
-                </div>
-                <div class="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
-                        Past Event
-                    </span>
-                    <p class="text-xs text-gray-400">Booked {{ booking.booked_at|date:"M d, Y" }}</p>
-                    <a href="{% url 'event_detail' booking.event.pk %}"
-                        class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs transition">
-                        View Event
-                    </a>
-                </div>
+        {% empty %}
+        <div class="text-center py-10 border-2 border-dashed border-gray-100 rounded-2xl animate-fade-slide">
+            <div class="empty-state-icon mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+                </svg>
             </div>
-            {% empty %}
-            <div class="text-center py-6 border-2 border-dashed border-gray-100 rounded-xl animate-fade-slide">
-                <div class="empty-state-icon mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
-                    </svg>
-                </div>
-                <p class="text-gray-400">No past bookings found.</p>
-            </div>
-            {% endfor %}
+            <p class="text-gray-500 font-medium mb-1">No past bookings found.</p>
+            <p class="text-gray-400 text-xs">Events you have attended in the past will show up here.</p>
         </div>
+        {% endfor %}
     </div>
-
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    var rawData = document.getElementById('upcoming-bookings-data');
-    if (!rawData) return;
-    try {
-        var bookings = JSON.parse(rawData.textContent);
-        if (!bookings || bookings.length === 0) return;
-
-        var currentIndex = -1;
-        var clockEl = document.querySelector('.flip-clock-wrapper');
-        var titleEl = document.getElementById('next-event-title');
-        var dateEl = document.getElementById('next-event-date');
-
-        function getBookingTimestamp(dateStr) {
-            if (typeof parseFlipClockTargetDate === 'function') {
-                return parseFlipClockTargetDate(dateStr);
-            }
-            return new Date(dateStr).getTime();
-        }
-
-        function findNextActiveIndex() {
-            var now = new Date().getTime();
-            for (var i = 0; i < bookings.length; i++) {
-                var bTime = getBookingTimestamp(bookings[i].target_date);
-                if (bTime > now) {
-                    return i;
-                }
-            }
-            return bookings.length > 0 ? 0 : -1;
-        }
-
-        function switchToBooking(index) {
-            if (index < 0 || index >= bookings.length) return;
-            currentIndex = index;
-            var b = bookings[currentIndex];
-            if (titleEl) titleEl.textContent = b.title;
-            if (dateEl) dateEl.textContent = b.formatted_date;
-            if (clockEl) {
-                clockEl.setAttribute('data-target-date', b.target_date);
-            }
-        }
-
-        var initialIndex = findNextActiveIndex();
-        if (initialIndex !== -1) {
-            switchToBooking(initialIndex);
-        }
-
-        setInterval(function () {
-            var now = new Date().getTime();
-            if (currentIndex >= 0 && currentIndex < bookings.length) {
-                var currentTarget = getBookingTimestamp(bookings[currentIndex].target_date);
-                if (now >= currentTarget) {
-                    var nextIndex = findNextActiveIndex();
-                    switchToBooking(nextIndex);
-                }
-            }
-        }, 1000);
-
-    } catch (e) {
-        console.error('Error in upcoming bookings auto-switch script:', e);
-    }
-});
-</script>
 {% endblock %}

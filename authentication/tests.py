@@ -534,7 +534,12 @@ class RoleDashboardAccessTests(TestCase):
             render.assert_called_once_with(
                 request,
                 'authentication/attendee_dashboard.html',
-                {'upcoming_events': ANY},
+                {
+                    'featured_events': ANY,
+                    'upcoming_events': ANY,
+                    'upcoming_bookings': ANY,
+                    'next_booking': ANY,
+                },
             )
 
     def test_organizer_and_attendee_remain_isolated(self):
