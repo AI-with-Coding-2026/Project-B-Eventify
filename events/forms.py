@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django import forms
 from django.utils import timezone
 
@@ -52,11 +54,20 @@ class CategoryForm(forms.ModelForm):
 
 
 class EventForm(forms.ModelForm):
+    categories = forms.ModelMultipleChoiceField(
+        queryset=Category.objects.all(),
+        required=True,
+        widget=forms.SelectMultiple(
+            attrs={
+                "class": INPUT_CLASSES,
+                "size": "5",
+            }
+        ),
+    )
 
     max_tickets = forms.IntegerField(
         required=False,
         min_value=1,
-        initial=1,
         widget=forms.NumberInput(
             attrs={
                 "class": INPUT_CLASSES,
@@ -65,16 +76,12 @@ class EventForm(forms.ModelForm):
         ),
     )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Dynamically merge hardcoded + admin-created categories.
-        self.fields['category'].choices = Event.get_all_category_choices()
-
     date = forms.DateTimeField(
         widget=forms.DateTimeInput(
             attrs={
                 "type": "datetime-local",
                 "class": INPUT_CLASSES,
+                "id": "id_date",
             },
             format="%Y-%m-%dT%H:%M",
         ),
@@ -91,8 +98,7 @@ class EventForm(forms.ModelForm):
             "date",
             "price",
             "max_tickets",
-            "category",
-            "custom_category",
+            "categories",
             "image",
         ]
 
@@ -116,17 +122,6 @@ class EventForm(forms.ModelForm):
                     "min": "0",
                 }
             ),
-            "category": forms.Select(
-                attrs={
-                    "class": INPUT_CLASSES,
-                }
-            ),
-            "custom_category": forms.TextInput(
-                attrs={
-                    "class": INPUT_CLASSES,
-                    "placeholder": "Enter your category",
-                }
-            ),
             "image": forms.ClearableFileInput(
                 attrs={
                     "class": INPUT_CLASSES,
@@ -141,27 +136,13 @@ class EventForm(forms.ModelForm):
 
     def clean_date(self):
         date = self.cleaned_data.get("date")
-        if date and not self.instance.pk and date < timezone.now():
-            raise forms.ValidationError("Event date and time cannot be in the past.")
+        if date and not self.instance.pk:
+            now = timezone.now()
+            if date < now:
+                raise forms.ValidationError("Event date and time cannot be in the past.")
+            if date > now + timedelta(days=183):
+                raise forms.ValidationError("Event date cannot be more than 6 months in the future.")
         return date
-
-    def clean(self):
-        cleaned_data = super().clean()
-        category = cleaned_data.get("category")
-        custom_category = (cleaned_data.get("custom_category") or "").strip()
-
-        if category == "other":
-            if not custom_category:
-                self.add_error(
-                    "custom_category",
-                    "Please enter a category name.",
-                )
-            else:
-                cleaned_data["custom_category"] = custom_category
-        else:
-            cleaned_data["custom_category"] = ""
-
-        return cleaned_data
 
     def clean_image(self):
         image = self.cleaned_data.get("image")

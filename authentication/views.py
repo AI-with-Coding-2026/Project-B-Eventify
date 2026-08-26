@@ -120,8 +120,6 @@ def logout_view(request):
 def unauthorized(request):
     return render(request, 'authentication/unauthorized.html', status=403)
 
-@role_required(UserRole.ORGANIZER)
-
 @organizer_required
 def organizer_dashboard(request):
     """Dashboard showing ticket sales performance, revenue, and charts for the organizer's events."""

@@ -5,9 +5,13 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Sum
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from authentication.decorators import (
     admin_required,
@@ -20,6 +24,7 @@ from authentication.models import UserRole
 from .emails import send_booking_confirmation_email
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
 from .models import Category, Event, EventBooking, Ticket
+from .serializers import EventSerializer
 
 
 def _user_can_manage_event(user, event):
@@ -118,20 +123,27 @@ def _resolve_back_navigation(request):
     return referer, 'Back'
 
 
-def event_list(request):
-    events = Event.objects.all().order_by('date')
+def _get_filtered_events(request):
+    events = Event.objects.filter(
+        date__gte=timezone.now()
+    ).prefetch_related("categories")
 
-    search_query = request.GET.get('search', '')
-    selected_category = request.GET.get('category', '')
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    max_price = request.GET.get('max_price', '')
+    search_query = request.GET.get("search", "").strip()
+    selected_category = request.GET.get("category", "")
+    location = request.GET.get("location", "").strip()
+    max_price = request.GET.get("max_price", "")
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+    sort = request.GET.get("sort", "date")
 
     if search_query:
         events = events.filter(title__icontains=search_query)
 
     if selected_category:
-        events = events.filter(category=selected_category)
+        events = events.filter(categories__slug=selected_category)
+
+    if location:
+        events = events.filter(location__icontains=location)
 
     if max_price:
         events = events.filter(price__lte=max_price)
@@ -143,6 +155,25 @@ def event_list(request):
             events = events.filter(date__date__gte=start_date)
         if end_date:
             events = events.filter(date__date__lte=end_date)
+
+    if sort == "date_desc":
+        events = events.order_by("-date")
+    else:
+        events = events.order_by("date")
+
+    return events.distinct()
+
+
+def event_list(request):
+    events = _get_filtered_events(request)
+
+    search_query = request.GET.get('search', '').strip()
+    selected_category = request.GET.get('category', '')
+    location = request.GET.get('location', '').strip()
+    sort = request.GET.get('sort', 'date')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    max_price = request.GET.get('max_price', '')
 
     paginator = Paginator(events, 6)
     page_number = request.GET.get('page')
@@ -156,15 +187,65 @@ def event_list(request):
         'events': page_obj,
         'page_obj': page_obj,
         'paginator': paginator,
-        'categories': Event.get_all_category_choices(),
+        'categories': Category.objects.all(),
         'search_query': search_query,
         'selected_category': selected_category,
+        'location': location,
+        'sort': sort,
         'max_price': max_price,
         'start_date': start_date,
         'end_date': end_date,
         'filter_query_string': filter_query_string,
     }
     return render(request, 'events/event_list.html', context)
+
+
+@api_view(["GET"])
+def event_api_list(request):
+    events = _get_filtered_events(request)
+    serializer = EventSerializer(
+        events,
+        many=True,
+        context={"request": request},
+    )
+    return Response(serializer.data)
+
+
+def event_page_api(request):
+    events = _get_filtered_events(request)
+
+    paginator = Paginator(events, 6)
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    grid_html = render_to_string(
+        "events/partials/event_page_grid.html",
+        {
+            "events": page_obj,
+            "user": request.user,
+        },
+        request=request,
+    )
+
+    list_html = render_to_string(
+        "events/partials/event_page_list.html",
+        {
+            "events": page_obj,
+            "user": request.user,
+        },
+        request=request,
+    )
+
+    return JsonResponse({
+        "grid_html": grid_html,
+        "list_html": list_html,
+        "has_next": page_obj.has_next(),
+        "next_page": (
+            page_obj.next_page_number()
+            if page_obj.has_next()
+            else None
+        ),
+    })
 
 
 def event_detail(request, pk):
@@ -292,6 +373,7 @@ def event_create(request):
             event = form.save(commit=False)
             event.organizer = request.user
             event.save()
+            form.save_m2m()
             messages.success(request, 'Event created successfully.')
             if request.user.is_admin:
                 return redirect('admin_dashboard')

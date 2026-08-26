@@ -383,7 +383,13 @@
             {% else %}
                 <a href="{% url 'home' %}" class="flex items-center hover:opacity-90 transition">
             {% endif %}
-                <img src="{% static 'images/eventify_no_background.png' %}" alt="Eventify" class="h-16 w-auto object-contain">
+                <div class="rounded-xl bg-white px-3 py-1.5 shadow-sm">
+                    <img
+                        src="{% static 'images/eventify_no_background.png' %}"
+                        alt="Eventify"
+                        class="h-12 w-auto object-contain"
+                    >
+                </div>
             </a>
             <button class="md:hidden text-2xl focus:outline-none" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
                 ☰

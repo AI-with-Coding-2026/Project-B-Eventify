@@ -25,7 +25,13 @@
                             <p><strong class="text-gray-900">Date:</strong> {{ event.date|date:"M d, Y — g:i A" }}</p>
                             <p><strong class="text-gray-900">Price per ticket:</strong> ${{ event.price }}</p>
                             <p><strong class="text-gray-900">Category:</strong> {{ event.category_label }}</p>
-                            <p><strong class="text-gray-900">Tickets available:</strong> {{ event.tickets_remaining }} / {{ event.max_tickets }}</p>
+                            <p>
+                                <strong class="text-gray-900">
+                                    Tickets available:
+                                </strong>
+                                {{ event.tickets_remaining }}
+                                Available Ticket{{ event.tickets_remaining|pluralize }}
+                            </p>
                         </div>
                         {% if event.description %}
                         <div class="mt-4 p-4 bg-white rounded-lg border border-indigo-100">
@@ -37,8 +43,8 @@
                         {% if event.image %}
                         <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-56 sm:h-64 object-cover rounded-xl bg-gray-50">
                         {% else %}
-                        <div class="w-full h-56 sm:h-64 rounded-xl bg-white/70 flex items-center justify-center text-indigo-400 text-sm">
-                            No image available
+                        <div class="w-full h-56 sm:h-64 rounded-xl overflow-hidden">
+                            {% include "events/partials/event_image_placeholder.html" %}
                         </div>
                         {% endif %}
                     </div>

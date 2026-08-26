@@ -47,10 +47,23 @@ def render_actions_menu(obj):
 
 
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('title', 'organizer', 'date', 'price', 'category', 'actions_menu')
-    list_filter = ('category', 'date')
+    list_display = (
+        'title',
+        'organizer',
+        'date',
+        'price',
+        'category_names',
+        'actions_menu',
+    )
+    list_filter = ('categories', 'date')
     search_fields = ('title', 'organizer__username', 'location')
     actions = ['delete_selected_events']
+
+    @admin.display(description="Categories")
+    def category_names(self, obj):
+        return ", ".join(
+            obj.categories.values_list("name", flat=True)
+        )
 
     @admin.display(description='')
     def actions_menu(self, obj):

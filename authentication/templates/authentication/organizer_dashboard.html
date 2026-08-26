@@ -284,8 +284,8 @@
                         class="w-full h-32 object-cover"
                     >
                 {% else %}
-                    <div class="w-full h-32 bg-indigo-50 flex items-center justify-center text-indigo-400 text-sm">
-                        No image
+                    <div class="w-full h-32">
+                        {% include "events/partials/event_image_placeholder.html" %}
                     </div>
                 {% endif %}
 

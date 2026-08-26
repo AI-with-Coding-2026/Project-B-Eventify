@@ -45,13 +45,6 @@ class Category(models.Model):
 
 
 class Event(models.Model):
-    CATEGORY_CHOICES = [
-        ("music", "Music"),
-        ("sports", "Sports"),
-        ("tech", "Tech"),
-        ("arts", "Arts"),
-        ("other", "Other"),
-    ]
 
     organizer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -87,49 +80,20 @@ class Event(models.Model):
         default=1,
     )
 
-    category = models.CharField(
-        max_length=120,
-        default="other",
-    )
-
-    custom_category = models.CharField(
-        max_length=80,
+    categories = models.ManyToManyField(
+        Category,
+        related_name="events",
         blank=True,
-        verbose_name="Custom category",
+        db_table="event_category",
     )
-
-    def __str__(self):
-        return self.title
-
-    @classmethod
-    def get_all_category_choices(cls):
-        """Return merged category choices: hardcoded defaults + admin-created.
-
-        Admin-created Category entries are appended after the built-in
-        choices, de-duplicated by slug so the list stays clean.
-        """
-        seen = {slug for slug, _ in cls.CATEGORY_CHOICES}
-        merged = list(cls.CATEGORY_CHOICES)
-        for cat in Category.objects.all():
-            if cat.slug not in seen:
-                merged.insert(-1, (cat.slug, cat.name))  # before "Other"
-                seen.add(cat.slug)
-        return merged
 
     @property
     def category_label(self):
-        custom = (self.custom_category or "").strip()
-        if self.category == "other" and custom:
-            return custom
-        # Check hardcoded choices first.
-        for slug, label in self.CATEGORY_CHOICES:
-            if slug == self.category:
-                return label
-        # Then check admin-created categories.
-        try:
-            return Category.objects.get(slug=self.category).name
-        except Category.DoesNotExist:
-            return self.category.replace("-", " ").title() if self.category else "Other"
+        names = self.categories.values_list("name", flat=True)
+        return ", ".join(names) if names else "Uncategorized"
+
+    def __str__(self):
+        return self.title
 
     @property
     def serial_number(self):

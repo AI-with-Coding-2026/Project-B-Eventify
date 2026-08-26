@@ -29,8 +29,8 @@
         {% if event.image %}
         <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-auto max-h-[700px] object-contain bg-gray-50">
         {% else %}
-        <div class="w-full h-64 bg-indigo-50 flex items-center justify-center text-indigo-400">
-            No image available
+        <div class="w-full h-64">
+            {% include "events/partials/event_image_placeholder.html" %}
         </div>
         {% endif %}
 
@@ -52,8 +52,13 @@
 
             <div class="grid sm:grid-cols-2 gap-4 mb-6 text-sm text-gray-600">
                 <p><strong class="text-gray-900">Date:</strong> {{ event.date|date:"F d, Y \a\t g:i A" }}</p>
-                <p><strong class="text-gray-900">Location:</strong> {{ event.location|default:"TBA" }}</p>
-                <p><strong class="text-gray-900">Tickets remaining:</strong> {{ event.tickets_remaining }} / {{ event.max_tickets }}</p>
+                <p>
+                    <strong class="text-gray-900">
+                        Ticket availability:
+                    </strong>
+                    {{ event.tickets_remaining }}
+                    Available Ticket{{ event.tickets_remaining|pluralize }}
+                </p>
                 {% if event.organizer %}
                 <p><strong class="text-gray-900">Organizer:</strong> {{ event.organizer.username }}</p>
                 {% endif %}

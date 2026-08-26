@@ -1,0 +1,5 @@
+{% for event in events %}
+<div class="hover-lift animate-fade-slide">
+    {% include "events/partials/event_card_list.html" with event=event %}
+</div>
+{% endfor %}
