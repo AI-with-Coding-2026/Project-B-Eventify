@@ -602,6 +602,10 @@
                 ☰
             </button>
 
+            <!-- =========================================================
+                 DESKTOP MENU WITH NOTIFICATION BELL
+                 ========================================================= -->
+
             <div class="hidden md:flex items-center gap-6 font-medium">
 
                 <a
@@ -612,6 +616,22 @@
                 </a>
 
                 {% if user.is_authenticated %}
+
+                    <!-- 🎯 TASK 3: Notification Bell (Desktop) -->
+                    <div class="relative inline-block" id="notification-dropdown-container">
+                        <button id="notification-bell-btn" class="relative p-1 text-white hover:text-indigo-200 transition focus:outline-none flex items-center">
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span id="notification-badge" class="hidden absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full animate-pulse">0</span>
+                        </button>
+                        <div id="notification-menu" class="hidden absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl divide-y divide-gray-100 overflow-hidden z-50">
+                            <div class="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-700">Recent Notifications</div>
+                            <div id="notification-list-box" class="max-h-60 overflow-y-auto divide-y divide-gray-50">
+                                <div class="px-4 py-4 text-center text-xs text-gray-400">No new notifications.</div>
+                            </div>
+                        </div>
+                    </div>
 
                     <a
                         href="{% url 'logout' %}"
@@ -635,7 +655,9 @@
 
         </div>
 
-        <!-- Mobile Menu -->
+        <!-- =========================================================
+             MOBILE MENU WITH NOTIFICATION BELL
+             ========================================================= -->
 
         <div
             id="mobile-menu"
@@ -650,6 +672,22 @@
             </a>
 
             {% if user.is_authenticated %}
+
+                <!-- 🎯 TASK 3: Notification Bell (Mobile) -->
+                <div class="relative inline-block" id="notification-dropdown-container-mobile">
+                    <button id="notification-bell-btn-mobile" class="relative p-1 text-white hover:text-indigo-200 transition focus:outline-none flex items-center">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <span id="notification-badge-mobile" class="hidden absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full animate-pulse">0</span>
+                    </button>
+                    <div id="notification-menu-mobile" class="hidden absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl divide-y divide-gray-100 overflow-hidden z-50">
+                        <div class="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-700">Recent Notifications</div>
+                        <div id="notification-list-box-mobile" class="max-h-60 overflow-y-auto divide-y divide-gray-50">
+                            <div class="px-4 py-4 text-center text-xs text-gray-400">No new notifications.</div>
+                        </div>
+                    </div>
+                </div>
 
                 <a
                     href="{% url 'logout' %}"
@@ -721,13 +759,6 @@
             </div>
 
         {% endif %}
-
-        <!--
-            IMPORTANT:
-            The hard-coded test ticket card has been removed.
-            Ticket cards will now only appear where they are
-            actually included by the relevant page/template.
-        -->
 
         {% block content %}{% endblock %}
 
@@ -841,61 +872,82 @@
 
         }
 
-        // Global Split-Flap 3D Flip Clock Controller
-        function updateFlipCard(cardEl, newValue, padLength) {
+
+        /* =========================================================
+           GLOBAL SPLIT-FLAP 3D FLIP CLOCK CONTROLLER
+           ========================================================= */
+
+        function updateFlipCard(cardEl, newValue) {
+
             if (!cardEl) return;
-            var valNum = parseInt(newValue, 10) || 0;
-            var valStr;
 
-            if (cardEl.dataset.unit === 'days') {
-                if (valNum >= 100) {
-                    valStr = String(valNum);
-                    cardEl.classList.add('flip-card-wide');
-                } else {
-                    valStr = String(valNum).padStart(2, '0');
-                    cardEl.classList.remove('flip-card-wide');
-                }
-            } else {
-                var targetLen = padLength || 2;
-                valStr = String(newValue).padStart(targetLen, '0');
-            }
+            var valStr =
+                String(newValue).padStart(2, '0');
 
-            var topSpan = cardEl.querySelector('.card-top span');
-            var bottomSpan = cardEl.querySelector('.card-bottom span');
-            var flipTopSpan = cardEl.querySelector('.card-flip-top span');
-            var flipBottomSpan = cardEl.querySelector('.card-flip-bottom span');
+            var topSpan =
+                cardEl.querySelector('.card-top span');
 
-            var currentVal = topSpan ? topSpan.textContent.trim() : '';
+            var bottomSpan =
+                cardEl.querySelector('.card-bottom span');
+
+            var flipTopSpan =
+                cardEl.querySelector('.card-flip-top span');
+
+            var flipBottomSpan =
+                cardEl.querySelector('.card-flip-bottom span');
+
+            var currentVal =
+                topSpan ? topSpan.textContent.trim() : '';
+
             if (currentVal === valStr) return;
 
             cardEl.classList.remove('animate-flip');
-            void cardEl.offsetWidth; // Force DOM reflow
 
-            if (topSpan) topSpan.textContent = valStr;
-            if (flipTopSpan) flipTopSpan.textContent = currentVal || valStr;
-            if (bottomSpan) bottomSpan.textContent = currentVal || valStr;
-            if (flipBottomSpan) flipBottomSpan.textContent = valStr;
+            void cardEl.offsetWidth;
 
-            if (cardEl.dataset.unit === 'seconds') {
-                if (topSpan) topSpan.style.color = '#ef4444';
-                if (flipTopSpan) flipTopSpan.style.color = '#ef4444';
-                if (bottomSpan) bottomSpan.style.color = '#ef4444';
-                if (flipBottomSpan) flipBottomSpan.style.color = '#ef4444';
-            }
+            if (topSpan)
+                topSpan.textContent = valStr;
+
+            if (flipTopSpan)
+                flipTopSpan.textContent = currentVal || valStr;
+
+            if (bottomSpan)
+                bottomSpan.textContent = currentVal || valStr;
+
+            if (flipBottomSpan)
+                flipBottomSpan.textContent = valStr;
 
             cardEl.classList.add('animate-flip');
 
             setTimeout(function () {
-                if (bottomSpan) bottomSpan.textContent = valStr;
-                if (flipTopSpan) flipTopSpan.textContent = valStr;
+
+                if (bottomSpan)
+                    bottomSpan.textContent = valStr;
+
+                if (flipTopSpan)
+                    flipTopSpan.textContent = valStr;
+
                 cardEl.classList.remove('animate-flip');
+
             }, 580);
         }
 
+
+        /* =========================================================
+           PARSE FLIP CLOCK TARGET DATE
+           ========================================================= */
+
         function parseFlipClockTargetDate(dateStr) {
+
             if (!dateStr) return NaN;
-            var m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+
+            var m =
+                String(dateStr).match(
+                    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/
+                );
+
             if (m) {
+
                 return new Date(
                     parseInt(m[1], 10),
                     parseInt(m[2], 10) - 1,
@@ -904,55 +956,93 @@
                     parseInt(m[5], 10),
                     m[6] ? parseInt(m[6], 10) : 0
                 ).getTime();
+
             }
+
             return new Date(dateStr).getTime();
         }
 
+
+        /* =========================================================
+           INITIALIZE FLIP CLOCK
+           ========================================================= */
+
         function initFlipClock(clockEl) {
-            if (!clockEl || clockEl.dataset.initialized) return;
+
+            if (!clockEl || clockEl.dataset.initialized)
+                return;
+
             clockEl.dataset.initialized = 'true';
 
-            var cardDays = clockEl.querySelector('[data-unit="days"]');
-            var cardHours = clockEl.querySelector('[data-unit="hours"]');
-            var cardMinutes = clockEl.querySelector('[data-unit="minutes"]');
-            var cardSeconds = clockEl.querySelector('[data-unit="seconds"]');
+            var cardHours =
+                clockEl.querySelector('[data-unit="hours"]');
+
+            var cardMinutes =
+                clockEl.querySelector('[data-unit="minutes"]');
+
+            var cardSeconds =
+                clockEl.querySelector('[data-unit="seconds"]');
+
 
             function tick() {
-                var targetStr = clockEl.getAttribute('data-target-date');
+
+                var targetStr =
+                    clockEl.getAttribute('data-target-date');
+
                 if (!targetStr) {
-                    if (cardDays) updateFlipCard(cardDays, 0);
-                    updateFlipCard(cardHours, '00', 2);
-                    updateFlipCard(cardMinutes, '00', 2);
-                    updateFlipCard(cardSeconds, '00', 2);
+
+                    updateFlipCard(cardHours, '00');
+                    updateFlipCard(cardMinutes, '00');
+                    updateFlipCard(cardSeconds, '00');
+
                     return;
                 }
 
-                var targetTime = parseFlipClockTargetDate(targetStr);
-                if (isNaN(targetTime)) return;
+                var targetTime =
+                    parseFlipClockTargetDate(targetStr);
 
-                var now = new Date().getTime();
-                var diff = targetTime - now;
+                if (isNaN(targetTime))
+                    return;
+
+                var now =
+                    new Date().getTime();
+
+                var diff =
+                    targetTime - now;
 
                 if (diff <= 0) {
-                    if (cardDays) updateFlipCard(cardDays, 0);
-                    updateFlipCard(cardHours, '00', 2);
-                    updateFlipCard(cardMinutes, '00', 2);
-                    updateFlipCard(cardSeconds, '00', 2);
+
+                    updateFlipCard(cardHours, '00');
+                    updateFlipCard(cardMinutes, '00');
+                    updateFlipCard(cardSeconds, '00');
+
                     return;
                 }
 
-                var days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                var seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                var totalHours =
+                    Math.floor(
+                        diff / (1000 * 60 * 60)
+                    );
 
-                if (cardDays) updateFlipCard(cardDays, days);
-                updateFlipCard(cardHours, hours, 2);
-                updateFlipCard(cardMinutes, minutes, 2);
-                updateFlipCard(cardSeconds, seconds, 2);
+                var minutes =
+                    Math.floor(
+                        (diff % (1000 * 60 * 60)) /
+                        (1000 * 60)
+                    );
+
+                var seconds =
+                    Math.floor(
+                        (diff % (1000 * 60)) /
+                        1000
+                    );
+
+                updateFlipCard(cardHours, totalHours);
+                updateFlipCard(cardMinutes, minutes);
+                updateFlipCard(cardSeconds, seconds);
             }
 
             tick();
+
             setInterval(tick, 1000);
         }
 
@@ -1050,6 +1140,110 @@
             initScrollAnimations
         );
 
+    </script>
+
+    <!-- =========================================================
+         TASK 3: Real-Time Notification System
+         ========================================================= -->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- Desktop ---
+            const bellBtn = document.getElementById('notification-bell-btn');
+            const menu = document.getElementById('notification-menu');
+            const badge = document.getElementById('notification-badge');
+            const listBox = document.getElementById('notification-list-box');
+
+            // --- Mobile ---
+            const bellBtnMobile = document.getElementById('notification-bell-btn-mobile');
+            const menuMobile = document.getElementById('notification-menu-mobile');
+            const badgeMobile = document.getElementById('notification-badge-mobile');
+            const listBoxMobile = document.getElementById('notification-list-box-mobile');
+
+            function fetchNotifications() {
+                fetch('/events/api/notifications/')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Mise à jour du badge desktop
+                        if (data.unread_count > 0) {
+                            if (badge) {
+                                badge.textContent = data.unread_count;
+                                badge.classList.remove('hidden');
+                            }
+                            if (badgeMobile) {
+                                badgeMobile.textContent = data.unread_count;
+                                badgeMobile.classList.remove('hidden');
+                            }
+                        } else {
+                            if (badge) badge.classList.add('hidden');
+                            if (badgeMobile) badgeMobile.classList.add('hidden');
+                        }
+
+                        // Afficher la liste desktop
+                        renderNotificationList(listBox, data);
+                        // Afficher la liste mobile
+                        renderNotificationList(listBoxMobile, data);
+                    });
+            }
+
+            function renderNotificationList(container, data) {
+                if (!container) return;
+                if (data.notifications && data.notifications.length > 0) {
+                    container.innerHTML = '';
+                    data.notifications.forEach(item => {
+                        const readClass = item.is_read ? 'bg-white' : 'bg-indigo-50/60 font-medium';
+                        const el = document.createElement('div');
+                        el.className = `p-3 text-left text-xs transition text-gray-700 cursor-pointer ${readClass} hover:bg-gray-50`;
+                        el.innerHTML = `
+                            <div class="flex justify-between items-start gap-1">
+                                <p class="font-bold text-gray-900">${item.title}</p>
+                                <span class="text-[9px] text-gray-400 whitespace-nowrap">${item.created_at}</span>
+                            </div>
+                            <p class="text-gray-500 mt-0.5">${item.message}</p>
+                        `;
+                        if (!item.is_read) {
+                            el.addEventListener('click', () => {
+                                fetch(`/events/api/notifications/${item.id}/read/`, {
+                                    method: 'POST',
+                                    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                                }).then(() => fetchNotifications());
+                            });
+                        }
+                        container.appendChild(el);
+                    });
+                } else {
+                    container.innerHTML = '<div class="px-4 py-4 text-center text-xs text-gray-400">No notifications found.</div>';
+                }
+            }
+
+            // Événements desktop
+            if (bellBtn && menu) {
+                bellBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    menu.classList.toggle('hidden');
+                    fetchNotifications();
+                });
+                document.addEventListener('click', function () {
+                    if (menu) menu.classList.add('hidden');
+                });
+            }
+
+            // Événements mobile
+            if (bellBtnMobile && menuMobile) {
+                bellBtnMobile.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    menuMobile.classList.toggle('hidden');
+                    fetchNotifications();
+                });
+                document.addEventListener('click', function () {
+                    if (menuMobile) menuMobile.classList.add('hidden');
+                });
+            }
+
+            // Premier chargement et rafraîchissement toutes les 15 secondes
+            fetchNotifications();
+            setInterval(fetchNotifications, 15000);
+        });
     </script>
 
 </body>

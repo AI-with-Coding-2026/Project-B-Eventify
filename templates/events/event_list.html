@@ -15,10 +15,6 @@
     <h1 class="text-3xl font-bold text-gray-900 display">Upcoming Events</h1>
 </div>
 
-{% if not search_query and not selected_category and not max_price and not start_date and not end_date %}
-    {% include "events/partials/hero_showcase.html" with featured_events=featured_events %}
-{% endif %}
-
 <div class="pb-12">
     <form method="get" class="hover-lift animate-fade-slide bg-white rounded-xl shadow-sm border border-indigo-100 p-5 mb-6">        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
             <div>

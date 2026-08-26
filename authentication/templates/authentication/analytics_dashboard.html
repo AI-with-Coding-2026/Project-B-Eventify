@@ -38,111 +38,14 @@
 </div>
 
 <div class="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <div>
-            <h2 class="text-lg font-semibold display">Event Performance</h2>
-            <p class="text-sm text-gray-500">Choose all events or an individual event to inspect details</p>
-        </div>
-        <div class="flex items-center gap-2">
-            <label for="event-selector" class="text-xs font-semibold text-gray-600 shrink-0">Select Event:</label>
-            <select id="event-selector" class="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                <option value="all">All Events (Overview)</option>
-            </select>
-        </div>
+    <div class="flex items-center justify-between mb-5">
+        <h2 class="text-lg font-semibold display">Event Performance</h2>
+        <span class="text-sm text-gray-500">Revenue share by event</span>
     </div>
 
     {% if filtered_events %}
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <!-- Left: Donut Chart & Reference Legend (7 cols) -->
-        <div class="lg:col-span-7 flex flex-col items-center">
-            <!-- Doughnut Chart Canvas -->
-            <div class="relative w-full h-72 max-w-sm flex items-center justify-center">
-                <canvas id="event-performance-chart" aria-label="Event revenue share doughnut chart"></canvas>
-            </div>
-
-            <!-- Event Reference Legend under the chart -->
-            <div class="w-full mt-5">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400 text-center mb-2">Event Reference</p>
-                <div id="event-legend-bar" class="w-full flex flex-wrap gap-2 justify-center max-h-36 overflow-y-auto custom-scrollbar p-1">
-                    <!-- Dynamically populated reference pills -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Right: Animated Details Box (5 cols) -->
-        <div class="lg:col-span-5">
-            <div id="event-details-card" class="relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-purple-50/50 p-6 shadow-sm transition-all duration-300">
-                <!-- Header with Category & Share % -->
-                <div class="flex items-center justify-between gap-2 mb-3">
-                    <span id="detail-category" class="inline-block text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-100 text-indigo-700">
-                        Overview
-                    </span>
-                    <span id="detail-percentage" class="text-xs font-extrabold text-indigo-600 bg-white px-2.5 py-1 rounded-lg border border-indigo-100 shadow-2xs">
-                        100% Total
-                    </span>
-                </div>
-
-                <!-- Event Title -->
-                <h3 id="detail-title" class="text-xl font-bold text-gray-900 mb-4 leading-snug">
-                    All Filtered Events
-                </h3>
-
-                <!-- Key Metrics Grid -->
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-2xs">
-                        <span class="block text-[10px] uppercase font-bold tracking-wider text-gray-400">Total Revenue</span>
-                        <span id="detail-revenue" class="text-lg font-black text-indigo-600">$0.00</span>
-                    </div>
-                    <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-2xs">
-                        <span class="block text-[10px] uppercase font-bold tracking-wider text-gray-400">Tickets Sold</span>
-                        <span id="detail-tickets" class="text-lg font-black text-gray-900">0</span>
-                    </div>
-                    <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-2xs">
-                        <span id="detail-price-label" class="block text-[10px] uppercase font-bold tracking-wider text-gray-400">Ticket Price</span>
-                        <span id="detail-price" class="text-base font-bold text-gray-800">$0.00</span>
-                    </div>
-                    <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-2xs">
-                        <span class="block text-[10px] uppercase font-bold tracking-wider text-gray-400">Organizer</span>
-                        <span id="detail-organizer" class="text-sm font-semibold text-gray-800 truncate block">—</span>
-                    </div>
-                </div>
-
-                <!-- Date & Location -->
-                <div class="space-y-2 text-xs text-gray-600 bg-white/80 rounded-xl p-3 border border-gray-100 mb-4">
-                    <p class="flex items-center gap-2">
-                        <svg class="w-4 h-4 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                        </svg>
-                        <span id="detail-date">—</span>
-                    </p>
-                    <p class="flex items-center gap-2">
-                        <svg class="w-4 h-4 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 0115 0z"/>
-                        </svg>
-                        <span id="detail-location">—</span>
-                    </p>
-                </div>
-
-                <!-- Revenue Share Progress Bar -->
-                <div>
-                    <div class="flex justify-between text-[11px] font-semibold text-gray-500 mb-1">
-                        <span>Revenue Contribution</span>
-                        <span id="detail-bar-pct">100%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                        <div id="detail-progress-bar" class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-500" style="width: 100%"></div>
-                    </div>
-                </div>
-
-                <!-- Action link to event -->
-                <div id="detail-link-wrap" class="mt-4 pt-3 border-t border-indigo-100 flex justify-end" style="display: none;">
-                    <a id="detail-link" href="#" class="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline transition">
-                        View event page →
-                    </a>
-                </div>
-            </div>
-        </div>
+    <div class="relative mx-auto h-96 max-w-2xl">
+        <canvas id="event-performance-chart" aria-label="Event revenue share doughnut chart"></canvas>
     </div>
     {% else %}
     <p class="py-8 text-center text-sm text-gray-400">No event performance data found for this filter.</p>
@@ -155,160 +58,19 @@
 <script>
     (function () {
         const chartData = JSON.parse(document.getElementById('event-chart-data').textContent);
-        const chartCanvas = document.getElementById('event-performance-chart');
-        const eventSelector = document.getElementById('event-selector');
-        const legendContainer = document.getElementById('event-legend-bar');
-        const detailsCard = document.getElementById('event-details-card');
+        const chart = document.getElementById('event-performance-chart');
 
-        if (!chartData || chartData.length === 0 || !chartCanvas) return;
-
-        const palette = [
-            '#6366f1', '#10b981', '#f59e0b', '#ef4444',
-            '#06b6d4', '#8b5cf6', '#ec4899', '#14b8a6',
-            '#f97316', '#3b82f6'
-        ];
-
-        // Compute overall totals
-        const totalRev = chartData.reduce(function (acc, ev) { return acc + (Number(ev.revenue) || 0); }, 0);
-        const totalTix = chartData.reduce(function (acc, ev) { return acc + (Number(ev.tickets) || 0); }, 0);
-
-        // Elements in details box
-        const elCategory = document.getElementById('detail-category');
-        const elPercentage = document.getElementById('detail-percentage');
-        const elTitle = document.getElementById('detail-title');
-        const elRevenue = document.getElementById('detail-revenue');
-        const elTickets = document.getElementById('detail-tickets');
-        const elPrice = document.getElementById('detail-price');
-        const elPriceLabel = document.getElementById('detail-price-label');
-        const elOrganizer = document.getElementById('detail-organizer');
-        const elDate = document.getElementById('detail-date');
-        const elLocation = document.getElementById('detail-location');
-        const elBarPct = document.getElementById('detail-bar-pct');
-        const elProgressBar = document.getElementById('detail-progress-bar');
-        const elLinkWrap = document.getElementById('detail-link-wrap');
-        const elLink = document.getElementById('detail-link');
-
-        // Populate dropdown options
-        chartData.forEach(function (ev, idx) {
-            const opt = document.createElement('option');
-            opt.value = String(idx);
-            opt.textContent = ev.title;
-            eventSelector.appendChild(opt);
-        });
-
-        // Populate reference legend pills under the chart
-        chartData.forEach(function (ev, idx) {
-            const color = palette[idx % palette.length];
-            const pill = document.createElement('div');
-            pill.id = 'legend-pill-' + idx;
-            pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs text-gray-700 bg-gray-50 border border-gray-200 transition';
-
-            const dot = document.createElement('span');
-            dot.className = 'w-2 h-2 rounded-full shrink-0';
-            dot.style.backgroundColor = color;
-            pill.appendChild(dot);
-
-            const label = document.createElement('span');
-            label.className = 'truncate max-w-[130px] font-medium';
-            label.textContent = ev.title;
-            pill.appendChild(label);
-
-            legendContainer.appendChild(pill);
-        });
-
-        function updateDetails(val) {
-            // Trigger animation on details card
-            detailsCard.style.opacity = '0';
-            detailsCard.style.transform = 'translateY(6px)';
-
-            setTimeout(function () {
-                if (val === 'all') {
-                    elCategory.textContent = 'Overview';
-                    elPercentage.textContent = '100% Total';
-                    elTitle.textContent = 'All Filtered Events';
-                    elRevenue.textContent = '$' + totalRev.toFixed(2);
-                    elTickets.textContent = totalTix;
-                    elPriceLabel.textContent = 'Avg Price';
-                    elPrice.textContent = chartData.length > 0
-                        ? '$' + (chartData.reduce(function (a, b) { return a + Number(b.price); }, 0) / chartData.length).toFixed(2)
-                        : '$0.00';
-                    elOrganizer.textContent = 'All Organizers';
-                    elDate.textContent = chartData.length + ' event' + (chartData.length === 1 ? '' : 's') + ' tracked';
-                    elLocation.textContent = 'Multiple venues';
-                    elBarPct.textContent = '100%';
-                    elProgressBar.style.width = '100%';
-                    if (elLinkWrap) elLinkWrap.style.display = 'none';
-                } else {
-                    const idx = Number(val);
-                    const ev = chartData[idx];
-                    if (!ev) return;
-
-                    elCategory.textContent = ev.category || 'Event';
-                    elPercentage.textContent = (ev.percentage || 0) + '% share';
-                    elTitle.textContent = ev.title;
-                    elRevenue.textContent = '$' + Number(ev.revenue).toFixed(2);
-                    elTickets.textContent = ev.tickets;
-                    elPriceLabel.textContent = 'Ticket Price';
-                    elPrice.textContent = '$' + Number(ev.price).toFixed(2);
-                    elOrganizer.textContent = ev.organizer || '—';
-                    elDate.textContent = ev.date || 'TBA';
-                    elLocation.textContent = ev.location || 'TBA';
-                    elBarPct.textContent = (ev.percentage || 0) + '%';
-                    elProgressBar.style.width = Math.min(Math.max(ev.percentage || 0, 0), 100) + '%';
-                    if (elLinkWrap) {
-                        elLinkWrap.style.display = 'flex';
-                        elLink.href = '/events/' + ev.id + '/';
-                    }
-                }
-
-                detailsCard.style.opacity = '1';
-                detailsCard.style.transform = 'translateY(0)';
-            }, 120);
-
-            // Update chart slice highlighting
-            if (val === 'all') {
-                chart.data.datasets[0].backgroundColor = chartData.map(function (_, i) {
-                    return palette[i % palette.length];
-                });
-                chart.data.datasets[0].borderColor = chartData.map(function () { return '#ffffff'; });
-            } else {
-                const activeIdx = Number(val);
-                chart.data.datasets[0].backgroundColor = chartData.map(function (_, i) {
-                    if (i === activeIdx) return palette[i % palette.length];
-                    return palette[i % palette.length] + '33'; // 20% opacity for other slices
-                });
-                chart.data.datasets[0].borderColor = chartData.map(function (_, i) {
-                    return i === activeIdx ? '#ffffff' : 'transparent';
-                });
-            }
-            chart.update();
-
-            // Highlight corresponding legend pill
-            chartData.forEach(function (_, i) {
-                const pill = document.getElementById('legend-pill-' + i);
-                if (!pill) return;
-                if (val === 'all') {
-                    pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs text-gray-700 bg-gray-50 border border-gray-200 transition';
-                } else if (i === Number(val)) {
-                    pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-300 shadow-xs transition';
-                } else {
-                    pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs text-gray-400 bg-gray-50/60 border border-gray-100 opacity-50 transition';
-                }
-            });
-        }
-
-        // Initialize Chart.js with hover tooltips disabled and click selection enabled
-        const chart = new Chart(chartCanvas, {
+        new Chart(chart, {
             type: 'doughnut',
             data: {
                 labels: chartData.map(function (event) { return event.title; }),
                 datasets: [{
                     label: 'Revenue ($)',
                     data: chartData.map(function (event) { return event.revenue; }),
-                    backgroundColor: chartData.map(function (_, i) { return palette[i % palette.length]; }),
+                    backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#f97316'],
                     borderColor: '#ffffff',
                     borderWidth: 3,
-                    hoverOffset: 6
+                    hoverOffset: 8
                 }]
             },
             options: {
@@ -316,25 +78,22 @@
                 maintainAspectRatio: false,
                 cutout: '58%',
                 plugins: {
-                    legend: { display: false },
-                    tooltip: { enabled: false }
-                },
-                onClick: function (event, elements) {
-                    if (elements && elements.length > 0) {
-                        const clickedIndex = String(elements[0].index);
-                        eventSelector.value = clickedIndex;
-                        updateDetails(clickedIndex);
+                    legend: { position: 'bottom' },
+                    title: {
+                        display: true,
+                        text: 'Revenue distribution across filtered events'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const event = chartData[context.dataIndex];
+                                return ' $' + event.revenue.toFixed(2) + ' · ' + event.tickets + ' tickets';
+                            }
+                        }
                     }
                 }
             }
         });
-
-        eventSelector.addEventListener('change', function () {
-            updateDetails(this.value);
-        });
-
-        // Initialize with "all" overview
-        updateDetails('all');
     })();
 </script>
 {% endif %}
@@ -373,13 +132,13 @@
         <table data-datagrid class="min-w-full divide-y divide-gray-100 text-sm">
             <thead class="bg-indigo-50 text-left text-xs font-semibold uppercase tracking-wide text-indigo-700">
                 <tr>
-                    <th scope="col" class="px-4 py-3"><button type="button" data-sort="0">Event</button></th>
-                    <th scope="col" class="px-4 py-3"><button type="button" data-sort="1">Organizer</button></th>
-                    <th scope="col" class="px-4 py-3"><button type="button" data-sort="2">Category</button></th>
-                    <th scope="col" class="px-4 py-3"><button type="button" data-sort="3">Date</button></th>
-                    <th scope="col" class="px-4 py-3"><button type="button" data-sort="4">Location</button></th>
-                    <th scope="col" class="px-4 py-3"><button type="button" data-sort="5">Price</button></th>
-                    <th scope="col" class="px-4 py-3"><button type="button" data-sort="6">Revenue</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="0">Event</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="1">Organizer</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="2">Category</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="3">Date</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="4">Location</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="5">Price</button></th>
+                    <th class="px-4 py-3"><button type="button" data-sort="6">Revenue</button></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-gray-600">
@@ -393,7 +152,7 @@
                     <td class="whitespace-nowrap px-4 py-3">{{ event.date|date:"M d, Y" }}</td>
                     <td class="whitespace-nowrap px-4 py-3">{{ event.location|default:"TBA" }}</td>
                     <td class="whitespace-nowrap px-4 py-3">${{ event.price }}</td>
-                    <td class="whitespace-nowrap px-4 py-3 font-semibold text-gray-900">${{ event.event_revenue }}</td>
+                    <td class="whitespace-nowrap px-4 py-3">${{ event.event_revenue }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -140,19 +140,10 @@ def register_success(request):
 
 @login_not_required
 def home(request):
-    if request.user.is_authenticated:
-        if request.user.is_admin:
-            return redirect('admin_dashboard')
-        elif request.user.is_organizer:
-            return redirect('organizer_dashboard')
-        elif request.user.is_attendee:
-            return redirect('attendee_dashboard')
-
-    featured_events = Event.objects.filter(
-        date__gte=timezone.now(),
-        publish_status=EventPublishStatus.APPROVED,
-    ).order_by('date')[:5]
-    return render(request, 'authentication/home.html', {'featured_events': featured_events})
+    return render(
+        request,
+        'authentication/home.html',
+    )
 
 
 @admin_required
@@ -537,41 +528,18 @@ def organizer_export_pdf(request):
 
 @role_required(UserRole.ATTENDEE)
 def attendee_dashboard(request):
-    now = timezone.now()
-    featured_events = Event.objects.filter(
-        date__gte=now,
+    upcoming_events = Event.objects.filter(
+        date__gte=timezone.now(),
         publish_status=EventPublishStatus.APPROVED,
-    ).order_by('date')[:5]
+    ).order_by('date')[:3]
 
-    tickets = (
-        Ticket.objects.filter(attendee=request.user)
-        .select_related('event')
+    return render(
+        request,
+        'authentication/attendee_dashboard.html',
+        {
+            'upcoming_events': upcoming_events,
+        },
     )
-    legacy_bookings = (
-        EventBooking.objects.filter(user=request.user)
-        .select_related('event')
-    )
-
-    upcoming_tickets = list(
-        tickets.filter(event__date__gte=now).order_by('event__date')
-    )
-    upcoming_legacy = [
-        b for b in legacy_bookings.filter(event__date__gte=now).order_by('event__date')
-        if not any(t.event_id == b.event_id for t in upcoming_tickets)
-    ]
-
-    upcoming_bookings = sorted(
-        upcoming_tickets + upcoming_legacy,
-        key=lambda x: x.event.date,
-    )
-    next_booking = upcoming_bookings[0] if upcoming_bookings else None
-
-    return render(request, 'authentication/attendee_dashboard.html', {
-        'featured_events': featured_events,
-        'upcoming_events': featured_events,
-        'upcoming_bookings': upcoming_bookings,
-        'next_booking': next_booking,
-    })
 
 
 @admin_required
@@ -989,19 +957,12 @@ def analytics_dashboard(request):
         )
         .order_by('-date', 'title')
     )
-    total_rev_float = float(total_revenue) if total_revenue else 0.0
+
     event_chart_data = [
         {
-            'id': event.pk,
             'title': event.title,
-            'organizer': event.organizer.username if event.organizer else '—',
-            'category': event.category_label,
-            'date': event.date.strftime('%b %d, %Y') if event.date else 'TBA',
-            'location': event.location or 'TBA',
-            'price': float(event.price),
             'revenue': float(event.event_revenue),
             'tickets': event.event_tickets_sold,
-            'percentage': round((float(event.event_revenue) / total_rev_float * 100), 1) if total_rev_float > 0 else 0,
         }
         for event in filtered_events
     ]

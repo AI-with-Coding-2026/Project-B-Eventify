@@ -25,7 +25,7 @@ from authentication.decorators import (
 from authentication.models import UserRole
 
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
-from .models import Category, Event, EventBooking, EventPublishStatus, Ticket
+from .models import Category, Event, EventBooking, Ticket, Notification, EventPublishStatus
 
 
 def _user_can_manage_event(user, event):
@@ -209,8 +209,6 @@ def event_list(request):
 
     filter_query_string = filter_params.urlencode()
 
-    featured_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')[:5]
-
     context = {
         'events': page_obj,
         'page_obj': page_obj,
@@ -224,7 +222,6 @@ def event_list(request):
         'filter_query_string': filter_query_string,
         'past_events': past_events,
         'selling_fast_threshold': selling_fast_threshold,
-        'featured_events': featured_events,
     }
 
     return render(
@@ -924,3 +921,70 @@ def admin_booking_list(request):
 create_event = event_create
 edit_event = event_edit
 delete_event = event_delete
+
+
+# =========================================================
+# 🎯 TASK 3: Real-Time Notification APIs
+# =========================================================
+
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+from .models import Notification
+
+@login_required
+def user_notifications_api(request):
+    """API endpoint to fetch the top 5 recent notifications for the logged-in user."""
+    notifications = Notification.objects.filter(recipient=request.user)
+    unread_count = notifications.filter(is_read=False).count()
+    
+    notifications_data = [
+        {
+            'id': n.id,
+            'title': n.title,
+            'message': n.message,
+            'is_read': n.is_read,
+            'created_at': n.created_at.strftime('%Y-%m-%d %H:%M')
+        }
+        for n in notifications[:5]
+    ]
+    return JsonResponse({
+        'unread_count': unread_count, 
+        'notifications': notifications_data
+    })
+
+
+@login_required
+def mark_notification_as_read(request, pk):
+    """API endpoint to safely mark a specific notification as read."""
+    if request.method == 'POST':
+        notification = get_object_or_404(Notification, pk=pk, recipient=request.user)
+        notification.is_read = True
+        notification.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=400)
+
+
+# =========================================================
+# 🔥 FIREBASE: Save FCM Token
+# =========================================================
+
+import json
+
+@login_required
+def save_fcm_token(request):
+    """
+    Sauvegarde le token FCM de l'utilisateur pour les notifications push.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            token = data.get('token')
+            if token:
+                request.user.fcm_token = token
+                request.user.save()
+                return JsonResponse({'status': 'success', 'message': 'Token saved successfully'})
+            return JsonResponse({'status': 'error', 'message': 'No token provided'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)

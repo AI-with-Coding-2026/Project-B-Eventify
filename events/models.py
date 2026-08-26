@@ -185,7 +185,6 @@ class Event(models.Model):
         return self.publish_status == EventPublishStatus.DENIED
 
 
-
 class Ticket(models.Model):
     """A ticket booked by an attendee for a specific event."""
 
@@ -266,3 +265,35 @@ def get_attendee_cancellable_booking(user, pk):
         .select_related('event', 'user')
         .first()
     )
+
+
+# =========================================================
+# 🎯 TASK 3: Real-Time Notification Storage Model
+# =========================================================
+
+class Notification(models.Model):
+    """Model to log real-time booking and cancellation events for organizers."""
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    event = models.ForeignKey(
+        Event, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='notifications'
+    )
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notification for {self.recipient.username} - {self.title}"

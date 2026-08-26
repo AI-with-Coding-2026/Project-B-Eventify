@@ -20,13 +20,13 @@
             btn.style.cursor = 'pointer';
             btn.style.userSelect = 'none';
 
-            // Add single full-arrow sort indicator span (default: descending icon ↓)
+            // Add sort indicator span
             var indicator = document.createElement('span');
             indicator.className = 'sort-indicator';
             indicator.style.marginLeft = '4px';
-            indicator.style.opacity = '0.35';
-            indicator.style.fontSize = '0.85em';
-            indicator.textContent = '↓';
+            indicator.style.opacity = '0.4';
+            indicator.style.fontSize = '0.7em';
+            indicator.textContent = '▲▼';
             btn.appendChild(indicator);
 
             btn.addEventListener('click', function () {
@@ -34,7 +34,6 @@
                 var currentDir = table.dataset.sortCol === String(colIndex)
                     ? table.dataset.sortDir
                     : null;
-                // When clicked for the first time, sort ascending (↑); subsequent clicks toggle
                 var direction = currentDir === 'asc' ? 'desc' : 'asc';
                 var tbody = table.tBodies[0];
                 if (!tbody) return;
@@ -72,10 +71,10 @@
 
                     if (Number(b.dataset.sort) === colIndex) {
                         ind.style.opacity = '1';
-                        ind.textContent = direction === 'asc' ? '↑' : '↓';
+                        ind.textContent = direction === 'asc' ? '▲' : '▼';
                     } else {
-                        ind.style.opacity = '0.35';
-                        ind.textContent = '↓';
+                        ind.style.opacity = '0.4';
+                        ind.textContent = '▲▼';
                     }
                 });
             });
