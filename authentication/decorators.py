@@ -30,12 +30,13 @@ def _normalize_roles(roles):
     return normalized
 
 
-def role_required(
-    *allowed_roles,
-    login_url="login",
-    redirect_url="unauthorized",
-):
-    """Require an authenticated user with one of the given roles."""
+def role_required(*allowed_roles, login_url='login'):
+    """
+    Require an authenticated user with one of the given roles.
+
+    Unauthorized authenticated users are redirected to the shared
+    /unauthorized/ page (HTTP 403), matching admin_required behavior.
+    """
     roles = _normalize_roles(allowed_roles)
 
     def decorator(view_func):
@@ -45,7 +46,7 @@ def role_required(
             if request.user.role in roles:
                 return view_func(request, *args, **kwargs)
 
-            return redirect(redirect_url)
+            return redirect('unauthorized')
 
         return _wrapped_view
 
@@ -54,21 +55,21 @@ def role_required(
 
 def admin_required(view_func):
     """Restrict a view to Admin users."""
+
     @wraps(view_func)
     def wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
             from django.contrib.auth.views import redirect_to_login
+
             return redirect_to_login(
                 request.get_full_path(),
-                login_url="eventify_admin:login",
+                login_url="login",
             )
 
         if request.user.role == UserRole.ADMIN:
             return view_func(request, *args, **kwargs)
 
-        return redirect(
-            f"/admin/login/?next={request.get_full_path()}"
-        )
+        return redirect('unauthorized')
 
     return wrapped_view
 

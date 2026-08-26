@@ -1,0 +1,1 @@
+web: gunicorn Eventify.wsgi:application

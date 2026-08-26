@@ -1,0 +1,21 @@
+Subject: Your Eventify Booking Confirmation
+
+Hello {{ ticket.attendee.username }},
+
+Your ticket booking has been successfully confirmed!
+
+Booking Details
+
+Event Name: {{ ticket.event.title }}
+Booking Date: {{ ticket.booked_at|date:"F d, Y, h:i A" }}
+Ticket Quantity: {{ ticket.quantity }}
+Total Price: {{ total_price|floatformat:2 }}
+
+See my event: {{ event_url }}
+
+Thank you for choosing Eventify.
+
+We hope you enjoy the event!
+
+Best regards,
+Eventify Team
