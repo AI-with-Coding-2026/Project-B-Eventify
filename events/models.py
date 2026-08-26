@@ -126,6 +126,12 @@ class Event(models.Model):
     def is_sold_out(self):
         return self.tickets_remaining <= 0
 
+    @property
+    def available_tickets_label(self):
+        count = self.tickets_remaining
+        ticket_word = 'Ticket' if count == 1 else 'Tickets'
+        return f'{count} Available {ticket_word}'
+
 
 class Ticket(models.Model):
     """A ticket booked by an attendee for a specific event."""

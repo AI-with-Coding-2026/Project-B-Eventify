@@ -17,7 +17,7 @@
                     <p><strong class="text-gray-900">Date:</strong> {{ event.date|date:"M d, Y — g:i A" }}</p>
                     <p><strong class="text-gray-900">Price per ticket:</strong> ${{ event.price }}</p>
                     <p><strong class="text-gray-900">Category:</strong> {{ event.category_label }}</p>
-                    <p><strong class="text-gray-900">Tickets available:</strong> {{ event.tickets_remaining }} / {{ event.max_tickets }}</p>
+                    <p><strong class="text-gray-900">Availability:</strong> {{ event.available_tickets_label }}</p>
                 </div>
                 {% if event.description %}
                 <div class="mt-4 p-4 bg-white rounded-lg border border-indigo-100">

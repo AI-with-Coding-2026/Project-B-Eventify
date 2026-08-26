@@ -82,7 +82,7 @@
                 </span>
                 <span class="flex items-center gap-2">
                     <span class="w-3 h-3 rounded-full bg-indigo-100"></span>
-                    Remaining: {{ total_tickets_remaining }}
+                    Remaining: {{ total_tickets_remaining }} available
                 </span>
             </div>
         </div>
@@ -111,7 +111,7 @@
                         <th class="py-3 pr-4 text-left font-semibold">Event Details</th>
                         <th class="py-3 pr-4 text-left font-semibold">Ticket Price</th>
                         <th class="py-3 pr-4 text-left font-semibold">Tickets Sold</th>
-                        <th class="py-3 pr-4 text-left font-semibold">Tickets Remaining</th>
+                        <th class="py-3 pr-4 text-left font-semibold">Availability</th>
                         <th class="py-3 pr-4 text-left font-semibold">Total Revenue</th>
                         <th class="py-3 text-left font-semibold">Actions</th>
                     </tr>
@@ -150,13 +150,17 @@
                             </div>
                         </td>
                         <td class="py-4 pr-4 text-gray-700">${{ row.event.price|floatformat:2 }}</td>
-                        <td class="py-4 pr-4 text-gray-700">
-                            {{ row.tickets_sold }} / {{ row.event.max_tickets }} capacity
-                        </td>
+                        <td class="py-4 pr-4 text-gray-700">{{ row.tickets_sold }} sold</td>
                         <td class="py-4 pr-4">
+                            {% if row.tickets_remaining > 0 %}
                             <span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
-                                {{ row.tickets_remaining }} remaining
+                                {{ row.event.available_tickets_label }}
                             </span>
+                            {% else %}
+                            <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-500">
+                                Sold Out
+                            </span>
+                            {% endif %}
                         </td>
                         <td class="py-4 pr-4 font-semibold text-green-600">${{ row.revenue|floatformat:2 }}</td>
                         <td class="py-4">

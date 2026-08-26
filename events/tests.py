@@ -495,3 +495,51 @@ class EventListViewTest(TestCase):
         self.assertContains(response, "Tech Conference")
         self.assertNotContains(response, "Music Festival")
 
+
+class EventAvailabilityLabelTests(TestCase):
+    def setUp(self):
+        self.organizer = User.objects.create_user(
+            'availability_organizer',
+            'availability_organizer@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            'availability_attendee',
+            'availability_attendee@example.com',
+            'strong-pass-123',
+            role=UserRole.ATTENDEE,
+        )
+        self.event = Event.objects.create(
+            organizer=self.organizer,
+            title='Availability Test Event',
+            date=timezone.now() + timedelta(days=7),
+            price='10.00',
+            max_tickets=500,
+        )
+
+    def test_available_tickets_label_when_none_sold(self):
+        self.assertEqual(self.event.available_tickets_label, '500 Available Tickets')
+
+    def test_available_tickets_label_after_sales(self):
+        Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=495,
+        )
+        self.assertEqual(self.event.available_tickets_label, '5 Available Tickets')
+
+    def test_available_tickets_label_singular(self):
+        Ticket.objects.create(
+            event=self.event,
+            attendee=self.attendee,
+            quantity=499,
+        )
+        self.assertEqual(self.event.available_tickets_label, '1 Available Ticket')
+
+    def test_event_detail_shows_available_tickets_label(self):
+        self.client.force_login(self.attendee)
+        response = self.client.get(reverse('event_detail', kwargs={'pk': self.event.pk}))
+        self.assertContains(response, '500 Available Tickets')
+        self.assertNotContains(response, '500 / 500')
+
