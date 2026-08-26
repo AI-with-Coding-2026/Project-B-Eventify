@@ -382,7 +382,7 @@ class AttendeeTicketBookingTests(TestCase):
             {'quantity': 2},
         )
 
-        self.assertRedirects(response, reverse('my_bookings'))
+        self.assertRedirects(response, reverse('attendee_dashboard'))
         ticket = Ticket.objects.get(
             event=self.event,
             attendee=self.attendee,
@@ -981,3 +981,87 @@ class BookingConfirmationEmailTests(TestCase):
             send_booking_confirmation_email(self.ticket)
 
         self.assertEqual(len(mail.outbox), 0)
+
+
+class AnalyticsExportTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.organizer = User.objects.create_user(
+            username='export_org',
+            email='export_org@example.com',
+            password='Password123!',
+            role=UserRole.ORGANIZER,
+        )
+        self.admin = User.objects.create_user(
+            username='export_admin',
+            email='export_admin@example.com',
+            password='Password123!',
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        self.attendee = User.objects.create_user(
+            username='export_att',
+            email='export_att@example.com',
+            password='Password123!',
+            role=UserRole.ATTENDEE,
+        )
+
+        self.event1 = Event.objects.create(
+            title='Tech Summit 2026',
+            organizer=self.organizer,
+            date=timezone.now() + timedelta(days=7),
+            price=Decimal('50.00'),
+            max_tickets=100,
+            category='tech',
+            location='Istanbul Congress Center',
+        )
+        self.ticket1 = Ticket.objects.create(
+            event=self.event1,
+            attendee=self.attendee,
+            quantity=5,
+        )
+
+    def test_organizer_can_export_excel(self):
+        self.client.force_login(self.organizer)
+        response = self.client.get(reverse('organizer_export_excel'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        self.assertIn('attachment; filename="eventify_analytics_', response['Content-Disposition'])
+        self.assertTrue(len(response.content) > 0)
+
+    def test_organizer_can_export_pdf(self):
+        self.client.force_login(self.organizer)
+        response = self.client.get(reverse('organizer_export_pdf'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('attachment; filename="eventify_analytics_', response['Content-Disposition'])
+        self.assertTrue(response.content.startswith(b'%PDF'))
+
+    def test_admin_can_export_excel_and_pdf(self):
+        self.client.force_login(self.admin)
+        excel_resp = self.client.get(reverse('organizer_export_excel'))
+        self.assertEqual(excel_resp.status_code, 200)
+        self.assertEqual(
+            excel_resp['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+
+        pdf_resp = self.client.get(reverse('organizer_export_pdf'))
+        self.assertEqual(pdf_resp.status_code, 200)
+        self.assertTrue(pdf_resp.content.startswith(b'%PDF'))
+
+    def test_attendee_cannot_export_analytics(self):
+        self.client.force_login(self.attendee)
+        excel_resp = self.client.get(reverse('organizer_export_excel'))
+        self.assertEqual(excel_resp.status_code, 302)
+        pdf_resp = self.client.get(reverse('organizer_export_pdf'))
+        self.assertEqual(pdf_resp.status_code, 302)
+
+    def test_unauthenticated_user_redirected_to_login(self):
+        excel_resp = self.client.get(reverse('organizer_export_excel'))
+        self.assertEqual(excel_resp.status_code, 302)
+        pdf_resp = self.client.get(reverse('organizer_export_pdf'))
+        self.assertEqual(pdf_resp.status_code, 302)

@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="{% static 'images/eventify_icon.png' %}">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.2">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .display { font-family: 'Inter', serif; }
@@ -30,6 +30,33 @@
         
         a:hover, button:hover {
             text-decoration: none !important;
+        }
+
+        /* ── Button and Toggle text stability ── */
+        .btn-primary, .btn-primary:hover,
+        a.bg-indigo-600:hover, a.bg-red-600:hover,
+        button.bg-indigo-600:hover, button.bg-red-600:hover {
+            color: #ffffff !important;
+        }
+
+        /* Segmented View Toggle (Grid / List) */
+        .view-toggle {
+            font-weight: 600 !important;
+            font-size: 0.875rem !important;
+            transition: background-color 0.15s ease, color 0.15s ease !important;
+            cursor: pointer;
+        }
+        .view-toggle[aria-pressed="true"] {
+            background-color: #4f46e5 !important;
+            color: #ffffff !important;
+        }
+        .view-toggle:not([aria-pressed="true"]) {
+            background-color: #ffffff !important;
+            color: #4338ca !important;
+        }
+        .view-toggle:not([aria-pressed="true"]):hover {
+            background-color: #eef2ff !important;
+            color: #1e1b4b !important;
         }
         /* ── Site-wide animations ── */
         @keyframes fadeSlideIn {
@@ -126,6 +153,20 @@
             box-shadow: 0 12px 32px rgba(79,70,229,0.14);
         }
 
+        .ticket-card--wide {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            height: 180px;
+            min-height: 180px;
+            max-height: 180px;
+            background: #fff;
+            border: 1px solid #e0e7ff;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+
         .ticket-card-image {
             width: 130px;
             min-height: 140px;
@@ -134,12 +175,25 @@
             border-radius: 15px 0 0 15px;
         }
         .ticket-card-image--wide {
-            width: 200px;
-            min-height: 160px;
+            width: 220px;
+            height: 100%;
+            min-height: 100%;
+            max-height: 100%;
+            flex-shrink: 0;
+            overflow: hidden;
+            border-radius: 15px 0 0 15px;
+            background: #0f172a;
+        }
+
+        .ticket-card-image--wide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
         }
 
         /* ── Full Image Display Fix ── */
-        .ticket-card-image img,
+        .ticket-card-image:not(.ticket-card-image--wide) img,
         .event-card-styled img {
             width: 100%;
             height: 100%;
@@ -221,14 +275,22 @@
             border-left: 1px solid #e2e8f0;
         }
 
-        /* ── Full Image Display Fix ── */
-        .ticket-card-image img,
+        /* ── Full Image Display Fix for standard cards ── */
+        .ticket-card-image:not(.ticket-card-image--wide) img,
         .event-card-styled img {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Prevents cropping and keeps full image aspect ratio */
+            object-fit: contain;
             object-position: center;
-            background-color: #f8fafc; /* Subtle background fill for uncropped margins */
+            background-color: #f8fafc;
+        }
+
+        .ticket-card-image--wide img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            object-position: center !important;
+            display: block !important;
         }
 
 
@@ -391,6 +453,21 @@
             <div class="hidden md:flex items-center gap-6 font-medium">
                 <a href="{% url 'event_list' %}" class="hover:text-indigo-200 transition">Events</a>
                 {% if user.is_authenticated %}
+                    <!-- Notification Bell (Desktop) -->
+                    <div class="relative inline-block" id="notification-dropdown-container">
+                        <button id="notification-bell-btn" class="relative p-1 text-white hover:text-indigo-200 transition focus:outline-none flex items-center">
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span id="notification-badge" class="hidden absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full animate-pulse">0</span>
+                        </button>
+                        <div id="notification-menu" class="hidden absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl divide-y divide-gray-100 overflow-hidden z-50">
+                            <div class="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-700">Recent Notifications</div>
+                            <div id="notification-list-box" class="max-h-60 overflow-y-auto divide-y divide-gray-50">
+                                <div class="px-4 py-4 text-center text-xs text-gray-400">No new notifications.</div>
+                            </div>
+                        </div>
+                    </div>
                     <a href="{% url 'logout' %}" class="hover:text-indigo-200 transition">Log out</a>
                 {% else %}
                     <a href="{% url 'login' %}" class="hover:text-indigo-200 transition">Log in</a>
@@ -400,6 +477,21 @@
         <div id="mobile-menu" class="hidden md:hidden bg-indigo-700 px-4 py-3 space-y-2">
             <a href="{% url 'event_list' %}" class="block hover:text-indigo-200 py-1 transition">Events</a>
             {% if user.is_authenticated %}
+                <!-- Notification Bell (Mobile) -->
+                <div class="relative inline-block" id="notification-dropdown-container-mobile">
+                    <button id="notification-bell-btn-mobile" class="relative p-1 text-white hover:text-indigo-200 transition focus:outline-none flex items-center">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <span id="notification-badge-mobile" class="hidden absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full animate-pulse">0</span>
+                    </button>
+                    <div id="notification-menu-mobile" class="hidden absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl divide-y divide-gray-100 overflow-hidden z-50">
+                        <div class="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-700">Recent Notifications</div>
+                        <div id="notification-list-box-mobile" class="max-h-60 overflow-y-auto divide-y divide-gray-50">
+                            <div class="px-4 py-4 text-center text-xs text-gray-400">No new notifications.</div>
+                        </div>
+                    </div>
+                </div>
                 <a href="{% url 'logout' %}" class="block hover:text-indigo-200 py-1 transition">Log out</a>
             {% else %}
                 <a href="{% url 'login' %}" class="block hover:text-indigo-200 py-1 transition">Log in</a>
@@ -483,9 +575,24 @@
         }
 
         // Global Split-Flap 3D Flip Clock Controller
-        function updateFlipCard(cardEl, newValue) {
+        function updateFlipCard(cardEl, newValue, padLength) {
             if (!cardEl) return;
-            var valStr = String(newValue).padStart(2, '0');
+            var valNum = parseInt(newValue, 10) || 0;
+            var valStr;
+
+            if (cardEl.dataset.unit === 'days') {
+                if (valNum >= 100) {
+                    valStr = String(valNum);
+                    cardEl.classList.add('flip-card-wide');
+                } else {
+                    valStr = String(valNum).padStart(2, '0');
+                    cardEl.classList.remove('flip-card-wide');
+                }
+            } else {
+                var targetLen = padLength || 2;
+                valStr = String(newValue).padStart(targetLen, '0');
+            }
+
             var topSpan = cardEl.querySelector('.card-top span');
             var bottomSpan = cardEl.querySelector('.card-bottom span');
             var flipTopSpan = cardEl.querySelector('.card-flip-top span');
@@ -501,6 +608,13 @@
             if (flipTopSpan) flipTopSpan.textContent = currentVal || valStr;
             if (bottomSpan) bottomSpan.textContent = currentVal || valStr;
             if (flipBottomSpan) flipBottomSpan.textContent = valStr;
+
+            if (cardEl.dataset.unit === 'seconds') {
+                if (topSpan) topSpan.style.color = '#ef4444';
+                if (flipTopSpan) flipTopSpan.style.color = '#ef4444';
+                if (bottomSpan) bottomSpan.style.color = '#ef4444';
+                if (flipBottomSpan) flipBottomSpan.style.color = '#ef4444';
+            }
 
             cardEl.classList.add('animate-flip');
 
@@ -531,6 +645,7 @@
             if (!clockEl || clockEl.dataset.initialized) return;
             clockEl.dataset.initialized = 'true';
 
+            var cardDays = clockEl.querySelector('[data-unit="days"]');
             var cardHours = clockEl.querySelector('[data-unit="hours"]');
             var cardMinutes = clockEl.querySelector('[data-unit="minutes"]');
             var cardSeconds = clockEl.querySelector('[data-unit="seconds"]');
@@ -538,9 +653,10 @@
             function tick() {
                 var targetStr = clockEl.getAttribute('data-target-date');
                 if (!targetStr) {
-                    updateFlipCard(cardHours, '00');
-                    updateFlipCard(cardMinutes, '00');
-                    updateFlipCard(cardSeconds, '00');
+                    if (cardDays) updateFlipCard(cardDays, 0);
+                    updateFlipCard(cardHours, '00', 2);
+                    updateFlipCard(cardMinutes, '00', 2);
+                    updateFlipCard(cardSeconds, '00', 2);
                     return;
                 }
 
@@ -551,19 +667,22 @@
                 var diff = targetTime - now;
 
                 if (diff <= 0) {
-                    updateFlipCard(cardHours, '00');
-                    updateFlipCard(cardMinutes, '00');
-                    updateFlipCard(cardSeconds, '00');
+                    if (cardDays) updateFlipCard(cardDays, 0);
+                    updateFlipCard(cardHours, '00', 2);
+                    updateFlipCard(cardMinutes, '00', 2);
+                    updateFlipCard(cardSeconds, '00', 2);
                     return;
                 }
 
-                var totalHours = Math.floor(diff / (1000 * 60 * 60));
+                var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                 var seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-                updateFlipCard(cardHours, totalHours);
-                updateFlipCard(cardMinutes, minutes);
-                updateFlipCard(cardSeconds, seconds);
+                if (cardDays) updateFlipCard(cardDays, days);
+                updateFlipCard(cardHours, hours, 2);
+                updateFlipCard(cardMinutes, minutes, 2);
+                updateFlipCard(cardSeconds, seconds, 2);
             }
 
             tick();
@@ -615,5 +734,108 @@
 
         window.addEventListener('pageshow', initScrollAnimations);
     </script>
+
+    <!-- Real-Time Notification System -->
+    {% if user.is_authenticated %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- Desktop ---
+            const bellBtn = document.getElementById('notification-bell-btn');
+            const menu = document.getElementById('notification-menu');
+            const badge = document.getElementById('notification-badge');
+            const listBox = document.getElementById('notification-list-box');
+
+            // --- Mobile ---
+            const bellBtnMobile = document.getElementById('notification-bell-btn-mobile');
+            const menuMobile = document.getElementById('notification-menu-mobile');
+            const badgeMobile = document.getElementById('notification-badge-mobile');
+            const listBoxMobile = document.getElementById('notification-list-box-mobile');
+
+            function fetchNotifications() {
+                fetch('/events/api/notifications/')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update desktop badge
+                        if (data.unread_count > 0) {
+                            if (badge) {
+                                badge.textContent = data.unread_count;
+                                badge.classList.remove('hidden');
+                            }
+                            if (badgeMobile) {
+                                badgeMobile.textContent = data.unread_count;
+                                badgeMobile.classList.remove('hidden');
+                            }
+                        } else {
+                            if (badge) badge.classList.add('hidden');
+                            if (badgeMobile) badgeMobile.classList.add('hidden');
+                        }
+
+                        // Render lists
+                        renderNotificationList(listBox, data);
+                        renderNotificationList(listBoxMobile, data);
+                    })
+                    .catch(function () {});
+            }
+
+            function renderNotificationList(container, data) {
+                if (!container) return;
+                if (data.notifications && data.notifications.length > 0) {
+                    container.innerHTML = '';
+                    data.notifications.forEach(function (item) {
+                        var readClass = item.is_read ? 'bg-white' : 'bg-indigo-50/60 font-medium';
+                        var el = document.createElement('div');
+                        el.className = 'px-4 py-3 text-xs text-gray-700 cursor-pointer hover:bg-gray-50 transition ' + readClass;
+                        el.innerHTML = '<p class="font-semibold text-gray-900 mb-0.5">' + item.title + '</p>'
+                            + '<p class="text-gray-500 line-clamp-2">' + item.message + '</p>'
+                            + '<p class="text-gray-400 mt-1 text-[10px]">' + item.created_at + '</p>';
+                        if (!item.is_read) {
+                            el.addEventListener('click', function () {
+                                fetch('/events/api/notifications/' + item.id + '/read/', {
+                                    method: 'POST',
+                                    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                                }).then(function () { fetchNotifications(); });
+                            });
+                        }
+                        container.appendChild(el);
+                    });
+                } else {
+                    container.innerHTML = '<div class="px-4 py-4 text-center text-xs text-gray-400">No notifications found.</div>';
+                }
+            }
+
+            // Desktop toggle
+            if (bellBtn && menu) {
+                bellBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    menu.classList.toggle('hidden');
+                    if (menuMobile) menuMobile.classList.add('hidden');
+                    fetchNotifications();
+                });
+                document.addEventListener('click', function () {
+                    menu.classList.add('hidden');
+                });
+                menu.addEventListener('click', function (e) { e.stopPropagation(); });
+            }
+
+            // Mobile toggle
+            if (bellBtnMobile && menuMobile) {
+                bellBtnMobile.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    menuMobile.classList.toggle('hidden');
+                    if (menu) menu.classList.add('hidden');
+                    fetchNotifications();
+                });
+                document.addEventListener('click', function () {
+                    menuMobile.classList.add('hidden');
+                });
+                menuMobile.addEventListener('click', function (e) { e.stopPropagation(); });
+            }
+
+            // Initial load + refresh every 15 seconds
+            fetchNotifications();
+            setInterval(fetchNotifications, 15000);
+        });
+    </script>
+    {% endif %}
 </body>
 </html>

@@ -3,129 +3,196 @@
 {% block title %}{{ event.title }} — Eventify{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
+<div class="max-w-4xl mx-auto space-y-6">
+
     <!-- Back to Dashboard Navigation -->
+    <div>
     {% if user.is_authenticated %}
         {% if user.is_admin %}
-            <a href="{% url 'admin_dashboard' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:underline mb-6">
-                ← Back to Dashboard
+            <a href="{% url 'admin_dashboard' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 shadow-2xs hover:shadow-xs transition duration-200 group">
+                <svg class="w-3.5 h-3.5 text-indigo-500 group-hover:-translate-x-0.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                <span>Back to Dashboard</span>
             </a>
         {% elif user.is_organizer %}
-            <a href="{% url 'organizer_dashboard' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:underline mb-6">
-                ← Back to Dashboard
+            <a href="{% url 'organizer_dashboard' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 shadow-2xs hover:shadow-xs transition duration-200 group">
+                <svg class="w-3.5 h-3.5 text-indigo-500 group-hover:-translate-x-0.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                <span>Back to Dashboard</span>
             </a>
         {% else %}
-            <a href="{% url 'attendee_dashboard' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:underline mb-6">
-                ← Back to Dashboard
+            <a href="{% url 'attendee_dashboard' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 shadow-2xs hover:shadow-xs transition duration-200 group">
+                <svg class="w-3.5 h-3.5 text-indigo-500 group-hover:-translate-x-0.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                <span>Back to Dashboard</span>
             </a>
         {% endif %}
     {% else %}
-        <a href="{% url 'event_list' %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:underline mb-6">
-            ← Back to Events
+        <a href="{% url 'event_list' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 shadow-2xs hover:shadow-xs transition duration-200 group">
+            <svg class="w-3.5 h-3.5 text-indigo-500 group-hover:-translate-x-0.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+            </svg>
+            <span>Back to Events</span>
         </a>
     {% endif %}
+    </div>
 
-    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
-        {% if event.image %}
-        <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-auto max-h-[700px] object-contain bg-gray-50">
-        {% else %}
-        <div class="w-full h-64 bg-indigo-50 flex items-center justify-center text-indigo-400">
-            No image available
+    <!-- Main Details Container (Matching screenshot design) -->
+    <div class="rounded-3xl border border-indigo-100/80 bg-[#f0f4ff]/70 p-6 sm:p-8 shadow-sm">
+
+        <!-- Top Section: 2 Columns (Info & 2x2 Grid on Left, Image Card on Right) -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+
+            <!-- Left: Title, Serial & 2x2 Metric Cards (7 cols) -->
+            <div class="md:col-span-7 flex flex-col justify-between space-y-4">
+                <div>
+                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                        <span class="inline-flex items-center rounded-full bg-indigo-100 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-indigo-700">
+                            {{ event.serial_number }}
+                        </span>
+                        {% if event.location %}
+                        <span class="inline-flex items-center gap-1 text-xs text-gray-500 font-medium">
+                            <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 0115 0z"/>
+                            </svg>
+                            {{ event.location }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-tight display">
+                        {{ event.title }}
+                    </h1>
+                </div>
+
+                <!-- 2x2 Metric Cards Grid -->
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <!-- Date Card -->
+                    <div class="rounded-2xl border border-indigo-100/60 bg-white p-3.5 sm:p-4 shadow-2xs flex flex-col justify-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">DATE</span>
+                        <span class="text-xs sm:text-sm font-bold text-gray-900 mt-1 truncate">{{ event.date|date:"M d, Y · g:i A" }}</span>
+                    </div>
+
+                    <!-- Price Card -->
+                    <div class="rounded-2xl border border-indigo-100/60 bg-white p-3.5 sm:p-4 shadow-2xs flex flex-col justify-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">PRICE</span>
+                        <span class="text-xs sm:text-sm font-bold text-indigo-600 mt-1">
+                            {% if event.price > 0 %}${{ event.price }}{% else %}Free{% endif %}
+                        </span>
+                    </div>
+
+                    <!-- Category Card -->
+                    <div class="rounded-2xl border border-indigo-100/60 bg-white p-3.5 sm:p-4 shadow-2xs flex flex-col justify-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">CATEGORY</span>
+                        <span class="text-xs sm:text-sm font-bold text-gray-900 mt-1 truncate">{{ event.category_label }}</span>
+                    </div>
+
+                    <!-- Tickets Available Card -->
+                    <div class="rounded-2xl border border-indigo-100/60 bg-white p-3.5 sm:p-4 shadow-2xs flex flex-col justify-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">TICKETS AVAILABLE</span>
+                        <span class="text-xs sm:text-sm font-bold text-gray-900 mt-1">
+                            {{ event.tickets_remaining }} / {{ event.max_tickets }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Image Card (5 cols) -->
+            <div class="md:col-span-5 flex">
+                <div class="w-full h-full min-h-[190px] rounded-2xl overflow-hidden border border-gray-900/10 bg-gray-950 flex items-center justify-center shadow-sm">
+                    {% if event.image %}
+                    <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-indigo-950 text-indigo-400 text-sm font-bold">
+                        {{ event.title|slice:":2"|upper }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Middle Section: EVENT HIGHLIGHTS & DETAILS (Bulleted Box) -->
+        <div class="mt-6 pt-2">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-indigo-700 mb-2.5">
+                EVENT HIGHLIGHTS & DETAILS
+            </h2>
+
+            <div class="rounded-2xl border border-indigo-100/60 bg-white p-4 sm:p-5 shadow-2xs">
+                {% if event.description_bullets %}
+                <ul class="space-y-3">
+                    {% for bullet in event.description_bullets %}
+                    <li class="flex items-start gap-3 text-sm text-gray-700 leading-relaxed">
+                        <span class="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-0.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                        </span>
+                        <span class="flex-1">{{ bullet }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-sm text-gray-400 italic">No description details provided for this event.</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom Actions & Countdown Card -->
+    <div class="rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-sm">
+
+        {% if not event.is_expired %}
+        <!-- Live Countdown Banner -->
+        <div id="event-timer-banner" class="mb-6 p-4 bg-gradient-to-r from-indigo-50/80 via-blue-50/80 to-indigo-50/80 rounded-2xl border border-indigo-100 flex flex-wrap items-center justify-between gap-4">
+            <span class="text-xs font-bold uppercase tracking-wide text-indigo-700">Event Starts In:</span>
+            {% include "events/partials/flip_countdown.html" with target_date=event.date|date:'Y-m-d\TH:i:s' %}
         </div>
         {% endif %}
 
-        <div class="p-8">
-            <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
-                <div>
-                    <div class="flex flex-wrap items-center gap-2 mb-3">
-                        <span class="inline-block text-xs font-semibold uppercase tracking-wide px-2 py-1 rounded bg-indigo-50 text-indigo-700">
-                            {{ event.category_label }}
-                        </span>
-                        <span class="inline-flex items-center rounded-full bg-[#edf8ff] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#1d6fd6]">
-                            {{ event.serial_number }}
-                        </span>
-                    </div>
-                    <h1 class="text-3xl font-bold text-gray-900 display">{{ event.title }}</h1>
-                </div>
-                <p class="text-2xl font-bold text-indigo-600">${{ event.price }}</p>
-            </div>
+        <!-- Dynamic Event Done Banner -->
+        <div id="event-done-banner" class="{% if not event.is_expired %}hidden{% endif %} mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-200 flex items-center justify-between gap-3">
+            <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Status:</span>
+            <span class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700 tracking-wide uppercase">
+                Event Done
+            </span>
+        </div>
 
-            <div class="grid sm:grid-cols-2 gap-4 mb-6 text-sm text-gray-600">
-                <p><strong class="text-gray-900">Date:</strong> {{ event.date|date:"F d, Y \a\t g:i A" }}</p>
-                <p><strong class="text-gray-900">Location:</strong> {{ event.location|default:"TBA" }}</p>
-                <p><strong class="text-gray-900">Tickets remaining:</strong> {{ event.tickets_remaining }} / {{ event.max_tickets }}</p>
-                {% if event.organizer %}
-                <p><strong class="text-gray-900">Organizer:</strong> {{ event.organizer.username }}</p>
-                {% endif %}
-            </div>
-
-            {% if event.is_expired %}
-            <!-- Expired Event Banner -->
-            <div id="event-done-banner" class="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between gap-3 shadow-sm">
-                <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Status:
-                </span>
-                <span class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700 tracking-wide uppercase shadow-sm">
-                    Event Done
-                </span>
-            </div>
-            {% else %}
-            <!-- Event Start Countdown (3-Column Flip Clock) -->
-            <div id="event-timer-banner" class="mb-6 p-4 bg-gradient-to-r from-indigo-50 via-blue-50 to-indigo-50 rounded-xl border border-indigo-100 shadow-sm flex flex-wrap items-center justify-between gap-3">
-                <span class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Event Starts In:</span>
-                {% include "events/partials/flip_countdown.html" with target_date=event.date|date:'Y-m-d\TH:i:s' %}
-            </div>
-
-            <!-- Dynamic Event Done Banner (Shown live when countdown finishes) -->
-            <div id="event-done-banner" class="hidden mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between gap-3 shadow-sm">
-                <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Status:
-                </span>
-                <span class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700 tracking-wide uppercase shadow-sm">
-                    Event Done
-                </span>
-            </div>
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap items-center gap-3">
+            {% if can_book %}
+            <a href="{% url 'book_ticket' event.pk %}" id="book-ticket-btn" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition shadow-sm">
+                Book Ticket
+            </a>
+            {% elif user_has_booked %}
+            <a href="{% url 'attendee_dashboard' %}" class="inline-flex items-center rounded-xl bg-green-50 px-6 py-2.5 text-sm font-semibold text-green-700 border border-green-200 hover:bg-green-100 transition">
+                ✓ View my bookings
+            </a>
+            {% elif event.is_expired %}
+            <span class="inline-flex items-center justify-center rounded-xl bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-600">
+                Event done
+            </span>
+            {% elif event.is_sold_out and user.is_authenticated and user.is_attendee %}
+            <span class="inline-flex items-center rounded-xl bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-500">
+                Sold out
+            </span>
             {% endif %}
 
-            <section class="mb-8">
-                <h2 class="text-lg font-semibold text-gray-900 display mb-2">Description</h2>
-                {% if event.description %}
-                <p class="text-gray-600 leading-relaxed whitespace-pre-line">{{ event.description }}</p>
-                {% else %}
-                <p class="text-gray-400 italic">No description provided for this event.</p>
-                {% endif %}
-            </section>
-
-            <div class="flex flex-wrap gap-3 pt-4 border-t border-gray-100">
-                {% if can_book %}
-                <a href="{% url 'book_ticket' event.pk %}" id="book-ticket-btn" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition shadow-sm">
-                    Book Ticket
-                </a>
-                {% elif user_has_booked %}
-                <a href="{% url 'my_bookings' %}" class="inline-flex items-center rounded-xl bg-green-50 px-6 py-2.5 text-sm font-semibold text-green-700 border border-green-200 hover:bg-green-100">
-                    ✓ View my bookings
-                </a>
-                {% elif event.is_expired %}
-                <span class="inline-flex items-center justify-center rounded-xl bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-600">
-                    Event done
-                </span>
-                {% elif event.is_sold_out and user.is_authenticated and user.is_attendee %}
-                <span class="inline-flex items-center rounded-xl bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-500">
-                    Sold out
-                </span>
-                {% endif %}
-
-                {% if can_manage %}
-                <a href="{% url 'edit_event' event.pk %}" class="inline-flex items-center justify-center rounded-xl bg-indigo-50 px-6 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition">
-                    Edit
-                </a>
-                <a href="{% url 'delete_event' event.pk %}" class="inline-flex items-center justify-center rounded-xl bg-red-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition">
-                    Delete
-                </a>
-                {% endif %}
-            </div>
+            {% if can_manage %}
+            <a href="{% url 'edit_event' event.pk %}" class="inline-flex items-center justify-center rounded-xl bg-indigo-50 px-6 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition">
+                Edit
+            </a>
+            <a href="{% url 'delete_event' event.pk %}" class="inline-flex items-center justify-center rounded-xl bg-red-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition">
+                Delete
+            </a>
+            {% endif %}
         </div>
+
     </div>
+
 </div>
 
 <script>

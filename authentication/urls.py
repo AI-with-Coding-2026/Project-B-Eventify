@@ -19,6 +19,16 @@ urlpatterns = [
         name='organizer_dashboard_stats_api',
     ),
     path(
+        'dashboard/organizer/export/excel/',
+        views.organizer_export_excel,
+        name='organizer_export_excel',
+    ),
+    path(
+        'dashboard/organizer/export/pdf/',
+        views.organizer_export_pdf,
+        name='organizer_export_pdf',
+    ),
+    path(
         'dashboard/attendee/',
         views.attendee_dashboard,
         name='attendee_dashboard',
@@ -32,6 +42,16 @@ urlpatterns = [
         'dashboard/attendee/bookings/<int:pk>/cancel/',
         views.cancel_booking,
         name='cancel_booking',
+    ),
+        path(
+        'admin/users/',
+        views.admin_user_list,
+        name='admin_user_list',
+    ),
+    path(
+        'admin/analytics/',
+        views.analytics_dashboard,
+        name='analytics_dashboard',
     ),
     path(
         'admin/users/<int:pk>/delete/',

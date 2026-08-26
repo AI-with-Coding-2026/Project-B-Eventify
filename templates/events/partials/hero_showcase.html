@@ -1,0 +1,281 @@
+{% load static %}
+{% if featured_events %}
+<div id="epic-hero-showcase" class="w-full mb-10 select-none" data-autoplay-duration="5500">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch">
+
+        <!-- Main Featured Stage (Left, 8-9 cols) -->
+        <div id="hero-main-stage" class="lg:col-span-8 xl:col-span-9 relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gray-950 border border-gray-800 shadow-2xl min-h-[420px] sm:min-h-[480px] flex flex-col justify-end p-6 sm:p-10 transition-all">
+
+            <!-- Background Image Slides -->
+            {% for event in featured_events %}
+            <div class="hero-bg-slide absolute inset-0 transition-opacity duration-700 ease-in-out {% if forloop.first %}opacity-100 z-10{% else %}opacity-0 z-0{% endif %}"
+                 data-slide-index="{{ forloop.counter0 }}">
+                {% if event.image %}
+                <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-full object-cover blur-[1.2px] scale-105 transform transition-transform duration-7000 ease-out">
+                {% else %}
+                <div class="w-full h-full bg-gradient-to-br from-indigo-950 via-gray-900 to-purple-950 flex items-center justify-center">
+                    <svg class="w-24 h-24 text-indigo-500/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                {% endif %}
+                <!-- Balanced gradient overlays for comfortable text readability -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent"></div>
+            </div>
+            {% endfor %}
+
+            <!-- Dynamic Content Container -->
+            <div class="relative z-20 max-w-2xl space-y-4">
+                <!-- Badges: Category & Nearest Date -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <span id="hero-category" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-indigo-600 text-white shadow-sm">
+                        {{ featured_events.0.category_label }}
+                    </span>
+                    <span id="hero-date-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs text-gray-300 bg-black/40 backdrop-blur-sm border border-white/5">
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span id="hero-date-text">{{ featured_events.0.date|date:"M d, Y · g:i A" }}</span>
+                    </span>
+                    <span id="hero-location-badge" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs text-gray-300 bg-black/40 backdrop-blur-sm border border-white/5">
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        </svg>
+                        <span id="hero-location-text">{{ featured_events.0.location|default:"TBA" }}</span>
+                    </span>
+                </div>
+
+                <!-- Event Title -->
+                <h2 id="hero-title" class="text-2xl sm:text-4xl lg:text-5xl font-black text-white leading-tight tracking-tight drop-shadow-md">
+                    {{ featured_events.0.title }}
+                </h2>
+
+                <!-- Short Description -->
+                <p id="hero-description" class="text-sm sm:text-base text-gray-300 line-clamp-2 leading-relaxed max-w-xl">
+                    {{ featured_events.0.description|default:"Join us for this exciting upcoming event. Book your tickets now before seats run out!" }}
+                </p>
+
+                <!-- Price and Action Buttons -->
+                <div class="pt-2 flex flex-wrap items-center gap-4">
+                    <div>
+                        <span class="block text-[10px] uppercase font-bold tracking-wider text-gray-400">Tickets from</span>
+                        <span id="hero-price" class="text-2xl font-black text-white">
+                            {% if featured_events.0.price > 0 %}${{ featured_events.0.price }}{% else %}Free{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <a id="hero-book-btn" href="{% url 'book_ticket' featured_events.0.pk %}"
+                           class="inline-flex items-center justify-center px-6 py-3 rounded-xl text-sm font-bold bg-white text-gray-950 hover:bg-gray-100 hover:scale-[1.02] active:scale-[0.98] transition shadow-lg">
+                            Book Ticket
+                        </a>
+                        <a id="hero-detail-btn" href="{% url 'event_detail' featured_events.0.pk %}"
+                           class="inline-flex items-center justify-center px-5 py-3 rounded-xl text-sm font-bold bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/10 transition">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Queue with Progress Timer (Right, 3-4 cols) -->
+        <div class="lg:col-span-4 xl:col-span-3 flex flex-col justify-between space-y-2">
+            <div class="px-2 pb-1 flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Upcoming Events</span>
+                <span class="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Nearest first</span>
+            </div>
+
+            <div id="hero-queue-list" class="space-y-2">
+                {% for event in featured_events %}
+                <button type="button"
+                        class="queue-item group w-full text-left rounded-xl p-2.5 sm:p-3 flex items-center gap-3 transition-all duration-300 relative overflow-hidden border {% if forloop.first %}bg-gray-900 border-indigo-500/60 ring-1 ring-indigo-500/40 shadow-md active-queue-item{% else %}bg-gray-900/80 hover:bg-gray-900 border-gray-800/80 hover:border-gray-700 shadow-xs{% endif %}"
+                        data-index="{{ forloop.counter0 }}"
+                        data-id="{{ event.pk }}"
+                        data-title="{{ event.title }}"
+                        data-category="{{ event.category_label }}"
+                        data-date="{{ event.date|date:'M d, Y · g:i A' }}"
+                        data-location="{{ event.location|default:'TBA' }}"
+                        data-price="{% if event.price > 0 %}${{ event.price }}{% else %}Free{% endif %}"
+                        data-description="{{ event.description|default:'Join us for this exciting upcoming event.'|truncatewords:20 }}"
+                        data-book-url="{% url 'book_ticket' event.pk %}"
+                        data-detail-url="{% url 'event_detail' event.pk %}">
+
+                    <!-- Dynamic Event Photo Background (Active Card takes natural unzoomed photo colors) -->
+                    <div class="card-bg-layer absolute inset-0 overflow-hidden pointer-events-none rounded-xl z-0">
+                        {% if event.image %}
+                        <img src="{{ event.image.url }}" alt="" class="card-bg-img w-full h-full object-cover transition-opacity duration-500 {% if forloop.first %}opacity-40{% else %}opacity-0{% endif %}">
+                        <div class="card-bg-overlay absolute inset-0 transition-colors duration-500 {% if forloop.first %}bg-gradient-to-r from-gray-950/85 via-gray-950/70 to-gray-950/60{% else %}bg-gray-900/90{% endif %}"></div>
+                        {% else %}
+                        <div class="card-bg-overlay absolute inset-0 transition-colors duration-500 {% if forloop.first %}bg-gradient-to-r from-gray-950 via-indigo-950/80 to-purple-950/70{% else %}bg-gray-900/90{% endif %}"></div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Full-Card Translucent Progress Fill (Low-brightness light sweep) -->
+                    <div class="queue-progress-track absolute inset-0 overflow-hidden pointer-events-none rounded-xl z-[1]">
+                        <div class="queue-progress-bar h-full bg-white/[0.18] transition-none" style="width: 0%;"></div>
+                    </div>
+
+                    <!-- Thumbnail -->
+                    <div class="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-950 border border-white/15 shadow-sm relative z-10">
+                        {% if event.image %}
+                        <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center bg-indigo-900/60 text-indigo-300 text-xs font-bold">
+                            {{ event.title|slice:":2"|upper }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Title & Date -->
+                    <div class="flex-1 min-w-0 relative z-10">
+                        <p class="queue-item-title text-sm font-semibold truncate text-white">
+                            {{ event.title }}
+                        </p>
+                        <p class="queue-item-date text-xs text-gray-300 truncate mt-0.5">
+                            {{ event.date|date:"M d" }} · {{ event.location|default:"TBA" }}
+                        </p>
+                    </div>
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    (function () {
+        const container = document.getElementById('epic-hero-showcase');
+        if (!container) return;
+
+        const mainStage = document.getElementById('hero-main-stage');
+        const queueItems = container.querySelectorAll('.queue-item');
+        const bgSlides = container.querySelectorAll('.hero-bg-slide');
+        const DURATION = parseInt(container.dataset.autoplayDuration, 10) || 5500;
+
+        if (queueItems.length <= 1) return;
+
+        // Stage elements
+        const elCategory = document.getElementById('hero-category');
+        const elDateText = document.getElementById('hero-date-text');
+        const elLocationText = document.getElementById('hero-location-text');
+        const elTitle = document.getElementById('hero-title');
+        const elDesc = document.getElementById('hero-description');
+        const elPrice = document.getElementById('hero-price');
+        const elBookBtn = document.getElementById('hero-book-btn');
+        const elDetailBtn = document.getElementById('hero-detail-btn');
+
+        let currentIndex = 0;
+        let animationFrameId = null;
+        let startTime = null;
+        let isPaused = false;
+
+        function setActiveSlide(index) {
+            currentIndex = index;
+            const item = queueItems[index];
+            if (!item) return;
+
+            // 1. Update Background Image Slides
+            bgSlides.forEach(function (slide, i) {
+                if (i === index) {
+                    slide.classList.remove('opacity-0', 'z-0');
+                    slide.classList.add('opacity-100', 'z-10');
+                } else {
+                    slide.classList.remove('opacity-100', 'z-10');
+                    slide.classList.add('opacity-0', 'z-0');
+                }
+            });
+
+            // 2. Update Content Info with quick transition
+            elCategory.textContent = item.dataset.category || 'Event';
+            elDateText.textContent = item.dataset.date || '';
+            elLocationText.textContent = item.dataset.location || 'TBA';
+            elTitle.textContent = item.dataset.title || '';
+            elDesc.textContent = item.dataset.description || '';
+            elPrice.textContent = item.dataset.price || 'Free';
+            elBookBtn.href = item.dataset.bookUrl || '#';
+            elDetailBtn.href = item.dataset.detailUrl || '#';
+
+            // 3. Update Queue Items styling
+            queueItems.forEach(function (btn, i) {
+                const bar = btn.querySelector('.queue-progress-bar');
+                const img = btn.querySelector('.card-bg-img');
+                const overlay = btn.querySelector('.card-bg-overlay');
+
+                if (i === index) {
+                    btn.classList.add('border-indigo-500/60', 'ring-1', 'ring-indigo-500/40', 'shadow-md', 'active-queue-item');
+                    btn.classList.remove('border-gray-800/80');
+                    if (img) {
+                        img.classList.remove('opacity-0');
+                        img.classList.add('opacity-40');
+                    }
+                    if (overlay) {
+                        overlay.className = 'card-bg-overlay absolute inset-0 transition-colors duration-500 bg-gradient-to-r from-gray-950/85 via-gray-950/70 to-gray-950/60';
+                    }
+                    if (bar) bar.style.width = '0%';
+                } else {
+                    btn.classList.remove('border-indigo-500/60', 'ring-1', 'ring-indigo-500/40', 'shadow-md', 'active-queue-item');
+                    btn.classList.add('border-gray-800/80');
+                    if (img) {
+                        img.classList.remove('opacity-40');
+                        img.classList.add('opacity-0');
+                    }
+                    if (overlay) {
+                        overlay.className = 'card-bg-overlay absolute inset-0 transition-colors duration-500 bg-gray-900/90';
+                    }
+                    if (bar) bar.style.width = '0%';
+                }
+            });
+
+            // Restart timer
+            startTime = performance.now();
+        }
+
+        function tick(now) {
+            if (!startTime) startTime = now;
+
+            if (!isPaused) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / DURATION, 1);
+
+                const activeItem = queueItems[currentIndex];
+                if (activeItem) {
+                    const bar = activeItem.querySelector('.queue-progress-bar');
+                    if (bar) {
+                        bar.style.width = (progress * 100) + '%';
+                    }
+                }
+
+                if (progress >= 1) {
+                    const nextIndex = (currentIndex + 1) % queueItems.length;
+                    setActiveSlide(nextIndex);
+                }
+            } else {
+                // Keep startTime sliding forward while paused so duration doesn't jump
+                startTime = now - (parseFloat((queueItems[currentIndex].querySelector('.queue-progress-bar') || {}).style.width || 0) / 100 * DURATION);
+            }
+
+            animationFrameId = requestAnimationFrame(tick);
+        }
+
+        // Click handler on queue items
+        queueItems.forEach(function (item) {
+            item.addEventListener('click', function () {
+                const idx = parseInt(this.dataset.index, 10);
+                setActiveSlide(idx);
+            });
+        });
+
+        // Pause timer ONLY when hovering over the main big card stage
+        if (mainStage) {
+            mainStage.addEventListener('mouseenter', function () { isPaused = true; });
+            mainStage.addEventListener('mouseleave', function () { isPaused = false; });
+        }
+
+        // Start loop
+        setActiveSlide(0);
+        animationFrameId = requestAnimationFrame(tick);
+    })();
+</script>
+{% endif %}
