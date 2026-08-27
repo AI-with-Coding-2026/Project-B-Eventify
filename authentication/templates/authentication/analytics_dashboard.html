@@ -716,17 +716,24 @@
         const expContainer = document.getElementById('exportDropdownContainer');
 
         if (expBtn && expMenu) {
+            function closeExportMenu() {
+                expMenu.classList.add('hidden');
+                if (expChevron) expChevron.classList.remove('rotate-180');
+                expBtn.setAttribute('aria-expanded', 'false');
+            }
+
             expBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const isHidden = expMenu.classList.contains('hidden');
                 if (isHidden) {
+                    if (filterMenu && !filterMenu.classList.contains('hidden')) {
+                        closeFilterMenu();
+                    }
                     expMenu.classList.remove('hidden');
                     if (expChevron) expChevron.classList.add('rotate-180');
                     expBtn.setAttribute('aria-expanded', 'true');
                 } else {
-                    expMenu.classList.add('hidden');
-                    if (expChevron) expChevron.classList.remove('rotate-180');
-                    expBtn.setAttribute('aria-expanded', 'false');
+                    closeExportMenu();
                 }
             });
         }
@@ -1018,6 +1025,11 @@
             filterBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 if (filterMenu.classList.contains('hidden')) {
+                    if (expMenu && !expMenu.classList.contains('hidden')) {
+                        expMenu.classList.add('hidden');
+                        if (expChevron) expChevron.classList.remove('rotate-180');
+                        expBtn.setAttribute('aria-expanded', 'false');
+                    }
                     openFilterMenu();
                 } else {
                     closeFilterMenu();
