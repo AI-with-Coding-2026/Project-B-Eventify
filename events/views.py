@@ -40,6 +40,11 @@ def organizer_event_list(request):
     else:
         events = Event.objects.filter(organizer=request.user)
 
+    # Annotate with tickets_sold so templates can display available tickets
+    events = events.annotate(
+        tickets_sold=Coalesce(Sum('bookings__quantity'), 0),
+    )
+
     return render(
         request,
         'events/event_list.html',
@@ -56,6 +61,7 @@ def event_create(request):
             event = form.save(commit=False)
             event.organizer = request.user
             event.save()
+            form.save_m2m()  # Save many-to-many categories
             messages.success(request, f'Event "{event.title}" created successfully!')
             return redirect('organizer_event_list')
     else:

@@ -1,6 +1,8 @@
 import os
+from datetime import timedelta
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from .models import Event
 
@@ -32,9 +34,11 @@ class EventForm(forms.ModelForm):
             'ticket_price',
             'max_tickets',
             'poster',
+            'categories',
         ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
+            'categories': forms.CheckboxSelectMultiple(),
         }
 
     def clean_poster(self):
@@ -67,3 +71,16 @@ class EventForm(forms.ModelForm):
         if max_t is not None and max_t <= 0:
             raise ValidationError('Maximum tickets must be greater than zero.')
         return max_t
+
+    def clean_date(self):
+        date = self.cleaned_data.get('date')
+        if date is not None:
+            now = timezone.now()
+            if date < now:
+                raise ValidationError('Event date cannot be in the past.')
+            max_date = now + timedelta(days=183)  # ~6 months
+            if date > max_date:
+                raise ValidationError(
+                    'Event date cannot be more than 6 months from now.'
+                )
+        return date

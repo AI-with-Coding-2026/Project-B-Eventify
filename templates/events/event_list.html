@@ -22,17 +22,39 @@
                     <img src="{{ event.poster.url }}" alt="{{ event.title }} Poster" class="event-poster">
                 {% else %}
                     <div class="event-poster-placeholder">
-                        {{ event.title|slice:":2"|upper }}
+                        <svg class="placeholder-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="8" y="16" width="48" height="32" rx="4" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <circle cx="8" cy="28" r="3" fill="currentColor" opacity="0.4"/>
+                            <circle cx="56" cy="28" r="3" fill="currentColor" opacity="0.4"/>
+                            <line x1="20" y1="16" x2="20" y2="48" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.4"/>
+                            <rect x="26" y="24" width="22" height="4" rx="2" fill="currentColor" opacity="0.6"/>
+                            <rect x="28" y="32" width="18" height="3" rx="1.5" fill="currentColor" opacity="0.3"/>
+                            <rect x="30" y="38" width="14" height="3" rx="1.5" fill="currentColor" opacity="0.2"/>
+                            <circle cx="14" cy="32" r="4" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5"/>
+                            <path d="M14 30v4M12 32h4" stroke="currentColor" stroke-width="1.2" opacity="0.5"/>
+                            <path d="M32 8l-2 8M32 8l2 8" stroke="currentColor" stroke-width="1.5" opacity="0.25"/>
+                            <path d="M24 10l0 6" stroke="currentColor" stroke-width="1.5" opacity="0.15"/>
+                            <path d="M40 10l0 6" stroke="currentColor" stroke-width="1.5" opacity="0.15"/>
+                        </svg>
+                        <span class="placeholder-label">Event</span>
                     </div>
                 {% endif %}
 
                 <div class="event-card-body">
                     <h2 class="event-title">{{ event.title }}</h2>
 
+                    {% if event.categories.all %}
+                        <div class="category-tags">
+                            {% for cat in event.categories.all %}
+                                <span class="category-tag">{{ cat.name }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
                     <div class="event-meta">
                         <span>📅 {{ event.date|date:"F j, Y @ g:i A" }}</span>
                         <span>📍 {{ event.location }}</span>
-                        <span>🎟️ ${{ event.ticket_price }} / ticket (Max {{ event.max_tickets }})</span>
+                        <span>🎟️ ${{ event.ticket_price }} / ticket</span>
                     </div>
 
                     <p class="event-description">

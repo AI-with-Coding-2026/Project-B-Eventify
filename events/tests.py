@@ -10,7 +10,7 @@ from django.urls import reverse
 
 from authentication.models import User, UserRole
 from .forms import EventForm
-from .models import Booking, Event
+from .models import Booking, Category, Event
 
 # Create a temporary directory for MEDIA_ROOT during tests
 TEMP_MEDIA_ROOT = tempfile.mkdtemp()
@@ -43,6 +43,29 @@ class EventModelTests(TestCase):
         )
         self.assertEqual(str(event), 'Tech Conference 2026 by org_model_test')
         self.assertEqual(event.organizer, self.organizer)
+
+    def test_event_categories_m2m(self):
+        """Test that events can have multiple categories."""
+        cat1 = Category.objects.create(name='Music')
+        cat2 = Category.objects.create(name='Technology')
+        event = Event.objects.create(
+            organizer=self.organizer,
+            title='Tech Music Fest',
+            description='Fusion event.',
+            location='Arena',
+            date=timezone.now() + timezone.timedelta(days=10),
+            ticket_price=Decimal('30.00'),
+            max_tickets=500,
+        )
+        event.categories.add(cat1, cat2)
+        self.assertEqual(event.categories.count(), 2)
+        self.assertIn(cat1, event.categories.all())
+        self.assertIn(cat2, event.categories.all())
+
+    def test_category_auto_slug(self):
+        """Test that Category auto-generates slug from name."""
+        cat = Category.objects.create(name='Health & Wellness')
+        self.assertEqual(cat.slug, 'health-wellness')
 
     def test_poster_file_deleted_on_event_delete(self):
         dummy_image = SimpleUploadedFile(
@@ -165,6 +188,47 @@ class EventFormTests(TestCase):
         form = EventForm(data=data)
         self.assertFalse(form.is_valid())
         self.assertIn('ticket_price', form.errors)
+
+    def test_past_date_rejected(self):
+        """Feature 5: Past dates should be rejected by form validation."""
+        data = {
+            'title': 'Past Date Event',
+            'description': 'Testing past date',
+            'location': 'Test City',
+            'date': (timezone.now() - timezone.timedelta(days=1)).strftime('%Y-%m-%dT%H:%M'),
+            'ticket_price': '10.00',
+            'max_tickets': 10,
+        }
+        form = EventForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('date', form.errors)
+
+    def test_date_beyond_six_months_rejected(self):
+        """Feature 5: Dates more than 6 months in the future should be rejected."""
+        data = {
+            'title': 'Far Future Event',
+            'description': 'Testing future date limit',
+            'location': 'Test City',
+            'date': (timezone.now() + timezone.timedelta(days=200)).strftime('%Y-%m-%dT%H:%M'),
+            'ticket_price': '10.00',
+            'max_tickets': 10,
+        }
+        form = EventForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('date', form.errors)
+
+    def test_valid_date_within_range_accepted(self):
+        """Feature 5: Dates within the valid range should be accepted."""
+        data = {
+            'title': 'Valid Date Event',
+            'description': 'Testing valid date',
+            'location': 'Test City',
+            'date': (timezone.now() + timezone.timedelta(days=30)).strftime('%Y-%m-%dT%H:%M'),
+            'ticket_price': '10.00',
+            'max_tickets': 10,
+        }
+        form = EventForm(data=data)
+        self.assertTrue(form.is_valid(), msg=form.errors)
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
@@ -312,12 +376,30 @@ class EventViewsAuthorizationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Organizer A&#x27;s Concert")
 
-    def test_attendee_sees_created_events_on_dashboard(self):
+    def test_attendee_sees_upcoming_events_on_dashboard(self):
+        """Feature 2: Only upcoming events should appear on the attendee dashboard."""
         self.client.force_login(self.attendee)
         dashboard_url = reverse('attendee_dashboard')
         response = self.client.get(dashboard_url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Organizer A&#x27;s Concert")
+
+    def test_past_events_excluded_from_attendee_dashboard(self):
+        """Feature 2: Past events should NOT appear on the attendee dashboard."""
+        past_event = Event.objects.create(
+            organizer=self.organizer_a,
+            title='Past Concert',
+            description='Already happened',
+            location='Old Venue',
+            date=timezone.now() - timezone.timedelta(days=1),
+            ticket_price=Decimal('10.00'),
+            max_tickets=50,
+        )
+        self.client.force_login(self.attendee)
+        dashboard_url = reverse('attendee_dashboard')
+        response = self.client.get(dashboard_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Past Concert')
 
 
 class BookingModelTests(TestCase):
@@ -598,3 +680,89 @@ class OrganizerDashboardAnalyticsTests(TestCase):
         self.assertEqual(response.context['tickets_remaining'], 93)
         self.assertEqual(response.context['tickets_sold'], 7)
 
+
+class AttendeeFilterTests(TestCase):
+    """Tests for attendee dashboard filtering and sorting (Feature 3)."""
+
+    def setUp(self):
+        self.client = Client()
+        self.organizer = User.objects.create_user(
+            username='org_filter',
+            email='org_filter@example.com',
+            password='Password123!',
+            role=UserRole.ORGANIZER,
+        )
+        self.attendee = User.objects.create_user(
+            username='att_filter',
+            email='att_filter@example.com',
+            password='Password123!',
+            role=UserRole.ATTENDEE,
+        )
+        self.cat_music = Category.objects.create(name='FilterMusic')
+        self.cat_tech = Category.objects.create(name='FilterTech')
+
+        self.event_ny = Event.objects.create(
+            organizer=self.organizer,
+            title='NY Music Fest',
+            description='Music in NY',
+            location='New York',
+            date=timezone.now() + timezone.timedelta(days=5),
+            ticket_price=Decimal('20.00'),
+            max_tickets=100,
+        )
+        self.event_ny.categories.add(self.cat_music)
+
+        self.event_la = Event.objects.create(
+            organizer=self.organizer,
+            title='LA Tech Conf',
+            description='Tech in LA',
+            location='Los Angeles',
+            date=timezone.now() + timezone.timedelta(days=10),
+            ticket_price=Decimal('30.00'),
+            max_tickets=200,
+        )
+        self.event_la.categories.add(self.cat_tech)
+
+    def test_location_filter(self):
+        """Feature 3: Filter events by location."""
+        self.client.force_login(self.attendee)
+        response = self.client.get(reverse('attendee_dashboard'), {'location': 'New York'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'NY Music Fest')
+        self.assertNotContains(response, 'LA Tech Conf')
+
+    def test_category_filter(self):
+        """Feature 3: Filter events by category."""
+        self.client.force_login(self.attendee)
+        response = self.client.get(reverse('attendee_dashboard'), {'category': self.cat_tech.slug})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'LA Tech Conf')
+        self.assertNotContains(response, 'NY Music Fest')
+
+    def test_sort_date_asc(self):
+        """Feature 3: Sort events soonest first."""
+        self.client.force_login(self.attendee)
+        response = self.client.get(reverse('attendee_dashboard'), {'sort': 'date_asc'})
+        events_list = list(response.context['events'])
+        self.assertEqual(events_list[0].title, 'NY Music Fest')
+
+    def test_sort_date_desc(self):
+        """Feature 3: Sort events latest first."""
+        self.client.force_login(self.attendee)
+        response = self.client.get(reverse('attendee_dashboard'), {'sort': 'date_desc'})
+        events_list = list(response.context['events'])
+        self.assertEqual(events_list[0].title, 'LA Tech Conf')
+
+    def test_ajax_infinite_scroll_returns_json(self):
+        """Feature 8: AJAX requests should return JSON with html and has_next."""
+        self.client.force_login(self.attendee)
+        response = self.client.get(
+            reverse('attendee_dashboard'),
+            {'page': 1},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        data = response.json()
+        self.assertIn('html', data)
+        self.assertIn('has_next', data)

@@ -11,51 +11,106 @@
     </div>
 </div>
 
+{# ── Filter Bar (Feature 3) ── #}
+<div class="filter-bar">
+    <form method="get" class="filter-form" id="filter-form">
+        <input
+            type="text"
+            name="location"
+            class="filter-input"
+            placeholder="🔍 Filter by location..."
+            value="{{ location_query }}"
+        >
+
+        <select name="category" class="filter-select">
+            <option value="">All Categories</option>
+            {% for cat in all_categories %}
+                <option value="{{ cat.slug }}" {% if cat.slug == category_slug %}selected{% endif %}>
+                    {{ cat.name }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <select name="sort" class="filter-select">
+            <option value="date_asc" {% if current_sort == 'date_asc' %}selected{% endif %}>
+                Soonest First
+            </option>
+            <option value="date_desc" {% if current_sort == 'date_desc' %}selected{% endif %}>
+                Latest First
+            </option>
+        </select>
+
+        <button type="submit" class="btn-create" style="padding: 10px 20px;">
+            Apply
+        </button>
+    </form>
+</div>
+
 {% if events %}
-    <div class="events-grid">
-        {% for event in events %}
-            <article class="event-card">
-                {% if event.poster %}
-                    <img src="{{ event.poster.url }}" alt="{{ event.title }} Poster" class="event-poster">
-                {% else %}
-                    <div class="event-poster-placeholder">
-                        {{ event.title|slice:":2"|upper }}
-                    </div>
-                {% endif %}
-
-                <div class="event-card-body">
-                    <h2 class="event-title">{{ event.title }}</h2>
-
-                    <div class="event-meta">
-                        <span>📅 {{ event.date|date:"F j, Y @ g:i A" }}</span>
-                        <span>📍 {{ event.location }}</span>
-                        <span>🎟️ ${{ event.ticket_price }} / ticket (Max {{ event.max_tickets }})</span>
-                        <span>👤 Organizer: {{ event.organizer.full_name }}</span>
-                    </div>
-
-                    <p class="event-description">
-                        {{ event.description }}
-                    </p>
-
-                    <div class="event-footer">
-                        <span class="event-badge">
-                            Created {{ event.created_at|date:"M j, Y" }}
-                        </span>
-
-                        <div class="action-buttons">
-                            <a href="{% url 'event_detail' event.pk %}" class="btn-create" style="padding: 6px 14px; font-size: 13px;">
-                                View Details
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </article>
-        {% endfor %}
+    <div class="events-grid" id="events-grid">
+        {% include 'authentication/_event_card_fragment.html' %}
     </div>
+
+    {# ── Infinite Scroll Loading Indicator (Feature 8) ── #}
+    {% if page_obj.has_next %}
+        <div class="scroll-loader" id="scroll-loader">
+            <div class="spinner"></div>
+            <span>Loading more events…</span>
+        </div>
+    {% endif %}
 {% else %}
     <div class="empty-state">
-        <h3>No Events Available Yet</h3>
-        <p>Organizers haven't posted any events yet. Check back soon!</p>
+        <h3>No Upcoming Events</h3>
+        <p>There are no upcoming events matching your filters. Try adjusting your search or check back soon!</p>
     </div>
 {% endif %}
+
+{# ── Infinite Scroll JavaScript (Feature 8) ── #}
+<script>
+(function () {
+    var grid = document.getElementById('events-grid');
+    var loader = document.getElementById('scroll-loader');
+    if (!grid || !loader) return;
+
+    var nextPage = {% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}null{% endif %};
+    var loading = false;
+
+    // Build the current filter query string (minus the page param)
+    function getFilterParams() {
+        var form = document.getElementById('filter-form');
+        if (!form) return '';
+        var params = new URLSearchParams(new FormData(form));
+        params.delete('page');
+        return params.toString();
+    }
+
+    var observer = new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting && !loading && nextPage !== null) {
+            loading = true;
+            var filterStr = getFilterParams();
+            var url = '?page=' + nextPage + (filterStr ? '&' + filterStr : '');
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                grid.insertAdjacentHTML('beforeend', data.html);
+                if (data.has_next) {
+                    nextPage = data.next_page;
+                } else {
+                    nextPage = null;
+                    loader.style.display = 'none';
+                }
+                loading = false;
+            })
+            .catch(function () {
+                loading = false;
+            });
+        }
+    }, { rootMargin: '200px' });
+
+    observer.observe(loader);
+})();
+</script>
 {% endblock %}

@@ -1,16 +1,20 @@
 from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.utils import timezone
 
 from decimal import Decimal
 
 from .decorators import admin_required, role_required
 from .forms import StudentEditForm, UserRegistrationForm
 from .models import User, UserRole
-from events.models import Event
+from events.models import Category, Event
 
 
 # -------------------------
@@ -156,11 +160,69 @@ def organizer_dashboard(request):
 
 @role_required(UserRole.ADMIN, UserRole.ATTENDEE)
 def attendee_dashboard(request):
-    events = Event.objects.all()
+    """Browse upcoming events with sorting, filtering, and infinite scroll."""
+    now = timezone.now()
+
+    # Feature 2: Only show upcoming events (exclude past/concluded events)
+    events = Event.objects.filter(date__gte=now)
+
+    # Feature 6: Annotate with tickets_sold for available ticket display
+    events = events.annotate(
+        tickets_sold=Coalesce(Sum('bookings__quantity'), 0),
+    )
+
+    # Compute tickets_remaining via Python after fetch (F() subtraction
+    # on PositiveIntegerField can cause issues, so we do it simply)
+
+    # Feature 3: Location filtering
+    location_query = request.GET.get('location', '').strip()
+    if location_query:
+        events = events.filter(location__icontains=location_query)
+
+    # Feature 3: Category filtering
+    category_slug = request.GET.get('category', '').strip()
+    if category_slug:
+        events = events.filter(categories__slug=category_slug).distinct()
+
+    # Feature 3: Chronological sorting
+    sort = request.GET.get('sort', 'date_asc').strip()
+    if sort == 'date_desc':
+        events = events.order_by('-date')
+    else:
+        events = events.order_by('date')  # Upcoming first (default)
+
+    # Gather filter options for the UI
+    all_categories = Category.objects.all()
+
+    # Feature 8: Pagination (6 events per page)
+    paginator = Paginator(events, 6)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    # AJAX request for infinite scroll
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        html = render_to_string(
+            'authentication/_event_card_fragment.html',
+            {'events': page_obj, 'user': request.user},
+            request=request,
+        )
+        return JsonResponse({
+            'html': html,
+            'has_next': page_obj.has_next(),
+            'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
+        })
+
     return render(
         request,
         'authentication/attendee_dashboard.html',
-        {'events': events},
+        {
+            'events': page_obj,
+            'page_obj': page_obj,
+            'all_categories': all_categories,
+            'location_query': location_query,
+            'category_slug': category_slug,
+            'current_sort': sort,
+        },
     )
 
 

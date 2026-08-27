@@ -32,7 +32,13 @@
                     </div>
                 {% endif %}
 
-                {{ field }}
+                {% if field.name == 'categories' %}
+                    <div class="categories-checkbox-group">
+                        {{ field }}
+                    </div>
+                {% else %}
+                    {{ field }}
+                {% endif %}
 
                 {% if field.help_text %}
                     <div class="help-text">
@@ -58,4 +64,26 @@
         </div>
     </form>
 </section>
+
+{# ── Date Picker Past-Date Restriction (Feature 5) ── #}
+<script>
+(function() {
+    var dateInput = document.getElementById('id_date');
+    if (!dateInput) return;
+
+    // Set minimum to right now
+    var now = new Date();
+    var pad = function(n) { return n < 10 ? '0' + n : n; };
+    var minDate = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' +
+                  pad(now.getDate()) + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+    dateInput.setAttribute('min', minDate);
+
+    // Set maximum to 6 months from now
+    var maxDate = new Date(now);
+    maxDate.setMonth(maxDate.getMonth() + 6);
+    var maxStr = maxDate.getFullYear() + '-' + pad(maxDate.getMonth() + 1) + '-' +
+                 pad(maxDate.getDate()) + 'T' + pad(maxDate.getHours()) + ':' + pad(maxDate.getMinutes());
+    dateInput.setAttribute('max', maxStr);
+})();
+</script>
 {% endblock %}
