@@ -66,9 +66,25 @@ def admin_dashboard(request):
     users = User.objects.all()
     organizers = users.filter(role=UserRole.ORGANIZER)
     attendees = users.filter(role=UserRole.ATTENDEE)
-    upcoming_events = Event.objects.filter(
-        date__gte=timezone.now()
-    ).order_by('date')[:3]
+    search_query = request.GET.get('search', '')
+    selected_category = request.GET.get('category', '')
+    max_price = request.GET.get('max_price', '')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    upcoming_events = Event.objects.filter(date__gte=timezone.now())
+
+    if search_query:
+        upcoming_events = upcoming_events.filter(title__icontains=search_query)
+    if selected_category:
+        upcoming_events = upcoming_events.filter(category=selected_category)
+    if max_price:
+        upcoming_events = upcoming_events.filter(price__lte=max_price)
+    if start_date:
+        upcoming_events = upcoming_events.filter(date__date__gte=start_date)
+    if end_date:
+        upcoming_events = upcoming_events.filter(date__date__lte=end_date)
+
+    upcoming_events = upcoming_events.order_by('date')[:3]
     context = {
         'total_users': users.count(),
         'admin_count': users.filter(role=UserRole.ADMIN).count(),
@@ -85,7 +101,13 @@ def admin_dashboard(request):
     reverse=True,
 ),
         'categories': Category.objects.order_by('name'),
+        'filter_categories': Event.get_all_category_choices(),
         'upcoming_events': upcoming_events,
+        'search_query': search_query,
+        'selected_category': selected_category,
+        'max_price': max_price,
+        'start_date': start_date,
+        'end_date': end_date,
     }
     return render(request, 'authentication/admin_dashboard.html', context)
 
@@ -401,11 +423,26 @@ def cancel_booking(request, pk):
 @admin_required
 def analytics_dashboard(request):
     organizer_id = request.GET.get('organizer')
+    search_query = request.GET.get('search', '')
+    selected_category = request.GET.get('category', '')
+    max_price = request.GET.get('max_price', '')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
 
     tickets = Ticket.objects.select_related('event', 'event__organizer')
 
     if organizer_id:
         tickets = tickets.filter(event__organizer_id=organizer_id)
+    if search_query:
+        tickets = tickets.filter(event__title__icontains=search_query)
+    if selected_category:
+        tickets = tickets.filter(event__category=selected_category)
+    if max_price:
+        tickets = tickets.filter(event__price__lte=max_price)
+    if start_date:
+        tickets = tickets.filter(event__date__date__gte=start_date)
+    if end_date:
+        tickets = tickets.filter(event__date__date__lte=end_date)
 
     total_revenue = tickets.aggregate(
         total=Coalesce(
@@ -421,6 +458,16 @@ def analytics_dashboard(request):
     events_qs = Event.objects.all()
     if organizer_id:
         events_qs = events_qs.filter(organizer_id=organizer_id)
+    if search_query:
+        events_qs = events_qs.filter(title__icontains=search_query)
+    if selected_category:
+        events_qs = events_qs.filter(category=selected_category)
+    if max_price:
+        events_qs = events_qs.filter(price__lte=max_price)
+    if start_date:
+        events_qs = events_qs.filter(date__date__gte=start_date)
+    if end_date:
+        events_qs = events_qs.filter(date__date__lte=end_date)
     total_events = events_qs.count()
 
     filtered_events = list(events_qs.select_related('organizer').annotate(
@@ -462,5 +509,11 @@ def analytics_dashboard(request):
         'event_chart_data': event_chart_data,
         'organizers': organizers,
         'selected_organizer': organizer_id,
+        'categories': Event.get_all_category_choices(),
+        'search_query': search_query,
+        'selected_category': selected_category,
+        'max_price': max_price,
+        'start_date': start_date,
+        'end_date': end_date,
     }
     return render(request, 'authentication/analytics_dashboard.html', context)
