@@ -864,25 +864,16 @@
                             + '<p class="text-gray-400 mt-1 text-[10px]">' + item.created_at + '</p>';
 
                         el.addEventListener('click', function () {
-                            var destUrl = null;
-                            if (item.notification_type === 'event_request') {
-                                destUrl = '/auth/event-requests/';
-                            } else if (item.notification_type === 'organizer_request') {
-                                destUrl = '/auth/organizer-requests/';
-                            } else if (item.event_id) {
-                                destUrl = '/events/' + item.event_id + '/';
-                            }
-
                             if (!item.is_read) {
+                                item.is_read = true;
+                                el.classList.remove('bg-indigo-50/60', 'font-medium');
+                                el.classList.add('bg-white');
                                 fetch('/events/api/notifications/' + item.id + '/read/', {
                                     method: 'POST',
                                     headers: { 'X-CSRFToken': '{{ csrf_token }}' }
                                 }).then(function () {
-                                    if (destUrl) window.location.href = destUrl;
-                                    else fetchNotifications();
-                                });
-                            } else if (destUrl) {
-                                window.location.href = destUrl;
+                                    fetchNotifications();
+                                }).catch(function () {});
                             }
                         });
                         container.appendChild(el);
