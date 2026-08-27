@@ -11,7 +11,7 @@ from django.utils import timezone
 from authentication.models import User, UserRole
 
 from .emails import send_booking_confirmation_email
-from .models import Category, Event, EventBooking, Ticket
+from .models import Category, Event, EventBooking, Ticket, EventPublishStatus
 
 
 # Tests for admin category creation
@@ -374,6 +374,7 @@ class AttendeeTicketBookingTests(TestCase):
             date=timezone.now() + timedelta(days=1),
             price='25.00',
             max_tickets=3,
+            publish_status=EventPublishStatus.APPROVED,
         )
         self.event.categories.add(self.arts_category)
 
@@ -477,8 +478,17 @@ class AttendeeTicketBookingTests(TestCase):
         self.assertEqual(self.event.tickets_remaining, 2)
 
     def test_attendee_can_view_own_tickets(self):
+        past_event = Event.objects.create(
+            organizer=self.organizer,
+            title='Past Booked Show',
+            description='Concluded show',
+            date=timezone.now() - timedelta(days=2),
+            price='25.00',
+            max_tickets=3,
+            publish_status=EventPublishStatus.APPROVED,
+        )
         Ticket.objects.create(
-            event=self.event,
+            event=past_event,
             attendee=self.attendee,
             quantity=1,
         )
@@ -487,12 +497,12 @@ class AttendeeTicketBookingTests(TestCase):
         # Test direct access to my_bookings
         response = self.client.get(reverse('my_bookings'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Bookable Show')
+        self.assertContains(response, 'Past Booked Show')
 
-# Test legacy my_tickets redirects to my_bookings
+        # Test legacy my_tickets redirects to my_bookings
         legacy_response = self.client.get(reverse('my_tickets'), follow=True)
         self.assertEqual(legacy_response.status_code, 200)
-        self.assertContains(legacy_response, 'Bookable Show')
+        self.assertContains(legacy_response, 'Past Booked Show')
 
     def test_expired_event_shows_done_status_and_disables_booking(self):
         expired_event = Event.objects.create(
@@ -502,6 +512,7 @@ class AttendeeTicketBookingTests(TestCase):
             date=timezone.now() - timedelta(days=1),
             price='20.00',
             max_tickets=5,
+            publish_status=EventPublishStatus.APPROVED,
         )
         expired_event.categories.add(self.arts_category)
         self.client.force_login(self.attendee)
@@ -845,6 +856,7 @@ class EventListViewTest(TestCase):
             location="Berlin",
             date=now + timedelta(days=2),
             price=50.00,
+            publish_status=EventPublishStatus.APPROVED,
         )
         self.event1.categories.add(self.tech_cat)
         self.event2 = Event.objects.create(
@@ -853,6 +865,7 @@ class EventListViewTest(TestCase):
             location="London",
             date=now + timedelta(days=10),
             price=150.00,
+            publish_status=EventPublishStatus.APPROVED,
         )
         self.event2.categories.add(self.music_cat)
 
@@ -909,6 +922,7 @@ class EventListViewTest(TestCase):
             date=timezone.now() + timedelta(days=1),
             price=10,
             max_tickets=10,
+            publish_status=EventPublishStatus.APPROVED,
         )
         future_event.categories.add(self.tech_cat)
 
@@ -918,6 +932,7 @@ class EventListViewTest(TestCase):
             date=timezone.now() - timedelta(days=1),
             price=10,
             max_tickets=10,
+            publish_status=EventPublishStatus.APPROVED,
         )
         past_event.categories.add(self.tech_cat)
 
@@ -957,6 +972,7 @@ class EventListViewTest(TestCase):
                 description=f"Description {i}",
                 date=now + timedelta(days=i),
                 price=10.00 * i,
+                publish_status=EventPublishStatus.APPROVED,
             )
             e.categories.add(self.tech_cat)
         response = self.client.get(reverse('event_list'))

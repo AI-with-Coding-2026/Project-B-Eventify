@@ -1,8 +1,11 @@
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from unittest.mock import ANY, patch
 
 from events.models import Event
@@ -592,3 +595,144 @@ class AdminUserDeleteTests(TestCase):
             response,
             'authentication/user_confirm_delete.html',
         )
+
+
+class UserEmailUniquenessTests(TestCase):
+    def setUp(self):
+        self.existing_user = User.objects.create_user(
+            username='existinguser',
+            email='existing@example.com',
+            password='Password123!',
+            role=UserRole.ATTENDEE,
+        )
+
+    def test_registration_form_rejects_duplicate_email(self):
+        form = UserRegistrationForm(
+            data={
+                'username': 'newuser',
+                'email': 'existing@example.com',
+                'role': UserRole.ATTENDEE,
+                'password1': 'strong-pass-123',
+                'password2': 'strong-pass-123',
+            }
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('email', form.errors)
+        self.assertIn('already exists', form.errors['email'][0])
+
+    def test_registration_form_rejects_duplicate_email_case_insensitive(self):
+        form = UserRegistrationForm(
+            data={
+                'username': 'newuser2',
+                'email': 'ExIsTiNg@Example.Com',
+                'role': UserRole.ATTENDEE,
+                'password1': 'strong-pass-123',
+                'password2': 'strong-pass-123',
+            }
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('email', form.errors)
+
+    def test_user_model_clean_rejects_duplicate_email(self):
+        duplicate_user = User(
+            username='anotheruser',
+            email='existing@example.com',
+            role=UserRole.ATTENDEE,
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            duplicate_user.clean()
+        self.assertIn('email', ctx.exception.message_dict)
+
+    def test_user_model_clean_allows_same_email_on_update(self):
+        # Updating the existing user without changing email should succeed
+        self.existing_user.clean()  # Should not raise ValidationError
+
+
+class PasswordResetWorkflowTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='resetuser',
+            email='resetuser@example.com',
+            password='InitialPassword123!',
+            role=UserRole.ATTENDEE,
+            email_verified=True,
+        )
+
+    def test_login_page_renders_forgot_password_link(self):
+        response = self.client.get(reverse('login'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Forgot password?')
+        self.assertContains(response, reverse('password_reset'))
+
+    def test_password_reset_page_renders(self):
+        response = self.client.get(reverse('password_reset'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'authentication/password_reset.html')
+        self.assertContains(response, 'Reset Password')
+
+    @patch('authentication.views.send_password_reset_email')
+    def test_password_reset_request_sends_email_for_existing_user(self, mock_send_email):
+        response = self.client.post(
+            reverse('password_reset'),
+            {'email': 'resetuser@example.com'},
+        )
+        self.assertRedirects(response, reverse('password_reset_done'))
+        self.assertTrue(mock_send_email.called)
+        called_user = mock_send_email.call_args[0][0]
+        reset_url = mock_send_email.call_args[0][1]
+        self.assertEqual(called_user.pk, self.user.pk)
+        self.assertIn('password-reset/', reset_url)
+
+    @patch('authentication.views.send_password_reset_email')
+    def test_password_reset_request_handles_nonexistent_email_gracefully(self, mock_send_email):
+        response = self.client.post(
+            reverse('password_reset'),
+            {'email': 'nonexistent@example.com'},
+        )
+        self.assertRedirects(response, reverse('password_reset_done'))
+        self.assertFalse(mock_send_email.called)
+
+    def test_password_reset_confirm_with_valid_token(self):
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        token = default_token_generator.make_token(self.user)
+
+        # GET request renders confirm form
+        response = self.client.get(
+            reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'authentication/password_reset_confirm.html')
+        self.assertTrue(response.context['validlink'])
+
+        # POST request with new password
+        post_response = self.client.post(
+            reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token}),
+            {
+                'new_password1': 'BrandNewPassword123!',
+                'new_password2': 'BrandNewPassword123!',
+            },
+        )
+        self.assertRedirects(post_response, reverse('password_reset_complete'))
+
+        # Verify password actually changed
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('BrandNewPassword123!'))
+
+    def test_password_reset_confirm_with_invalid_token(self):
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        invalid_token = 'invalid-token-123'
+
+        response = self.client.get(
+            reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': invalid_token})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'authentication/password_reset_confirm.html')
+        self.assertFalse(response.context['validlink'])
+        self.assertContains(response, 'Invalid or Expired Link')
+
+    def test_password_reset_complete_renders(self):
+        response = self.client.get(reverse('password_reset_complete'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'authentication/password_reset_complete.html')
+        self.assertContains(response, 'Password Reset Complete')

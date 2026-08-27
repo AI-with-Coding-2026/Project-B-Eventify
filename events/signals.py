@@ -78,10 +78,6 @@ def send_fcm_push(recipient, title, body):
         return None
 
 
-# =========================================================
-# Real-Time Booking & Cancellation Notification Signals
-# =========================================================
-
 @receiver(post_save, sender=Ticket)
 def notify_organizer_on_booking(sender, instance, created, **kwargs):
     """Generates an internal notification and sends Firebase push when a ticket is booked."""
@@ -99,35 +95,4 @@ def notify_organizer_on_booking(sender, instance, created, **kwargs):
                 notification_type=NotificationType.BOOKING,
             )
 
-            send_fcm_push(event.organizer, title, msg_text)
-
-
-@receiver(post_delete, sender=Ticket)
-def notify_organizer_on_cancellation(sender, instance, **kwargs):
-    """Generates an internal notification and sends Firebase push when a booking is cancelled."""
-    try:
-        event = instance.event
-        # Guard: if the event itself is being cascade-deleted, skip notification
-        if not event or not event.pk:
-            return
-        # Verify the event still exists in the database (not mid-cascade)
-        if not Event.objects.filter(pk=event.pk).exists():
-            return
-        if not event.organizer:
-            return
-
-        title = "Booking Cancelled"
-        msg_text = f"{instance.attendee.username} cancelled their booking of {instance.quantity} ticket(s) for your event '{event.title}'."
-
-        Notification.objects.create(
-            recipient=event.organizer,
-            title=title,
-            message=msg_text,
-            event=event,
-            notification_type=NotificationType.CANCELLATION,
-        )
-
-        send_fcm_push(event.organizer, title, msg_text)
-    except Exception:
-        # Gracefully handle any errors during cascade deletion
-        pass
+            send_fcm_push(event.organizer, title, msg_text)

@@ -631,11 +631,9 @@ def event_delete(request, pk):
         event = get_object_or_404(Event, pk=pk, organizer=request.user)
 
     if request.method == 'POST':
-        try:
-            Notification.objects.filter(event=event).update(event=None)
-        except Exception:
-            pass
-
+        Notification.objects.filter(event=event).update(event=None)
+        Ticket.objects.filter(event=event).delete()
+        EventBooking.objects.filter(event=event).delete()
         event.delete()
         messages.success(request, 'Event deleted successfully.')
         if request.user.is_admin or request.user.is_superuser:

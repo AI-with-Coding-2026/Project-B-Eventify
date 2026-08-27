@@ -124,6 +124,13 @@ class User(AbstractUser):
 
     def clean(self):
         super().clean()
+        if self.email:
+            self.email = self.email.strip().lower()
+            existing = User.objects.filter(email__iexact=self.email)
+            if self.pk:
+                existing = existing.exclude(pk=self.pk)
+            if existing.exists():
+                raise ValidationError({'email': 'An account with this email address already exists.'})
         if self.role == UserRole.ADMIN and not self.is_staff:
             raise ValidationError({'role': 'Admin role requires staff privileges.'})
         if self.is_superuser and self.role != UserRole.ADMIN:
