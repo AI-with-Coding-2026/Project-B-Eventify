@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Cancellation — Eventify</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f3f4f6;padding:24px 12px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #fee2e2;">
+                    <tr>
+                        <td style="background-color:#e11d48;padding:22px 32px;text-align:center;">
+                            {% if logo_src %}
+                                <img src="{{ logo_src }}" alt="Eventify" width="150" style="display:block;margin:0 auto;max-width:150px;height:auto;">
+                            {% else %}
+                                <h1 style="color:#ffffff;margin:0;font-size:24px;">Eventify</h1>
+                            {% endif %}
+                            <p style="margin:10px 0 0;font-size:14px;color:#fecdd3;">Booking Cancelled</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:32px;">
+                            <p style="margin:0 0 12px;font-size:16px;">Hello {{ attendee.username }},</p>
+                            <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#374151;">
+                                This email confirms that your booking has been cancelled as requested.
+                            </p>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#fff1f2;border-radius:12px;border:1px solid #ffe4e6;">
+                                <tr>
+                                    <td style="padding:20px 24px;">
+                                        <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#e11d48;text-transform:uppercase;letter-spacing:0.6px;">Cancellation Summary</p>
+                                        <p style="margin:0 0 10px;font-size:15px;color:#111827;"><strong>Event:</strong> {{ event.title }}</p>
+                                        {% if event.date %}
+                                        <p style="margin:0 0 10px;font-size:15px;color:#111827;"><strong>Event Date:</strong> {{ event.date|date:"F d, Y, h:i A" }}</p>
+                                        {% endif %}
+                                        <p style="margin:0 0 10px;font-size:15px;color:#111827;"><strong>Tickets Cancelled:</strong> {{ cancelled_quantity }}</p>
+                                        {% if remaining_quantity > 0 %}
+                                        <p style="margin:0;font-size:15px;color:#111827;"><strong>Remaining Tickets:</strong> {{ remaining_quantity }}</p>
+                                        {% else %}
+                                        <p style="margin:0;font-size:15px;color:#e11d48;"><strong>Status:</strong> Entire booking cancelled</p>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:28px 0 8px;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{ browse_events_url }}"
+                                           style="display:inline-block;background-color:#4f46e5;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:12px 28px;border-radius:10px;">
+                                            Discover Other Events
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#6b7280;">
+                                If you did not request this cancellation or believe this was done in error, please contact support.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:16px 32px 28px;text-align:center;border-top:1px solid #e5e7eb;">
+                            <p style="margin:0;font-size:13px;color:#6b7280;">Best regards,<br><strong style="color:#4f46e5;">Eventify Team</strong></p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

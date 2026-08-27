@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import User, UserRole
+from .models import OrganizerApprovalStatus, User, UserRole
 
 
 class UserRegistrationForm(UserCreationForm):
@@ -29,6 +29,10 @@ class UserRegistrationForm(UserCreationForm):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
         user.role = self.cleaned_data['role']
+        if user.role == UserRole.ORGANIZER:
+            user.organizer_status = OrganizerApprovalStatus.PENDING
+        else:
+            user.organizer_status = OrganizerApprovalStatus.NOT_REQUIRED
         if commit:
             user.save()
         return user

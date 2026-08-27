@@ -16,11 +16,12 @@ from authentication.decorators import (
     organizer_required,
     role_required,
     organizer_or_admin_required,
+    approved_organizer_required,
 )
 from authentication.models import UserRole
 from .emails import send_booking_confirmation_email
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
-from .models import Category, Event, EventBooking, Ticket
+from .models import Category, Event, EventBooking, EventPublishStatus, Ticket
 
 
 def _user_can_manage_event(user, event):
@@ -30,6 +31,26 @@ def _user_can_manage_event(user, event):
         user.role == UserRole.ORGANIZER
         and event.organizer_id == user.id
     )
+
+
+def _user_can_see_unpublished_event(user, event):
+    if event.is_published:
+        return True
+    if not user.is_authenticated:
+        return False
+    if user.is_admin:
+        return True
+    return user.role == UserRole.ORGANIZER and event.organizer_id == user.id
+
+
+def _user_has_booked_event(user, event):
+    return Ticket.objects.filter(
+        attendee=user,
+        event=event,
+    ).exists() or EventBooking.objects.filter(
+        user=user,
+        event=event,
+    ).exists()
 
 
 # Map URL path prefixes to human-readable back-button labels.
@@ -120,7 +141,9 @@ def _resolve_back_navigation(request):
 
 
 def event_list(request):
-    events = Event.objects.all().order_by('date')
+    events = Event.objects.filter(
+        publish_status=EventPublishStatus.APPROVED
+    ).order_by('date')
 
     search_query = request.GET.get('search', '')
     selected_category = request.GET.get('category', '')
@@ -145,6 +168,11 @@ def event_list(request):
         if end_date:
             events = events.filter(date__date__lte=end_date)
 
+    today = timezone.now().date()
+    past_events = events.filter(date__date__lt=today).order_by('-date')
+    events = events.filter(date__date__gte=today)
+    selling_fast_threshold = 10  # tweak this number as needed
+
     paginator = Paginator(events, 6)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -152,6 +180,11 @@ def event_list(request):
     filter_params = request.GET.copy()
     filter_params.pop('page', None)
     filter_query_string = filter_params.urlencode()
+
+    featured_events = Event.objects.filter(
+        publish_status=EventPublishStatus.APPROVED,
+        date__gte=timezone.now()
+    ).order_by('date')[:5]
 
     context = {
         'events': page_obj,
@@ -164,33 +197,35 @@ def event_list(request):
         'start_date': start_date,
         'end_date': end_date,
         'filter_query_string': filter_query_string,
+        'past_events': past_events,
+        'selling_fast_threshold': selling_fast_threshold,
+        'featured_events': featured_events,
     }
     return render(request, 'events/event_list.html', context)
-
 
 def event_detail(request, pk):
     event = get_object_or_404(Event, pk=pk)
     user = request.user
+
+    if not _user_can_see_unpublished_event(user, event):
+        raise PermissionDenied("This event is not currently published.")
+
     user_has_booked = False
 
     if user.is_authenticated:
-        user_has_booked = Ticket.objects.filter(
-            attendee=user,
-            event=event,
-        ).exists()
-
-
-    is_past_event = event.date < timezone.now()
+        user_has_booked = _user_has_booked_event(user, event)
 
     context = {
         'event': event,
         'can_manage': user.is_authenticated and _user_can_manage_event(user, event),
+        'can_review_event': user.is_authenticated and user.is_admin,
         'can_book': (
             user.is_authenticated
             and user.role == UserRole.ATTENDEE
             and not user_has_booked
             and not event.is_sold_out
             and not event.is_expired
+            and event.is_published
         ),
         'user_has_booked': user_has_booked,
         'is_past_event': event.is_expired,
@@ -213,6 +248,10 @@ def book_ticket(request, pk):
         messages.error(request, 'Booking is not available because this event has ended.')
         return redirect('event_detail', pk=pk)
 
+    if _user_has_booked_event(request.user, event):
+        messages.info(request, 'You have already booked this event.')
+        return redirect('event_detail', pk=pk)
+
     if request.method == 'POST':
         try:
             quantity = int(request.POST.get('quantity', 1))
@@ -223,11 +262,7 @@ def book_ticket(request, pk):
             messages.error(request, 'Choose at least one ticket.')
         else:
             with transaction.atomic():
-                event = Event.objects.select_for_update().get(pk=pk)
-                tickets_sold = Ticket.objects.filter(event=event).aggregate(
-                    total=Sum('quantity')
-                )['total'] or 0
-                tickets_sold += event.bookings.count()
+                tickets_sold = event.tickets_sold
                 remaining = event.max_tickets - tickets_sold
 
                 if quantity > remaining:
@@ -238,16 +273,20 @@ def book_ticket(request, pk):
                             request,
                             f'Only {remaining} ticket(s) remain for this event.',
                         )
+                elif _user_has_booked_event(request.user, event):
+                    messages.info(request, 'You have already booked this event.')
                 else:
                     ticket = Ticket.objects.create(
                         event=event,
                         attendee=request.user,
                         quantity=quantity,
                     )
+                    EventBooking.objects.get_or_create(
+                        user=request.user,
+                        event=event,
+                    )
                     
-                    # --------------------------------------------------
-                    # التعديل هنا: تشغيل الإرسال في الخلفية دون تعليق السيرفر
-                    # --------------------------------------------------
+                   
                     threading.Thread(
                         target=send_booking_confirmation_email,
                         args=(ticket,)
@@ -258,7 +297,7 @@ def book_ticket(request, pk):
                         f'Ticket booked for "{event.title}". Confirmation email is on its way.',
                     )
 
-                    return redirect('my_bookings')
+                    return redirect('attendee_dashboard')
 
     return render(
         request,
@@ -284,7 +323,7 @@ def organizer_event_list(request):
     )
 
 
-@organizer_or_admin_required
+@approved_organizer_required
 def event_create(request):
     """Create an event and assign the logged-in organizer as owner."""
     if request.method == 'POST':
@@ -292,11 +331,19 @@ def event_create(request):
         if form.is_valid():
             event = form.save(commit=False)
             event.organizer = request.user
-            event.save()
-            messages.success(request, 'Event created successfully.')
             if request.user.is_admin:
+                event.publish_status = EventPublishStatus.APPROVED
+            else:
+                event.publish_status = EventPublishStatus.PENDING
+            event.save()
+            if request.user.is_admin:
+                messages.success(request, 'Event created successfully.')
                 return redirect('admin_dashboard')
-            return redirect('my_events') # التعديل هنا لتوجهه لصفحة My Events
+            messages.success(
+                request,
+                'Event submitted. It will appear in the system after an admin approves it.',
+            )
+            return redirect('organizer_event_list')
     else:
         form = EventForm()
 
@@ -605,6 +652,7 @@ def delete_event(request, pk):
     )
 
 
+
 @admin_required
 def ticket_edit(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
@@ -614,7 +662,7 @@ def ticket_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, "Ticket updated successfully.")
-            return redirect("admin_dashboard")
+            return redirect("admin_booking_list")
     else:
         form = TicketForm(instance=ticket)
 
@@ -635,9 +683,10 @@ def ticket_delete(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
 
     if request.method == "POST":
+        EventBooking.objects.filter(user=ticket.attendee, event=ticket.event).delete()
         ticket.delete()
         messages.success(request, "Ticket deleted successfully.")
-        return redirect("admin_dashboard")
+        return redirect("admin_booking_list")
 
     return render(
         request,
@@ -657,7 +706,7 @@ def booking_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, "Booking updated successfully.")
-            return redirect("admin_dashboard")
+            return redirect("admin_booking_list")
     else:
         form = BookingForm(instance=booking)
 
@@ -678,9 +727,10 @@ def booking_delete(request, pk):
     booking = get_object_or_404(EventBooking, pk=pk)
 
     if request.method == "POST":
+        Ticket.objects.filter(attendee=booking.user, event=booking.event).delete()
         booking.delete()
         messages.success(request, "Booking deleted successfully.")
-        return redirect("admin_dashboard")
+        return redirect("admin_booking_list")
 
     return render(
         request,
@@ -690,8 +740,77 @@ def booking_delete(request, pk):
         },
     )
 
-    
-    # ربط الأسماء القديمة بالدوال الجديدة لمنع أخطاء الـ URLs
+@admin_required
+def admin_booking_list(request):
+    for ticket in Ticket.objects.select_related('attendee', 'event').all():
+        EventBooking.objects.get_or_create(
+            user=ticket.attendee,
+            event=ticket.event,
+            defaults={'booked_at': ticket.booked_at}
+        )
+    bookings = EventBooking.objects.select_related('user', 'event').order_by('-booked_at')
+    return render(request, 'events/admin_booking_list.html', {'bookings': bookings})
+
 create_event = event_create
 edit_event = event_edit
 delete_event = event_delete
+
+
+# =========================================================
+# Real-Time Notification APIs
+# =========================================================
+
+import json
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import Notification
+
+
+@login_required
+def user_notifications_api(request):
+    """API endpoint to fetch the top 5 recent notifications for the logged-in user."""
+    notifications = Notification.objects.filter(recipient=request.user)
+    unread_count = notifications.filter(is_read=False).count()
+
+    notifications_data = [
+        {
+            'id': n.id,
+            'title': n.title,
+            'message': n.message,
+            'is_read': n.is_read,
+            'created_at': n.created_at.strftime('%Y-%m-%d %H:%M')
+        }
+        for n in notifications[:5]
+    ]
+    return JsonResponse({
+        'unread_count': unread_count,
+        'notifications': notifications_data
+    })
+
+
+@login_required
+def mark_notification_as_read(request, pk):
+    """API endpoint to mark a specific notification as read."""
+    if request.method == 'POST':
+        notification = get_object_or_404(Notification, pk=pk, recipient=request.user)
+        notification.is_read = True
+        notification.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=400)
+
+
+@login_required
+def save_fcm_token(request):
+    """Save the user's FCM token for push notifications."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            token = data.get('token')
+            if token:
+                request.user.fcm_token = token
+                request.user.save()
+                return JsonResponse({'status': 'success', 'message': 'Token saved successfully'})
+            return JsonResponse({'status': 'error', 'message': 'No token provided'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
