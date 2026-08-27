@@ -792,6 +792,18 @@ def cancel_booking(request, pk):
                     f'Cancelled {cancel_quantity} ticket(s). {ticket.quantity} remaining.',
                 )
 
+            if event and event.organizer:
+                try:
+                    Notification.objects.create(
+                        recipient=event.organizer,
+                        title="Booking Cancelled",
+                        message=f"{attendee.username} cancelled their booking of {cancel_quantity} ticket(s) for your event '{event.title}'.",
+                        event=event,
+                        notification_type=NotificationType.CANCELLATION,
+                    )
+                except Exception:
+                    pass
+
             try:
                 send_booking_cancellation_email(attendee, event, cancel_quantity, remaining)
             except Exception as e:
@@ -804,6 +816,19 @@ def cancel_booking(request, pk):
             Ticket.objects.filter(attendee=legacy_booking.user, event=legacy_booking.event).delete()
             legacy_booking.delete()
             messages.success(request, 'Booking cancelled successfully.')
+
+            if event and event.organizer:
+                try:
+                    Notification.objects.create(
+                        recipient=event.organizer,
+                        title="Booking Cancelled",
+                        message=f"{attendee.username} cancelled their booking of {quantity} ticket(s) for your event '{event.title}'.",
+                        event=event,
+                        notification_type=NotificationType.CANCELLATION,
+                    )
+                except Exception:
+                    pass
+
             try:
                 send_booking_cancellation_email(attendee, event, quantity, 0)
             except Exception as e:
