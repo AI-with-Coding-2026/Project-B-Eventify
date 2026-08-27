@@ -502,6 +502,9 @@
         const menu = document.getElementById('exportDropdownMenu');
         const chevron = document.getElementById('exportDropdownChevron');
         const container = document.getElementById('exportDropdownContainer');
+        const filterModal = document.getElementById('filterModal');
+        const filterBtn = document.getElementById('filterPopupBtn');
+        const filterChevron = document.getElementById('filterPopupChevron');
 
         if (!btn || !menu) return;
 
@@ -509,6 +512,15 @@
             e.stopPropagation();
             const isHidden = menu.classList.contains('hidden');
             if (isHidden) {
+                if (filterModal) {
+                    filterModal.classList.add('hidden');
+                }
+                if (filterBtn) {
+                    filterBtn.setAttribute('aria-expanded', 'false');
+                }
+                if (filterChevron) {
+                    filterChevron.classList.remove('rotate-180');
+                }
                 menu.classList.remove('hidden');
                 if (chevron) chevron.classList.add('rotate-180');
                 btn.setAttribute('aria-expanded', 'true');
@@ -543,10 +555,22 @@
         const closeBtn = document.getElementById('filterModalClose');
         const resetBtn = document.getElementById('filterModalReset');
         const chevron = document.getElementById('filterPopupChevron');
+        const exportMenu = document.getElementById('exportDropdownMenu');
+        const exportBtn = document.getElementById('exportDropdownBtn');
+        const exportChevron = document.getElementById('exportDropdownChevron');
 
         if (!btn || !modal) return;
 
         function openModal() {
+            if (exportMenu) {
+                exportMenu.classList.add('hidden');
+            }
+            if (exportBtn) {
+                exportBtn.setAttribute('aria-expanded', 'false');
+            }
+            if (exportChevron) {
+                exportChevron.classList.remove('rotate-180');
+            }
             modal.classList.remove('hidden');
             if (chevron) chevron.classList.add('rotate-180');
             btn.setAttribute('aria-expanded', 'true');
