@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db import transaction
 from django.db.models import Sum
 from django.http import JsonResponse, HttpResponse
@@ -155,18 +155,34 @@ def _get_filtered_events(request):
     ).prefetch_related("categories")
 
     search_query = request.GET.get("search", "").strip()
-    selected_category = request.GET.get("category", "")
+    categories_param = request.GET.getlist("category")
+    if not categories_param:
+        cat_str = request.GET.get("category", "").strip()
+        if cat_str:
+            categories_param = [c.strip() for c in cat_str.split(",") if c.strip()]
+    else:
+        # Also expand any comma-separated entries in the list
+        expanded = []
+        for c in categories_param:
+            expanded.extend([part.strip() for part in c.split(",") if part.strip()])
+        categories_param = expanded
+
     location = request.GET.get("location", "").strip()
-    max_price = request.GET.get("max_price", "")
+    max_price = request.GET.get("max_price", "").strip()
     start_date = request.GET.get("start_date")
     end_date = request.GET.get("end_date")
     sort = request.GET.get("sort", "date")
 
     if search_query:
-        events = events.filter(title__icontains=search_query)
+        from django.db.models import Q
+        events = events.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(location__icontains=search_query)
+        )
 
-    if selected_category:
-        events = events.filter(categories__slug=selected_category)
+    if categories_param:
+        events = events.filter(categories__slug__in=categories_param)
 
     if location:
         events = events.filter(location__icontains=location)
@@ -192,12 +208,34 @@ def _get_filtered_events(request):
 
     return events.distinct()
 
+def _get_safe_page(paginator, page_number):
+    try:
+        page_num = int(page_number)
+        if page_num < 1:
+            page_num = 1
+    except (TypeError, ValueError):
+        page_num = 1
+
+    try:
+        return paginator.page(page_num)
+    except PageNotAnInteger:
+        return paginator.page(1)
+    except EmptyPage:
+        if paginator.num_pages > 0:
+            return paginator.page(1)
+        return paginator.get_page(1)
+
 
 def event_list(request):
     events = _get_filtered_events(request)
 
     search_query = request.GET.get('search', '').strip()
-    selected_category = request.GET.get('category', '')
+    categories_param = request.GET.getlist('category')
+    if not categories_param:
+        cat_str = request.GET.get('category', '').strip()
+        if cat_str:
+            categories_param = [c.strip() for c in cat_str.split(',') if c.strip()]
+    selected_category = categories_param[0] if categories_param else ''
     location = request.GET.get('location', '').strip()
     sort = request.GET.get('sort', 'date')
     start_date = request.GET.get('start_date')
@@ -206,7 +244,7 @@ def event_list(request):
 
     paginator = Paginator(events, 6)
     page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
+    page_obj = _get_safe_page(paginator, page_number)
 
     filter_params = request.GET.copy()
     filter_params.pop('page', None)
@@ -219,6 +257,7 @@ def event_list(request):
         'categories': Category.objects.all(),
         'search_query': search_query,
         'selected_category': selected_category,
+        'selected_categories': categories_param,
         'location': location,
         'sort': sort,
         'max_price': max_price,
@@ -245,7 +284,7 @@ def event_page_api(request):
 
     paginator = Paginator(events, 6)
     page_number = request.GET.get("page", 1)
-    page_obj = paginator.get_page(page_number)
+    page_obj = _get_safe_page(paginator, page_number)
 
     grid_html = render_to_string(
         "events/partials/event_page_grid.html",
@@ -265,12 +304,15 @@ def event_page_api(request):
         request=request,
     )
 
-    return JsonResponse({
-        "grid_html": grid_html,
-        "list_html": list_html,
-        "has_next": page_obj.has_next(),
-        "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
-    })
+    return JsonResponse(
+        {
+            "grid_html": grid_html,
+            "list_html": list_html,
+            "has_next": page_obj.has_next(),
+            "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
+            "total_count": paginator.count,
+        }
+    )
 
 
 def event_detail(request, pk):
@@ -380,7 +422,7 @@ def book_event(request, pk):
             request,
             f'You have booked {quantity} ticket(s) for "{event.title}". A confirmation email has been sent.',
         )
-        return redirect('my_bookings')
+        return redirect('attendee_dashboard')
 
     return redirect('book_ticket', pk=pk)
 
@@ -456,7 +498,7 @@ def book_ticket(request, pk):
                 f'Ticket booked for "{event.title}". Confirmation email is on its way.',
             )
 
-            return redirect('my_bookings')
+            return redirect('attendee_dashboard')
 
     return render(
         request,
@@ -496,6 +538,12 @@ def event_create(request):
             event.organizer = request.user
             event.save()
             form.save_m2m()
+
+            custom_cat = request.POST.get('custom_category', '').strip()[:15]
+            if custom_cat:
+                new_cat, _ = Category.objects.get_or_create(name=custom_cat)
+                event.categories.add(new_cat)
+
             messages.success(request, 'Event created successfully.')
             if request.user.is_admin:
                 return redirect('admin_dashboard')
@@ -526,6 +574,12 @@ def event_edit(request, pk):
         form = EventForm(request.POST, request.FILES, instance=event)
         if form.is_valid():
             form.save()
+
+            custom_cat = request.POST.get('custom_category', '').strip()[:15]
+            if custom_cat:
+                new_cat, _ = Category.objects.get_or_create(name=custom_cat)
+                event.categories.add(new_cat)
+
             messages.success(request, 'Event updated successfully.')
             if request.user.is_admin:
                 return redirect('admin_dashboard')
@@ -792,6 +846,15 @@ def mark_notification_as_read(request, pk):
         notification = get_object_or_404(Notification, pk=pk, recipient=request.user)
         notification.is_read = True
         notification.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=400)
+
+
+@login_required
+def mark_all_notifications_as_read(request):
+    """API endpoint to mark all unread notifications as read for current user."""
+    if request.method in ['POST', 'GET']:
+        Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
         return JsonResponse({'status': 'success'})
     return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=400)
 

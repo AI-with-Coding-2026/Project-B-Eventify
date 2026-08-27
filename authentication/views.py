@@ -16,7 +16,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.http import require_POST
 
-from events.models import Category, Event, EventBooking, EventPublishStatus, Ticket
+from events.models import Category, Event, EventBooking, EventPublishStatus, Ticket, Notification
 from events.exports import export_events_excel, export_events_pdf
 from events.emails import send_booking_cancellation_email
 
@@ -434,6 +434,16 @@ def organizer_request_approve(request, pk):
     )
     organizer.organizer_status = OrganizerApprovalStatus.APPROVED
     organizer.save(update_fields=['organizer_status'])
+
+    try:
+        Notification.objects.create(
+            recipient=organizer,
+            title="Organizer Access Approved 🎉",
+            message="Congratulations! Your organizer access has been approved by the administrator. You can now create and publish events.",
+        )
+    except Exception as notif_err:
+        print(f"Failed to create approval notification: {notif_err}")
+
     messages.success(
         request,
         f'Organizer "{organizer.username}" was approved and can now publish events.',
@@ -451,6 +461,16 @@ def organizer_request_deny(request, pk):
     )
     organizer.organizer_status = OrganizerApprovalStatus.DENIED
     organizer.save(update_fields=['organizer_status'])
+
+    try:
+        Notification.objects.create(
+            recipient=organizer,
+            title="Organizer Access Update",
+            message="Your request for organizer access has been declined or revoked by the administrator.",
+        )
+    except Exception as notif_err:
+        print(f"Failed to create denial notification: {notif_err}")
+
     messages.success(
         request,
         f'Organizer request from "{organizer.username}" was denied.',

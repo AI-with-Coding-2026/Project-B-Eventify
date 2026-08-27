@@ -131,6 +131,11 @@ urlpatterns = [
         views.mark_notification_as_read,
         name='mark_notification_as_read'
     ),
+    path(
+        'api/notifications/mark-all-read/',
+        views.mark_all_notifications_as_read,
+        name='mark_all_notifications_as_read'
+    ),
     # Firebase: Save FCM Token
     path('api/save-fcm-token/', views.save_fcm_token, name='save_fcm_token'),
 ]
