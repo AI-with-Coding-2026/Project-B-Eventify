@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, SetPasswordForm
 
 from .models import OrganizerApprovalStatus, User, UserRole
 
@@ -19,6 +19,16 @@ class UserRegistrationForm(UserCreationForm):
         model = User
         fields = ('username', 'email', 'role', 'password1', 'password2')
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip().lower()
+        if not email:
+            raise forms.ValidationError("Email is required.")
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError(
+                "An account with this email address already exists. Please log in or use a different email."
+            )
+        return email
+
     def clean_role(self):
         role = self.cleaned_data['role']
         if role == UserRole.ADMIN:
@@ -36,3 +46,14 @@ class UserRegistrationForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+
+class PasswordResetRequestForm(forms.Form):
+    email = forms.EmailField(
+        label="Email Address",
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'placeholder': 'Enter your registered email address',
+            'autocomplete': 'email',
+        }),
+    )

@@ -10,6 +10,11 @@ from django.template.loader import render_to_string
 VERIFICATION_TEXT = "authentication/verification_email.txt"
 VERIFICATION_HTML = "authentication/verification_email.html"
 DEFAULT_SUBJECT = "Verify your Eventify email address"
+
+PASSWORD_RESET_TEXT = "authentication/password_reset_email.txt"
+PASSWORD_RESET_HTML = "authentication/password_reset_email.html"
+DEFAULT_RESET_SUBJECT = "Reset your Eventify password"
+
 LOGO_PATH = Path(settings.BASE_DIR) / 'static' / 'images' / 'eventify_no_background.png'
 
 
@@ -82,4 +87,69 @@ def send_verification_email(user, verification_url):
     except ApiException as e:
         print(f"Brevo API error sending verification email: {e}")
         print(f"Fallback verification link: {verification_url}")
+        raise e
+
+
+def send_password_reset_email(user, reset_url):
+    """
+    Send a password reset email to the user via Brevo API with console fallback.
+    """
+    user_email = (getattr(user, "email", "") or "").strip()
+    if not user_email:
+        raise ValueError("Cannot send password reset email because user has no email address.")
+
+    context = {
+        "user": user,
+        "reset_url": reset_url,
+        "logo_src": _get_logo_src(),
+    }
+
+    rendered = render_to_string(PASSWORD_RESET_TEXT, context).strip()
+    lines = rendered.splitlines()
+
+    if lines and lines[0].lower().startswith("subject:"):
+        subject = lines[0].split(":", 1)[1].strip()
+        text_body = "\n".join(lines[1:]).lstrip("\n")
+    else:
+        subject = DEFAULT_RESET_SUBJECT
+        text_body = rendered
+
+    html_body = render_to_string(PASSWORD_RESET_HTML, context)
+
+    api_key = os.environ.get("BREVO_API_KEY")
+    if not api_key:
+        print("==================================================")
+        print("[WARNING] BREVO_API_KEY not set. Password reset link:")
+        print(f"Password Reset URL: {reset_url}")
+        print("==================================================")
+        return None
+
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = api_key
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+        sib_api_v3_sdk.ApiClient(configuration)
+    )
+
+    sender = {
+        "name": "Eventify",
+        "email": settings.DEFAULT_FROM_EMAIL,
+    }
+    username = getattr(user, "username", "") or user_email
+    to = [{"email": user_email, "name": username}]
+
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+        to=to,
+        sender=sender,
+        subject=subject,
+        text_content=text_body,
+        html_content=html_body,
+    )
+
+    try:
+        response = api_instance.send_transac_email(send_smtp_email)
+        print("Password reset email sent successfully via Brevo API!")
+        return response
+    except ApiException as e:
+        print(f"Brevo API error sending password reset email: {e}")
+        print(f"Fallback password reset link: {reset_url}")
         raise e

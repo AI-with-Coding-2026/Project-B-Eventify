@@ -21,8 +21,8 @@ from events.exports import export_events_excel, export_events_pdf
 from events.emails import send_booking_cancellation_email
 
 from .decorators import admin_required, organizer_required, role_required
-from .emails import send_verification_email
-from .forms import UserRegistrationForm
+from .emails import send_verification_email, send_password_reset_email
+from .forms import UserRegistrationForm, PasswordResetRequestForm, SetPasswordForm
 from .models import OrganizerApprovalStatus, User, UserRole
 
 
@@ -96,6 +96,104 @@ def verify_email(request, uidb64, token):
 @login_not_required
 def register_success(request):
     return render(request, 'authentication/register_success.html')
+
+
+@login_not_required
+def password_reset_request(request):
+    """
+    Handle user request to reset password by email.
+    """
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    if request.method == 'POST':
+        form = PasswordResetRequestForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email'].strip().lower()
+            matching_users = User.objects.filter(email__iexact=email)
+
+            site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
+
+            for user in matching_users:
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                reset_path = reverse(
+                    'password_reset_confirm',
+                    kwargs={
+                        'uidb64': uid,
+                        'token': token,
+                    },
+                )
+                reset_url = f'{site_url}{reset_path}'
+
+                try:
+                    send_password_reset_email(user, reset_url)
+                except Exception as e:
+                    print(f"Failed to send password reset email: {e}")
+
+            return redirect('password_reset_done')
+    else:
+        form = PasswordResetRequestForm()
+
+    return render(
+        request,
+        'authentication/password_reset.html',
+        {'form': form}
+    )
+
+
+@login_not_required
+def password_reset_done(request):
+    """
+    Informational page showing that password reset email has been dispatched.
+    """
+    return render(request, 'authentication/password_reset_done.html')
+
+
+@login_not_required
+def password_reset_confirm(request, uidb64, token):
+    """
+    Verify the reset token and allow the user to set a new password.
+    """
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        validlink = True
+        if request.method == 'POST':
+            form = SetPasswordForm(user, request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Your password has been reset successfully! You can now log in.')
+                return redirect('password_reset_complete')
+        else:
+            form = SetPasswordForm(user)
+    else:
+        validlink = False
+        form = None
+
+    return render(
+        request,
+        'authentication/password_reset_confirm.html',
+        {
+            'form': form,
+            'validlink': validlink,
+        }
+    )
+
+
+@login_not_required
+def password_reset_complete(request):
+    """
+    Page confirming the password reset was successful.
+    """
+    return render(request, 'authentication/password_reset_complete.html')
 
 
 @login_not_required
