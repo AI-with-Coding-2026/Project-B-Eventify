@@ -394,7 +394,7 @@ class AttendeeTicketBookingTests(TestCase):
             {'quantity': 2},
         )
 
-        self.assertRedirects(response, reverse('attendee_dashboard'))
+        self.assertRedirects(response, reverse('my_bookings'))
         ticket = Ticket.objects.get(
             event=self.event,
             attendee=self.attendee,
@@ -445,7 +445,7 @@ class AttendeeTicketBookingTests(TestCase):
         response = self.client.post(ticket_url, {'quantity': 2})
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Only 1 ticket(s) remain')
+        self.assertContains(response, 'Only 1 tickets remaining')
         self.assertEqual(self.event.tickets_sold, 2)
 
     def test_sold_out_event_is_labelled_and_rejects_booking(self):
@@ -463,6 +463,7 @@ class AttendeeTicketBookingTests(TestCase):
         post_response = self.client.post(
             reverse('book_ticket', kwargs={'pk': self.event.pk}),
             {'quantity': 1},
+            follow=True,
         )
 
         self.assertContains(list_response, 'Sold out')
@@ -1093,15 +1094,19 @@ class AnalyticsExportTests(TestCase):
             role=UserRole.ATTENDEE,
         )
 
+        self.category = Category.objects.create(
+            name='Tech',
+            slug='tech',
+        )
         self.event1 = Event.objects.create(
             title='Tech Summit 2026',
             organizer=self.organizer,
             date=timezone.now() + timedelta(days=7),
             price=Decimal('50.00'),
             max_tickets=100,
-            category='tech',
             location='Istanbul Congress Center',
         )
+        self.event1.categories.add(self.category)
         self.ticket1 = Ticket.objects.create(
             event=self.event1,
             attendee=self.attendee,

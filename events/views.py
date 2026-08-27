@@ -283,6 +283,13 @@ def event_detail(request, pk):
     if request.user.is_authenticated:
         user_has_booked = _user_has_booked_event(request.user, event)
 
+    can_book = (
+        not event.is_expired
+        and not event.is_sold_out
+        and not user_has_booked
+        and (not request.user.is_authenticated or request.user.is_attendee)
+    )
+
     back_url, back_label = _resolve_back_navigation(request)
 
     return render(
@@ -291,6 +298,7 @@ def event_detail(request, pk):
         {
             'event': event,
             'user_has_booked': user_has_booked,
+            'can_book': can_book,
             'can_manage': (
                 _user_can_manage_event(request.user, event)
                 if request.user.is_authenticated
@@ -740,25 +748,41 @@ def booking_delete(request, pk):
     )
 
 
+@admin_required
+def admin_booking_list(request):
+    for ticket in Ticket.objects.select_related('attendee', 'event').all():
+        EventBooking.objects.get_or_create(
+            user=ticket.attendee,
+            event=ticket.event,
+            defaults={'booked_at': ticket.booked_at}
+        )
+    bookings = EventBooking.objects.select_related('user', 'event').order_by('-booked_at')
+    return render(request, 'events/admin_booking_list.html', {'bookings': bookings})
+
+
 @login_required
-def get_unread_notifications_api(request):
-    """API endpoint to get the latest unread notifications for the logged in user."""
-    notifications = Notification.objects.filter(recipient=request.user, is_read=False).order_by('-created_at')
-    unread_count = notifications.count()
+def user_notifications_api(request):
+    """API endpoint to get the latest notifications for the logged in user."""
+    notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')
+    unread_count = notifications.filter(is_read=False).count()
     notifications_data = [
         {
             'id': n.id,
             'title': n.title,
             'message': n.message,
+            'is_read': n.is_read,
             'created_at': n.created_at.strftime('%b %d, %H:%M'),
             'event_id': n.event_id,
         }
-        for n in notifications[:5]
+        for n in notifications[:10]
     ]
     return JsonResponse({
         'unread_count': unread_count,
         'notifications': notifications_data
     })
+
+
+get_unread_notifications_api = user_notifications_api
 
 
 @login_required
