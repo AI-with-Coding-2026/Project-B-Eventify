@@ -28,7 +28,7 @@ from authentication.decorators import (
 from authentication.models import UserRole
 from .emails import send_booking_confirmation_email
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
-from .models import Category, Event, EventBooking, EventPublishStatus, Notification, Ticket
+from .models import Category, Event, EventBooking, EventPublishStatus, Notification, NotificationType, Ticket
 from .serializers import EventSerializer
 
 
@@ -408,7 +408,8 @@ def book_event(request, pk):
                         recipient=event_locked.organizer,
                         event=event_locked,
                         title=f"New Booking: {event_locked.title}",
-                        message=f"{request.user.username} just booked {quantity} ticket(s) for '{event_locked.title}'."
+                        message=f"{request.user.username} just booked {quantity} ticket(s) for '{event_locked.title}'.",
+                        notification_type=NotificationType.BOOKING,
                     )
                 except Exception as notif_err:
                     print(f"Failed to create booking notification: {notif_err}")
@@ -483,7 +484,8 @@ def book_ticket(request, pk):
                         recipient=event_locked.organizer,
                         event=event_locked,
                         title=f"New Booking: {event_locked.title}",
-                        message=f"{request.user.username} just booked {quantity} ticket(s) for '{event_locked.title}'."
+                        message=f"{request.user.username} just booked {quantity} ticket(s) for '{event_locked.title}'.",
+                        notification_type=NotificationType.BOOKING,
                     )
                 except Exception as notif_err:
                     print(f"Failed to create booking notification: {notif_err}")
@@ -561,6 +563,7 @@ def event_create(request):
                             title='New Event Request',
                             message=f'Organizer @{request.user.username} submitted "{event.title}" for approval.',
                             event=event,
+                            notification_type=NotificationType.EVENT_REQUEST,
                         )
                     except Exception:
                         pass
@@ -628,6 +631,11 @@ def event_delete(request, pk):
         event = get_object_or_404(Event, pk=pk, organizer=request.user)
 
     if request.method == 'POST':
+        try:
+            Notification.objects.filter(event=event).update(event=None)
+        except Exception:
+            pass
+
         event.delete()
         messages.success(request, 'Event deleted successfully.')
         if request.user.is_admin or request.user.is_superuser:
@@ -847,6 +855,7 @@ def user_notifications_api(request):
             'is_read': n.is_read,
             'created_at': n.created_at.strftime('%b %d, %H:%M'),
             'event_id': n.event_id,
+            'notification_type': n.notification_type,
         }
         for n in notifications[:10]
     ]
