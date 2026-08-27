@@ -96,7 +96,7 @@ class Event(models.Model):
     publish_status = models.CharField(
         max_length=20,
         choices=EventPublishStatus.choices,
-        default=EventPublishStatus.APPROVED,
+        default=EventPublishStatus.PENDING,
     )
 
     @property

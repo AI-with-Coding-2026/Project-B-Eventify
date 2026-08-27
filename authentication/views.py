@@ -511,6 +511,17 @@ def event_request_approve(request, pk):
     event = get_object_or_404(Event, pk=pk)
     event.publish_status = EventPublishStatus.APPROVED
     event.save(update_fields=['publish_status'])
+
+    try:
+        Notification.objects.create(
+            recipient=event.organizer,
+            title='Event Approved 🎉',
+            message=f'Your event "{event.title}" has been approved by an administrator and is now live!',
+            event=event,
+        )
+    except Exception as notif_err:
+        print(f"Failed to create event approval notification: {notif_err}")
+
     messages.success(
         request,
         f'Event "{event.title}" was approved and is now live in the system.',
@@ -524,6 +535,17 @@ def event_request_deny(request, pk):
     event = get_object_or_404(Event, pk=pk)
     event.publish_status = EventPublishStatus.DENIED
     event.save(update_fields=['publish_status'])
+
+    try:
+        Notification.objects.create(
+            recipient=event.organizer,
+            title='Event Denied',
+            message=f'Your event "{event.title}" was not approved by an administrator.',
+            event=event,
+        )
+    except Exception as notif_err:
+        print(f"Failed to create event denial notification: {notif_err}")
+
     messages.success(
         request,
         f'Event "{event.title}" was denied and will not be published.',

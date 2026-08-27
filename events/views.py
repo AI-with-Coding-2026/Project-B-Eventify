@@ -536,6 +536,13 @@ def event_create(request):
         if form.is_valid():
             event = form.save(commit=False)
             event.organizer = request.user
+            if not request.user.is_admin and not request.user.is_superuser:
+                event.publish_status = EventPublishStatus.PENDING
+                messages.success(request, 'Event submitted for review. An administrator will approve it shortly.')
+            else:
+                event.publish_status = EventPublishStatus.APPROVED
+                messages.success(request, 'Event created successfully.')
+
             event.save()
             form.save_m2m()
 
@@ -544,7 +551,20 @@ def event_create(request):
                 new_cat, _ = Category.objects.get_or_create(name=custom_cat)
                 event.categories.add(new_cat)
 
-            messages.success(request, 'Event created successfully.')
+            if not request.user.is_admin and not request.user.is_superuser:
+                from authentication.models import User, UserRole
+                admins = User.objects.filter(role=UserRole.ADMIN, is_active=True)
+                for admin_user in admins:
+                    try:
+                        Notification.objects.create(
+                            recipient=admin_user,
+                            title='New Event Request',
+                            message=f'Organizer @{request.user.username} submitted "{event.title}" for approval.',
+                            event=event,
+                        )
+                    except Exception:
+                        pass
+
             if request.user.is_admin:
                 return redirect('admin_dashboard')
             return redirect('my_events')
