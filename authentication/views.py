@@ -16,7 +16,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.http import require_POST
 
-from events.models import Category, Event, EventBooking, EventPublishStatus, Ticket
+from events.models import Category, Event, EventBooking, EventPublishStatus, Ticket, Notification, NotificationType
 from events.exports import export_events_excel, export_events_pdf
 from events.emails import send_booking_cancellation_email
 
@@ -57,6 +57,20 @@ def register(request):
                 send_verification_email(user, verification_url)
             except Exception as e:
                 print(f"Failed to send verification email: {e}")
+
+            # If the user registered as organizer (pending approval), notify all admins
+            if user.is_organizer and user.organizer_status == OrganizerApprovalStatus.PENDING:
+                try:
+                    admin_users = User.objects.filter(role=UserRole.ADMIN, is_active=True)
+                    for admin_user in admin_users:
+                        Notification.objects.create(
+                            recipient=admin_user,
+                            title='New Organizer Request',
+                            message=f'User @{user.username} has registered as an organizer and is pending approval.',
+                            notification_type=NotificationType.ORGANIZER_REQUEST,
+                        )
+                except Exception:
+                    pass
 
             return redirect('verification_pending')
     else:
@@ -179,9 +193,26 @@ def login_view(request):
             messages.error(request, 'Invalid username or password')
         else:
             if not user.is_admin and not user.email_verified:
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                verification_path = reverse(
+                    'verify_email',
+                    kwargs={
+                        'uidb64': uid,
+                        'token': token,
+                    },
+                )
+                site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
+                verification_url = f'{site_url}{verification_path}'
+
+                try:
+                    send_verification_email(user, verification_url)
+                except Exception as e:
+                    print(f"Failed to send verification email: {e}")
+
                 messages.error(
                     request,
-                    'Please verify your email address before logging in.',
+                    'Please verify your email address before logging in. A new verification link has been sent to your email.',
                 )
                 return render(request, 'authentication/login.html')
 
@@ -204,7 +235,28 @@ def unauthorized(request):
     return render(request, 'authentication/unauthorized.html', status=403)
 
 
-@role_required(UserRole.ORGANIZER)
+@organizer_required
+def request_organizer_approval(request):
+    """Allow an organizer to submit or re-submit a request to the admin for event creation approval."""
+    if request.user.organizer_status != OrganizerApprovalStatus.APPROVED:
+        request.user.organizer_status = OrganizerApprovalStatus.PENDING
+        request.user.save(update_fields=['organizer_status'])
+
+        try:
+            admin_users = User.objects.filter(role=UserRole.ADMIN, is_active=True)
+            for admin_user in admin_users:
+                Notification.objects.create(
+                    recipient=admin_user,
+                    title='Organizer Access Request',
+                    message=f'Organizer @{request.user.username} has submitted a request for event creation access.',
+                    notification_type=NotificationType.ORGANIZER_REQUEST,
+                )
+        except Exception:
+            pass
+
+        messages.success(request, 'Your request for event creation access has been submitted to the administrator.')
+    return redirect('organizer_dashboard')
+
 
 @organizer_required
 def organizer_dashboard(request):
@@ -286,6 +338,27 @@ def organizer_dashboard_stats_api(request):
     })
 
 
+def _apply_export_filters(events, request):
+    """Apply search and category query-string filters to an events queryset."""
+    search_query = request.GET.get('search', '').strip()
+    category_param = request.GET.get('category', '').strip()
+
+    if search_query:
+        from django.db.models import Q
+        events = events.filter(
+            Q(title__icontains=search_query)
+            | Q(organizer__username__icontains=search_query)
+            | Q(location__icontains=search_query)
+        )
+
+    if category_param:
+        category_names = [c.strip() for c in category_param.split(',') if c.strip()]
+        if category_names:
+            events = events.filter(categories__name__in=category_names).distinct()
+
+    return events
+
+
 @login_required
 def organizer_export_excel(request):
     """Download Excel (.xlsx) export of event analytics for organizers or admins."""
@@ -300,6 +373,8 @@ def organizer_export_excel(request):
             events = Event.objects.all().order_by('-date')
     else:
         events = Event.objects.filter(organizer=request.user).order_by('-date')
+
+    events = _apply_export_filters(events, request)
 
     return export_events_excel(events, user=request.user)
 
@@ -318,6 +393,8 @@ def organizer_export_pdf(request):
             events = Event.objects.all().order_by('-date')
     else:
         events = Event.objects.filter(organizer=request.user).order_by('-date')
+
+    events = _apply_export_filters(events, request)
 
     total_events = events.count()
     total_tickets_sold = sum(event.tickets_sold for event in events)
@@ -409,6 +486,17 @@ def organizer_request_approve(request, pk):
     )
     organizer.organizer_status = OrganizerApprovalStatus.APPROVED
     organizer.save(update_fields=['organizer_status'])
+
+    try:
+        Notification.objects.create(
+            recipient=organizer,
+            title="Organizer Access Approved 🎉",
+            message="Congratulations! Your organizer access has been approved by the administrator. You can now create and publish events.",
+            notification_type=NotificationType.ORGANIZER_APPROVAL,
+        )
+    except Exception as notif_err:
+        print(f"Failed to create approval notification: {notif_err}")
+
     messages.success(
         request,
         f'Organizer "{organizer.username}" was approved and can now publish events.',
@@ -426,6 +514,17 @@ def organizer_request_deny(request, pk):
     )
     organizer.organizer_status = OrganizerApprovalStatus.DENIED
     organizer.save(update_fields=['organizer_status'])
+
+    try:
+        Notification.objects.create(
+            recipient=organizer,
+            title="Organizer Access Update",
+            message="Your request for organizer access has been declined or revoked by the administrator.",
+            notification_type=NotificationType.ORGANIZER_DENIAL,
+        )
+    except Exception as notif_err:
+        print(f"Failed to create denial notification: {notif_err}")
+
     messages.success(
         request,
         f'Organizer request from "{organizer.username}" was denied.',
@@ -466,6 +565,18 @@ def event_request_approve(request, pk):
     event = get_object_or_404(Event, pk=pk)
     event.publish_status = EventPublishStatus.APPROVED
     event.save(update_fields=['publish_status'])
+
+    try:
+        Notification.objects.create(
+            recipient=event.organizer,
+            title='Event Approved 🎉',
+            message=f'Your event "{event.title}" has been approved by an administrator and is now live!',
+            event=event,
+            notification_type=NotificationType.EVENT_APPROVAL,
+        )
+    except Exception as notif_err:
+        print(f"Failed to create event approval notification: {notif_err}")
+
     messages.success(
         request,
         f'Event "{event.title}" was approved and is now live in the system.',
@@ -479,6 +590,18 @@ def event_request_deny(request, pk):
     event = get_object_or_404(Event, pk=pk)
     event.publish_status = EventPublishStatus.DENIED
     event.save(update_fields=['publish_status'])
+
+    try:
+        Notification.objects.create(
+            recipient=event.organizer,
+            title='Event Denied',
+            message=f'Your event "{event.title}" was not approved by an administrator.',
+            event=event,
+            notification_type=NotificationType.EVENT_DENIAL,
+        )
+    except Exception as notif_err:
+        print(f"Failed to create event denial notification: {notif_err}")
+
     messages.success(
         request,
         f'Event "{event.title}" was denied and will not be published.',

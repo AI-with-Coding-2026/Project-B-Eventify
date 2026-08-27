@@ -1,0 +1,10 @@
+{% for event in events %}
+<div class="hover-lift w-full">
+    {% include "events/partials/event_card_list.html" with event=event %}
+</div>
+{% empty %}
+<div class="py-16 text-center">
+    <h3 class="text-base font-semibold text-gray-900 mb-1">No upcoming events found</h3>
+    <p class="text-sm text-gray-500">Try adjusting your filters.</p>
+</div>
+{% endfor %}

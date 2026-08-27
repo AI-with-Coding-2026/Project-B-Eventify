@@ -51,13 +51,6 @@ class Category(models.Model):
 
 
 class Event(models.Model):
-    CATEGORY_CHOICES = [
-        ("music", "Music"),
-        ("sports", "Sports"),
-        ("tech", "Tech"),
-        ("arts", "Arts"),
-        ("other", "Other"),
-    ]
 
     organizer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -93,55 +86,26 @@ class Event(models.Model):
         default=1,
     )
 
-    category = models.CharField(
-        max_length=120,
-        default="other",
-    )
-
-    custom_category = models.CharField(
-        max_length=80,
+    categories = models.ManyToManyField(
+        Category,
+        related_name="events",
         blank=True,
-        verbose_name="Custom category",
+        db_table="event_category",
     )
 
     publish_status = models.CharField(
         max_length=20,
         choices=EventPublishStatus.choices,
-        default=EventPublishStatus.APPROVED,
+        default=EventPublishStatus.PENDING,
     )
-
-    def __str__(self):
-        return self.title
-
-    @classmethod
-    def get_all_category_choices(cls):
-        """Return merged category choices: hardcoded defaults + admin-created.
-
-        Admin-created Category entries are appended after the built-in
-        choices, de-duplicated by slug so the list stays clean.
-        """
-        seen = {slug for slug, _ in cls.CATEGORY_CHOICES}
-        merged = list(cls.CATEGORY_CHOICES)
-        for cat in Category.objects.all():
-            if cat.slug not in seen:
-                merged.insert(-1, (cat.slug, cat.name))  # before "Other"
-                seen.add(cat.slug)
-        return merged
 
     @property
     def category_label(self):
-        custom = (self.custom_category or "").strip()
-        if self.category == "other" and custom:
-            return custom
-        # Check hardcoded choices first.
-        for slug, label in self.CATEGORY_CHOICES:
-            if slug == self.category:
-                return label
-        # Then check admin-created categories.
-        try:
-            return Category.objects.get(slug=self.category).name
-        except Category.DoesNotExist:
-            return self.category.replace("-", " ").title() if self.category else "Other"
+        names = self.categories.values_list("name", flat=True)
+        return ", ".join(names) if names else "Uncategorized"
+
+    def __str__(self):
+        return self.title
 
     @property
     def serial_number(self):
@@ -280,6 +244,18 @@ class EventBooking(models.Model):
 # Notification Storage Model
 # =========================================================
 
+class NotificationType(models.TextChoices):
+    BOOKING = 'booking', 'Booking'
+    CANCELLATION = 'cancellation', 'Cancellation'
+    EVENT_APPROVAL = 'event_approval', 'Event Approval'
+    EVENT_DENIAL = 'event_denial', 'Event Denial'
+    EVENT_REQUEST = 'event_request', 'Event Request'
+    ORGANIZER_APPROVAL = 'organizer_approval', 'Organizer Approval'
+    ORGANIZER_DENIAL = 'organizer_denial', 'Organizer Denial'
+    ORGANIZER_REQUEST = 'organizer_request', 'Organizer Request'
+    SYSTEM = 'system', 'System'
+
+
 class Notification(models.Model):
     """Model to log real-time booking and cancellation events for organizers."""
     recipient = models.ForeignKey(
@@ -296,6 +272,12 @@ class Notification(models.Model):
         blank=True,
         related_name='notifications'
     )
+    notification_type = models.CharField(
+        max_length=30,
+        choices=NotificationType.choices,
+        default=NotificationType.SYSTEM,
+        db_index=True,
+    )
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -306,4 +288,5 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification for {self.recipient.username} - {self.title}"
+
 

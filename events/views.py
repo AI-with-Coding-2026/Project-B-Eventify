@@ -1,13 +1,21 @@
+import json
 import threading
 from urllib.parse import urlparse
+
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db import transaction
 from django.db.models import Sum
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from authentication.decorators import (
     admin_required,
@@ -20,7 +28,8 @@ from authentication.decorators import (
 from authentication.models import UserRole
 from .emails import send_booking_confirmation_email
 from .forms import BookingForm, CategoryForm, EventForm, TicketForm
-from .models import Category, Event, EventBooking, EventPublishStatus, Ticket
+from .models import Category, Event, EventBooking, EventPublishStatus, Notification, NotificationType, Ticket
+from .serializers import EventSerializer
 
 
 def _user_can_manage_event(user, event):
@@ -93,7 +102,7 @@ def get_user_bookings(user_id):
         bookings.append({
             'event': booking.event,
             'quantity': 1,
-           'booked_at': booking.booked_at,
+            'booked_at': booking.booked_at,
             'source': 'legacy',
         })
 
@@ -139,25 +148,50 @@ def _resolve_back_navigation(request):
     return referer, 'Back'
 
 
-def event_list(request):
+def _get_filtered_events(request):
     events = Event.objects.filter(
-        publish_status=EventPublishStatus.APPROVED
-    ).order_by('date')
+        publish_status=EventPublishStatus.APPROVED,
+        date__gte=timezone.now()
+    ).prefetch_related("categories")
 
-    search_query = request.GET.get('search', '')
-    selected_category = request.GET.get('category', '')
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    max_price = request.GET.get('max_price', '')
+    search_query = request.GET.get("search", "").strip()
+    categories_param = request.GET.getlist("category")
+    if not categories_param:
+        cat_str = request.GET.get("category", "").strip()
+        if cat_str:
+            categories_param = [c.strip() for c in cat_str.split(",") if c.strip()]
+    else:
+        # Also expand any comma-separated entries in the list
+        expanded = []
+        for c in categories_param:
+            expanded.extend([part.strip() for part in c.split(",") if part.strip()])
+        categories_param = expanded
+
+    location = request.GET.get("location", "").strip()
+    max_price = request.GET.get("max_price", "").strip()
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+    sort = request.GET.get("sort", "date")
 
     if search_query:
-        events = events.filter(title__icontains=search_query)
+        from django.db.models import Q
+        events = events.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(location__icontains=search_query)
+        )
 
-    if selected_category:
-        events = events.filter(category=selected_category)
+    if categories_param:
+        events = events.filter(categories__slug__in=categories_param)
+
+    if location:
+        events = events.filter(location__icontains=location)
 
     if max_price:
-        events = events.filter(price__lte=max_price)
+        try:
+            events = events.filter(price__lte=float(max_price))
+        except ValueError:
+            pass
 
     if start_date and end_date:
         events = events.filter(date__date__range=(start_date, end_date))
@@ -167,136 +201,306 @@ def event_list(request):
         if end_date:
             events = events.filter(date__date__lte=end_date)
 
-    today = timezone.now().date()
-    past_events = events.filter(date__date__lt=today).order_by('-date')
-    events = events.filter(date__date__gte=today)
-    selling_fast_threshold = 10  # tweak this number as needed
+    if sort == "date_desc":
+        events = events.order_by("-date")
+    else:
+        events = events.order_by("date")
+
+    return events.distinct()
+
+def _get_safe_page(paginator, page_number):
+    try:
+        page_num = int(page_number)
+        if page_num < 1:
+            page_num = 1
+    except (TypeError, ValueError):
+        page_num = 1
+
+    try:
+        return paginator.page(page_num)
+    except PageNotAnInteger:
+        return paginator.page(1)
+    except EmptyPage:
+        if paginator.num_pages > 0:
+            return paginator.page(1)
+        return paginator.get_page(1)
+
+
+def event_list(request):
+    events = _get_filtered_events(request)
+
+    search_query = request.GET.get('search', '').strip()
+    categories_param = request.GET.getlist('category')
+    if not categories_param:
+        cat_str = request.GET.get('category', '').strip()
+        if cat_str:
+            categories_param = [c.strip() for c in cat_str.split(',') if c.strip()]
+    selected_category = categories_param[0] if categories_param else ''
+    location = request.GET.get('location', '').strip()
+    sort = request.GET.get('sort', 'date')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    max_price = request.GET.get('max_price', '')
 
     paginator = Paginator(events, 6)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_number = request.GET.get('page', 1)
+    page_obj = _get_safe_page(paginator, page_number)
 
     filter_params = request.GET.copy()
     filter_params.pop('page', None)
     filter_query_string = filter_params.urlencode()
 
-    featured_events = Event.objects.filter(
-        publish_status=EventPublishStatus.APPROVED,
-        date__gte=timezone.now()
-    ).order_by('date')[:5]
-
     context = {
         'events': page_obj,
         'page_obj': page_obj,
         'paginator': paginator,
-        'categories': Event.get_all_category_choices(),
+        'categories': Category.objects.all(),
         'search_query': search_query,
         'selected_category': selected_category,
+        'selected_categories': categories_param,
+        'location': location,
+        'sort': sort,
         'max_price': max_price,
         'start_date': start_date,
         'end_date': end_date,
         'filter_query_string': filter_query_string,
-        'past_events': past_events,
-        'selling_fast_threshold': selling_fast_threshold,
-        'featured_events': featured_events,
     }
     return render(request, 'events/event_list.html', context)
 
-def event_detail(request, pk):
-    event = get_object_or_404(Event, pk=pk)
-    user = request.user
 
-    if not _user_can_see_unpublished_event(user, event):
-        raise PermissionDenied("This event is not currently published.")
+@api_view(["GET"])
+def event_api_list(request):
+    events = _get_filtered_events(request)
+    serializer = EventSerializer(
+        events,
+        many=True,
+        context={"request": request},
+    )
+    return Response(serializer.data)
+
+
+def event_page_api(request):
+    events = _get_filtered_events(request)
+
+    paginator = Paginator(events, 6)
+    page_number = request.GET.get("page", 1)
+    page_obj = _get_safe_page(paginator, page_number)
+
+    grid_html = render_to_string(
+        "events/partials/event_page_grid.html",
+        {
+            "events": page_obj,
+            "user": request.user,
+        },
+        request=request,
+    )
+
+    list_html = render_to_string(
+        "events/partials/event_page_list.html",
+        {
+            "events": page_obj,
+            "user": request.user,
+        },
+        request=request,
+    )
+
+    return JsonResponse(
+        {
+            "grid_html": grid_html,
+            "list_html": list_html,
+            "has_next": page_obj.has_next(),
+            "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
+            "total_count": paginator.count,
+        }
+    )
+
+
+def event_detail(request, pk):
+    event = get_object_or_404(Event.objects.prefetch_related("categories"), pk=pk)
+
+    if not _user_can_see_unpublished_event(request.user, event):
+        raise PermissionDenied("This event is not publicly available.")
 
     user_has_booked = False
+    if request.user.is_authenticated:
+        user_has_booked = _user_has_booked_event(request.user, event)
 
-    if user.is_authenticated:
-        user_has_booked = _user_has_booked_event(user, event)
+    can_book = (
+        not event.is_expired
+        and not event.is_sold_out
+        and not user_has_booked
+        and (not request.user.is_authenticated or request.user.is_attendee)
+    )
 
-    context = {
-        'event': event,
-        'can_manage': user.is_authenticated and _user_can_manage_event(user, event),
-        'can_review_event': user.is_authenticated and user.is_admin,
-        'can_book': (
-            user.is_authenticated
-            and user.role == UserRole.ATTENDEE
-            and not user_has_booked
-            and not event.is_sold_out
-            and not event.is_expired
-            and event.is_published
-        ),
-        'user_has_booked': user_has_booked,
-        'is_past_event': event.is_expired,
-    }
-    return render(request, 'events/event_detail.html', context)
+    back_url, back_label = _resolve_back_navigation(request)
+
+    return render(
+        request,
+        'events/event_detail.html',
+        {
+            'event': event,
+            'user_has_booked': user_has_booked,
+            'can_book': can_book,
+            'can_manage': (
+                _user_can_manage_event(request.user, event)
+                if request.user.is_authenticated
+                else False
+            ),
+            'back_url': back_url,
+            'back_label': back_label,
+        },
+    )
 
 
-@role_required(UserRole.ATTENDEE)
+@attendee_required
 def book_event(request, pk):
-    """Keep the legacy endpoint from bypassing the ticket-capacity flow."""
+    event = get_object_or_404(Event, pk=pk)
+
+    if request.method == 'POST':
+        if not event.is_published:
+            messages.error(request, 'This event is not published.')
+            return redirect('event_detail', pk=pk)
+
+        if event.is_expired:
+            messages.error(request, 'This event has already occurred.')
+            return redirect('event_detail', pk=pk)
+
+        if event.is_sold_out:
+            messages.error(request, 'This event is sold out.')
+            return redirect('event_detail', pk=pk)
+
+        try:
+            quantity = int(request.POST.get('quantity', 1))
+        except (ValueError, TypeError):
+            quantity = 1
+
+        if quantity < 1:
+            quantity = 1
+
+        if quantity > event.tickets_remaining:
+            messages.error(request, f'Only {event.tickets_remaining} tickets remaining.')
+            return redirect('book_ticket', pk=pk)
+
+        with transaction.atomic():
+            event_locked = Event.objects.select_for_update().get(pk=pk)
+
+            if event_locked.tickets_remaining < quantity:
+                messages.error(request, f'Only {event_locked.tickets_remaining} tickets remaining.')
+                return redirect('book_ticket', pk=pk)
+
+            ticket, created = Ticket.objects.get_or_create(
+                event=event_locked,
+                attendee=request.user,
+                defaults={'quantity': quantity},
+            )
+            if not created:
+                ticket.quantity += quantity
+                ticket.save(update_fields=['quantity'])
+
+            EventBooking.objects.get_or_create(
+                event=event_locked,
+                user=request.user,
+            )
+
+            if event_locked.organizer:
+                try:
+                    Notification.objects.create(
+                        recipient=event_locked.organizer,
+                        event=event_locked,
+                        title=f"New Booking: {event_locked.title}",
+                        message=f"{request.user.username} just booked {quantity} ticket(s) for '{event_locked.title}'.",
+                        notification_type=NotificationType.BOOKING,
+                    )
+                except Exception as notif_err:
+                    print(f"Failed to create booking notification: {notif_err}")
+
+        try:
+            send_booking_confirmation_email(ticket)
+        except Exception as e:
+            print(f"Failed to send booking confirmation email: {e}")
+
+        messages.success(
+            request,
+            f'You have booked {quantity} ticket(s) for "{event.title}". A confirmation email has been sent.',
+        )
+        return redirect('attendee_dashboard')
+
     return redirect('book_ticket', pk=pk)
 
 
 @attendee_required
 def book_ticket(request, pk):
-    """Book tickets without allowing a request to exceed event capacity."""
     event = get_object_or_404(Event, pk=pk)
 
-    if event.is_expired:
-        messages.error(request, 'Booking is not available because this event has ended.')
+    if not event.is_published:
+        messages.error(request, 'This event is not available for booking.')
         return redirect('event_detail', pk=pk)
 
-    if _user_has_booked_event(request.user, event):
-        messages.info(request, 'You have already booked this event.')
+    if event.is_expired:
+        messages.error(request, 'This event has already occurred.')
+        return redirect('event_detail', pk=pk)
+
+    if event.is_sold_out:
+        messages.error(request, 'This event is sold out.')
         return redirect('event_detail', pk=pk)
 
     if request.method == 'POST':
         try:
             quantity = int(request.POST.get('quantity', 1))
-        except (TypeError, ValueError):
-            quantity = 0
+        except (ValueError, TypeError):
+            quantity = 1
 
         if quantity < 1:
-            messages.error(request, 'Choose at least one ticket.')
-        else:
-            with transaction.atomic():
-                tickets_sold = event.tickets_sold
-                remaining = event.max_tickets - tickets_sold
+            quantity = 1
 
-                if quantity > remaining:
-                    if remaining <= 0:
-                        messages.error(request, 'This event is sold out.')
-                    else:
-                        messages.error(
-                            request,
-                            f'Only {remaining} ticket(s) remain for this event.',
-                        )
-                elif _user_has_booked_event(request.user, event):
-                    messages.info(request, 'You have already booked this event.')
-                else:
-                    ticket = Ticket.objects.create(
-                        event=event,
-                        attendee=request.user,
-                        quantity=quantity,
-                    )
-                    EventBooking.objects.get_or_create(
-                        user=request.user,
-                        event=event,
-                    )
-                    
-                   
-                    threading.Thread(
-                        target=send_booking_confirmation_email,
-                        args=(ticket,)
-                    ).start()
+        if quantity > event.tickets_remaining:
+            messages.error(request, f'Only {event.tickets_remaining} tickets remaining.')
+            return render(request, 'events/book_ticket.html', {'event': event})
 
-                    messages.success(
-                        request,
-                        f'Ticket booked for "{event.title}". Confirmation email is on its way.',
-                    )
+        with transaction.atomic():
+            event_locked = Event.objects.select_for_update().get(pk=pk)
 
-                    return redirect('attendee_dashboard')
+            if event_locked.tickets_remaining < quantity:
+                messages.error(request, f'Only {event_locked.tickets_remaining} tickets remaining.')
+                return render(request, 'events/book_ticket.html', {'event': event})
+
+            ticket, created = Ticket.objects.get_or_create(
+                event=event_locked,
+                attendee=request.user,
+                defaults={'quantity': quantity},
+            )
+            if not created:
+                ticket.quantity += quantity
+                ticket.save(update_fields=['quantity'])
+
+            EventBooking.objects.get_or_create(
+                event=event_locked,
+                user=request.user,
+            )
+
+            if event_locked.organizer:
+                try:
+                    Notification.objects.create(
+                        recipient=event_locked.organizer,
+                        event=event_locked,
+                        title=f"New Booking: {event_locked.title}",
+                        message=f"{request.user.username} just booked {quantity} ticket(s) for '{event_locked.title}'.",
+                        notification_type=NotificationType.BOOKING,
+                    )
+                except Exception as notif_err:
+                    print(f"Failed to create booking notification: {notif_err}")
+
+            threading.Thread(
+                target=send_booking_confirmation_email,
+                args=(ticket,)
+            ).start()
+
+            messages.success(
+                request,
+                f'Ticket booked for "{event.title}". Confirmation email is on its way.',
+            )
+
+            return redirect('attendee_dashboard')
 
     return render(
         request,
@@ -322,27 +526,51 @@ def organizer_event_list(request):
     )
 
 
-@approved_organizer_required
+@organizer_or_admin_required
 def event_create(request):
     """Create an event and assign the logged-in organizer as owner."""
+    if not request.user.is_admin and request.user.is_organizer and not request.user.is_approved_organizer:
+        messages.error(request, 'Your organizer account must be approved by an administrator before creating events.')
+        return redirect('organizer_dashboard')
+
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES)
         if form.is_valid():
             event = form.save(commit=False)
             event.organizer = request.user
-            if request.user.is_admin:
-                event.publish_status = EventPublishStatus.APPROVED
-            else:
+            if not request.user.is_admin and not request.user.is_superuser:
                 event.publish_status = EventPublishStatus.PENDING
-            event.save()
-            if request.user.is_admin:
+                messages.success(request, 'Event submitted for review. An administrator will approve it shortly.')
+            else:
+                event.publish_status = EventPublishStatus.APPROVED
                 messages.success(request, 'Event created successfully.')
+
+            event.save()
+            form.save_m2m()
+
+            custom_cat = request.POST.get('custom_category', '').strip()[:15]
+            if custom_cat:
+                new_cat, _ = Category.objects.get_or_create(name=custom_cat)
+                event.categories.add(new_cat)
+
+            if not request.user.is_admin and not request.user.is_superuser:
+                from authentication.models import User, UserRole
+                admins = User.objects.filter(role=UserRole.ADMIN, is_active=True)
+                for admin_user in admins:
+                    try:
+                        Notification.objects.create(
+                            recipient=admin_user,
+                            title='New Event Request',
+                            message=f'Organizer @{request.user.username} submitted "{event.title}" for approval.',
+                            event=event,
+                            notification_type=NotificationType.EVENT_REQUEST,
+                        )
+                    except Exception:
+                        pass
+
+            if request.user.is_admin:
                 return redirect('admin_dashboard')
-            messages.success(
-                request,
-                'Event submitted. It will appear in the system after an admin approves it.',
-            )
-            return redirect('organizer_event_list')
+            return redirect('my_events')
     else:
         form = EventForm()
 
@@ -369,11 +597,16 @@ def event_edit(request, pk):
         form = EventForm(request.POST, request.FILES, instance=event)
         if form.is_valid():
             form.save()
+
+            custom_cat = request.POST.get('custom_category', '').strip()[:15]
+            if custom_cat:
+                new_cat, _ = Category.objects.get_or_create(name=custom_cat)
+                event.categories.add(new_cat)
+
             messages.success(request, 'Event updated successfully.')
-            
             if request.user.is_admin:
                 return redirect('admin_dashboard')
-            return redirect('my_events') # التعديل هنا أيضاً ليأخذه لصفحة My Events
+            return redirect('my_events')
     else:
         form = EventForm(instance=event)
 
@@ -391,21 +624,30 @@ def event_edit(request, pk):
 
 @organizer_or_admin_required
 def event_delete(request, pk):
-    """Delete an event only if it belongs to the logged-in organizer."""
-    event = get_object_or_404(Event, pk=pk, organizer=request.user)
+    """Delete an event. Admins can delete any event, organizers only their own."""
+    if request.user.is_admin or request.user.is_superuser:
+        event = get_object_or_404(Event, pk=pk)
+    else:
+        event = get_object_or_404(Event, pk=pk, organizer=request.user)
 
     if request.method == 'POST':
+        try:
+            Notification.objects.filter(event=event).update(event=None)
+        except Exception:
+            pass
+
         event.delete()
         messages.success(request, 'Event deleted successfully.')
-        if request.user.is_admin:
+        if request.user.is_admin or request.user.is_superuser:
             return redirect('admin_dashboard')
-        return redirect('my_events') # التعديل هنا ليعود لصفحة My Events بعد الحذف
+        return redirect('my_events')
 
     return render(
         request,
         'events/event_confirm_delete.html',
         {'event': event},
     )
+
 
 @admin_required
 def category_list(request):
@@ -417,17 +659,13 @@ def category_list(request):
 def category_create(request):
     if request.method == 'POST':
         form = CategoryForm(request.POST)
-
         if form.is_valid():
             form.save()
-
             messages.success(
                 request,
                 'Category created successfully.',
             )
-
             return redirect('admin_dashboard')
-
     else:
         form = CategoryForm()
 
@@ -449,17 +687,13 @@ def category_update(request, pk):
 
     if request.method == 'POST':
         form = CategoryForm(request.POST, instance=category)
-
         if form.is_valid():
             form.save()
-
             messages.success(
                 request,
                 'Category updated successfully.'
             )
-
             return redirect('category_update', pk=category.pk)
-
     else:
         form = CategoryForm(instance=category)
 
@@ -519,7 +753,7 @@ def ticket_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, "Ticket updated successfully.")
-            return redirect("admin_booking_list")
+            return redirect("admin_dashboard")
     else:
         form = TicketForm(instance=ticket)
 
@@ -540,10 +774,9 @@ def ticket_delete(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
 
     if request.method == "POST":
-        EventBooking.objects.filter(user=ticket.attendee, event=ticket.event).delete()
         ticket.delete()
         messages.success(request, "Ticket deleted successfully.")
-        return redirect("admin_booking_list")
+        return redirect("admin_dashboard")
 
     return render(
         request,
@@ -563,7 +796,7 @@ def booking_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, "Booking updated successfully.")
-            return redirect("admin_booking_list")
+            return redirect("admin_dashboard")
     else:
         form = BookingForm(instance=booking)
 
@@ -584,10 +817,9 @@ def booking_delete(request, pk):
     booking = get_object_or_404(EventBooking, pk=pk)
 
     if request.method == "POST":
-        Ticket.objects.filter(attendee=booking.user, event=booking.event).delete()
         booking.delete()
         messages.success(request, "Booking deleted successfully.")
-        return redirect("admin_booking_list")
+        return redirect("admin_dashboard")
 
     return render(
         request,
@@ -596,6 +828,7 @@ def booking_delete(request, pk):
             "booking": booking,
         },
     )
+
 
 @admin_required
 def admin_booking_list(request):
@@ -608,41 +841,31 @@ def admin_booking_list(request):
     bookings = EventBooking.objects.select_related('user', 'event').order_by('-booked_at')
     return render(request, 'events/admin_booking_list.html', {'bookings': bookings})
 
-create_event = event_create
-edit_event = event_edit
-delete_event = event_delete
-
-
-# =========================================================
-# Real-Time Notification APIs
-# =========================================================
-
-import json
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from .models import Notification
-
 
 @login_required
 def user_notifications_api(request):
-    """API endpoint to fetch the top 5 recent notifications for the logged-in user."""
-    notifications = Notification.objects.filter(recipient=request.user)
+    """API endpoint to get the latest notifications for the logged in user."""
+    notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')
     unread_count = notifications.filter(is_read=False).count()
-
     notifications_data = [
         {
             'id': n.id,
             'title': n.title,
             'message': n.message,
             'is_read': n.is_read,
-            'created_at': n.created_at.strftime('%Y-%m-%d %H:%M')
+            'created_at': n.created_at.strftime('%b %d, %H:%M'),
+            'event_id': n.event_id,
+            'notification_type': n.notification_type,
         }
-        for n in notifications[:5]
+        for n in notifications[:10]
     ]
     return JsonResponse({
         'unread_count': unread_count,
         'notifications': notifications_data
     })
+
+
+get_unread_notifications_api = user_notifications_api
 
 
 @login_required
@@ -652,6 +875,15 @@ def mark_notification_as_read(request, pk):
         notification = get_object_or_404(Notification, pk=pk, recipient=request.user)
         notification.is_read = True
         notification.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=400)
+
+
+@login_required
+def mark_all_notifications_as_read(request):
+    """API endpoint to mark all unread notifications as read for current user."""
+    if request.method in ['POST', 'GET']:
+        Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
         return JsonResponse({'status': 'success'})
     return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=400)
 
@@ -670,4 +902,9 @@ def save_fcm_token(request):
             return JsonResponse({'status': 'error', 'message': 'No token provided'}, status=400)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+
+
+create_event = event_create
+edit_event = event_edit
+delete_event = event_delete

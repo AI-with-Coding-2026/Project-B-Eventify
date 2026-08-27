@@ -5,6 +5,16 @@ from . import views
 urlpatterns = [
     path('', views.event_list, name='event_list'),
     path(
+        'api/events/',
+        views.event_api_list,
+        name='event_api_list',
+    ),
+    path(
+        'api/event-page/',
+        views.event_page_api,
+        name='event_page_api',
+    ),
+    path(
         'my-tickets/',
         views.my_tickets,
         name='my_tickets',
@@ -120,6 +130,11 @@ urlpatterns = [
         'api/notifications/<int:pk>/read/',
         views.mark_notification_as_read,
         name='mark_notification_as_read'
+    ),
+    path(
+        'api/notifications/mark-all-read/',
+        views.mark_all_notifications_as_read,
+        name='mark_all_notifications_as_read'
     ),
     # Firebase: Save FCM Token
     path('api/save-fcm-token/', views.save_fcm_token, name='save_fcm_token'),

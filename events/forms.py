@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django import forms
 from django.utils import timezone
 
@@ -52,11 +54,17 @@ class CategoryForm(forms.ModelForm):
 
 
 class EventForm(forms.ModelForm):
+    categories = forms.ModelMultipleChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Categories",
+        help_text="Select one or more categories for this event, or specify a custom category under 'Other'.",
+    )
 
     max_tickets = forms.IntegerField(
         required=False,
         min_value=1,
-        initial=1,
         widget=forms.NumberInput(
             attrs={
                 "class": INPUT_CLASSES,
@@ -65,16 +73,12 @@ class EventForm(forms.ModelForm):
         ),
     )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Dynamically merge hardcoded + admin-created categories.
-        self.fields['category'].choices = Event.get_all_category_choices()
-
     date = forms.DateTimeField(
         widget=forms.DateTimeInput(
             attrs={
                 "type": "datetime-local",
                 "class": INPUT_CLASSES,
+                "id": "id_date",
             },
             format="%Y-%m-%dT%H:%M",
         ),
@@ -91,8 +95,7 @@ class EventForm(forms.ModelForm):
             "date",
             "price",
             "max_tickets",
-            "category",
-            "custom_category",
+            "categories",
             "image",
         ]
 
@@ -116,17 +119,6 @@ class EventForm(forms.ModelForm):
                     "min": "0",
                 }
             ),
-            "category": forms.Select(
-                attrs={
-                    "class": INPUT_CLASSES,
-                }
-            ),
-            "custom_category": forms.TextInput(
-                attrs={
-                    "class": INPUT_CLASSES,
-                    "placeholder": "Enter your category",
-                }
-            ),
             "image": forms.ClearableFileInput(
                 attrs={
                     "class": INPUT_CLASSES,
@@ -135,33 +127,50 @@ class EventForm(forms.ModelForm):
             ),
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        categories = cleaned_data.get("categories")
+        custom_category = self.data.get("custom_category", "").strip()
+
+        if not categories and not custom_category:
+            self.add_error(
+                "categories",
+                "Please select at least one category or specify a custom category under 'Other'."
+            )
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=commit)
+        custom_cat_name = self.data.get("custom_category", "").strip()[:15]
+        if custom_cat_name:
+            new_cat, _ = Category.objects.get_or_create(name=custom_cat_name)
+            if commit:
+                instance.categories.add(new_cat)
+            else:
+                old_save_m2m = getattr(self, "save_m2m", None)
+
+                def new_save_m2m():
+                    if old_save_m2m:
+                        old_save_m2m()
+                    instance.categories.add(new_cat)
+
+                self.save_m2m = new_save_m2m
+        return instance
+
     def clean_max_tickets(self):
         value = self.cleaned_data.get("max_tickets")
         return value or 1
 
     def clean_date(self):
         date = self.cleaned_data.get("date")
-        if date and not self.instance.pk and date < timezone.now():
-            raise forms.ValidationError("Event date and time cannot be in the past.")
+        if date:
+            now = timezone.now()
+            if not self.instance.pk or (self.instance.pk and self.instance.date != date):
+                if date < now:
+                    raise forms.ValidationError("Event date and time cannot be in the past.")
+                if date > now + timedelta(days=183):
+                    raise forms.ValidationError("Event date cannot be more than 6 months in the future.")
         return date
-
-    def clean(self):
-        cleaned_data = super().clean()
-        category = cleaned_data.get("category")
-        custom_category = (cleaned_data.get("custom_category") or "").strip()
-
-        if category == "other":
-            if not custom_category:
-                self.add_error(
-                    "custom_category",
-                    "Please enter a category name.",
-                )
-            else:
-                cleaned_data["custom_category"] = custom_category
-        else:
-            cleaned_data["custom_category"] = ""
-
-        return cleaned_data
 
     def clean_image(self):
         image = self.cleaned_data.get("image")

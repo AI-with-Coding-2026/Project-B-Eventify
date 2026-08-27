@@ -15,7 +15,7 @@
         </a>
     </div>
 
-    <!-- Main Card Container (Matching screenshot) -->
+    <!-- Main Card Container -->
     <div class="rounded-3xl border border-indigo-100/80 bg-[#f0f4ff]/70 p-6 sm:p-8 shadow-sm">
 
         <!-- Top Section: 2 Columns (Info & 2x2 Grid on Left, Image Card on Right) -->
@@ -53,7 +53,11 @@
                     <div class="rounded-2xl border border-indigo-100/60 bg-white p-3.5 sm:p-4 shadow-2xs flex flex-col justify-center">
                         <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">TICKETS AVAILABLE</span>
                         <span class="text-xs sm:text-sm font-bold text-gray-900 mt-1">
-                            {{ event.tickets_remaining }} / {{ event.max_tickets }}
+                            {% if event.is_sold_out %}
+                                <span class="text-red-600">Sold Out</span>
+                            {% else %}
+                                {{ event.tickets_remaining }} Available Ticket{{ event.tickets_remaining|pluralize }}
+                            {% endif %}
                         </span>
                     </div>
                 </div>
@@ -61,12 +65,12 @@
 
             <!-- Right: Image Card (5 cols) -->
             <div class="md:col-span-5 flex">
-                <div class="w-full h-full min-h-[190px] rounded-2xl overflow-hidden border border-gray-900/10 bg-gray-950 flex items-center justify-center shadow-sm">
+                <div class="w-full h-full min-h-[190px] rounded-2xl overflow-hidden border border-gray-900/10 bg-white flex items-center justify-center shadow-sm">
                     {% if event.image %}
                     <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-full object-cover">
                     {% else %}
-                    <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-indigo-950 text-indigo-400 text-sm font-bold">
-                        {{ event.title|slice:":2"|upper }}
+                    <div class="w-full h-full">
+                        {% include "events/partials/event_image_placeholder.html" %}
                     </div>
                     {% endif %}
                 </div>
@@ -159,18 +163,25 @@
 <script>
     (function () {
         var quantityInput = document.getElementById('quantity');
-        var totalEl = document.getElementById('booking-total');
-        if (!quantityInput || !totalEl) {
-            return;
-        }
+        var totalDisplay = document.getElementById('booking-total');
+        if (!quantityInput || !totalDisplay) return;
+
         var unitPrice = parseFloat(quantityInput.getAttribute('data-unit-price')) || 0;
+
         function updateTotal() {
-            var quantity = parseInt(quantityInput.value, 10);
-            if (isNaN(quantity) || quantity < 1) {
-                quantity = 0;
+            var qty = parseInt(quantityInput.value, 10);
+            if (isNaN(qty) || qty < 1) {
+                qty = 1;
             }
-            totalEl.textContent = (unitPrice * quantity).toFixed(2);
+            var max = parseInt(quantityInput.getAttribute('max'), 10);
+            if (!isNaN(max) && qty > max) {
+                qty = max;
+                quantityInput.value = max;
+            }
+            var total = (qty * unitPrice).toFixed(2);
+            totalDisplay.textContent = total;
         }
+
         quantityInput.addEventListener('input', updateTotal);
         quantityInput.addEventListener('change', updateTotal);
         updateTotal();

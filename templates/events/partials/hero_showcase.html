@@ -13,11 +13,7 @@
                 {% if event.image %}
                 <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-full object-cover blur-[1.2px] scale-105 transform transition-transform duration-7000 ease-out">
                 {% else %}
-                <div class="w-full h-full bg-gradient-to-br from-indigo-950 via-gray-900 to-purple-950 flex items-center justify-center">
-                    <svg class="w-24 h-24 text-indigo-500/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                </div>
+                <img src="{% static 'images/Picture eventify black.png' %}" alt="{{ event.title }}" class="w-full h-full object-cover blur-[1.2px] scale-105 transform transition-transform duration-7000 ease-out">
                 {% endif %}
                 <!-- Balanced gradient overlays for comfortable text readability -->
                 <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"></div>
@@ -27,11 +23,29 @@
 
             <!-- Dynamic Content Container -->
             <div class="relative z-20 max-w-2xl space-y-4">
-                <!-- Badges: Category & Nearest Date -->
+                <!-- Badges: Category (1 Shown + Animated Hover Tooltip) & Nearest Date -->
                 <div class="flex flex-wrap items-center gap-2">
-                    <span id="hero-category" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-indigo-600 text-white shadow-sm">
-                        {{ featured_events.0.category_label }}
-                    </span>
+                    <div class="inline-flex items-center gap-1.5 z-30" id="hero-category-container">
+                        <span id="hero-category" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-indigo-600 text-white shadow-sm">
+                            {{ featured_events.0.categories.all.0.name|default:"Event" }}
+                        </span>
+                        <div class="relative inline-block group/hero-cat-more" id="hero-category-more-wrapper">
+                            <span id="hero-category-more" class="{% if featured_events.0.categories.all|length <= 1 %}hidden{% endif %} inline-flex items-center justify-center text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/20 backdrop-blur-sm shadow-xs cursor-pointer hover:bg-white/30 transition">
+                                +{{ featured_events.0.categories.all|length|add:"-1" }}
+                            </span>
+                            <!-- Animated Popover Tooltip for Hero Showcase on +N hover only -->
+                            <div id="hero-category-tooltip" class="absolute left-0 top-full mt-2 min-w-[150px] p-2.5 bg-gray-900/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-700 opacity-0 scale-95 -translate-y-1 group-hover/hero-cat-more:opacity-100 group-hover/hero-cat-more:scale-100 group-hover/hero-cat-more:translate-y-0 transition-all duration-200 ease-out pointer-events-none group-hover/hero-cat-more:pointer-events-auto z-50">
+                                <p class="text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5 px-1">All Categories</p>
+                                <div id="hero-category-list" class="flex flex-wrap gap-1">
+                                    {% for cat in featured_events.0.categories.all %}
+                                        <span class="inline-block text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                            {{ cat.name }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <span id="hero-date-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs text-gray-300 bg-black/40 backdrop-blur-sm border border-white/5">
                         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -99,14 +113,14 @@
                 <span class="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Nearest first</span>
             </div>
 
-            <div id="hero-queue-list" class="space-y-2">
+            <div class="flex-1 flex flex-col justify-between gap-2" id="hero-queue-list">
                 {% for event in featured_events %}
                 <button type="button"
                         class="queue-item group w-full text-left rounded-xl p-2.5 sm:p-3 flex items-center gap-3 transition-all duration-300 relative overflow-hidden border {% if forloop.first %}bg-gray-900 border-indigo-500/60 ring-1 ring-indigo-500/40 shadow-md active-queue-item{% else %}bg-gray-900/80 hover:bg-gray-900 border-gray-800/80 hover:border-gray-700 shadow-xs{% endif %}"
                         data-index="{{ forloop.counter0 }}"
                         data-id="{{ event.pk }}"
                         data-title="{{ event.title }}"
-                        data-category="{{ event.category_label }}"
+                        data-categories="{% for cat in event.categories.all %}{{ cat.name }}{% if not forloop.last %},{% endif %}{% endfor %}"
                         data-date="{{ event.date|date:'M d, Y · g:i A' }}"
                         data-location="{{ event.location|default:'TBA' }}"
                         data-price="{% if event.price > 0 %}${{ event.price }}{% else %}Free{% endif %}"
@@ -120,7 +134,8 @@
                         <img src="{{ event.image.url }}" alt="" class="card-bg-img w-full h-full object-cover transition-opacity duration-500 {% if forloop.first %}opacity-40{% else %}opacity-0{% endif %}">
                         <div class="card-bg-overlay absolute inset-0 transition-colors duration-500 {% if forloop.first %}bg-gradient-to-r from-gray-950/85 via-gray-950/70 to-gray-950/60{% else %}bg-gray-900/90{% endif %}"></div>
                         {% else %}
-                        <div class="card-bg-overlay absolute inset-0 transition-colors duration-500 {% if forloop.first %}bg-gradient-to-r from-gray-950 via-indigo-950/80 to-purple-950/70{% else %}bg-gray-900/90{% endif %}"></div>
+                        <img src="{% static 'images/Picture eventify black.png' %}" alt="" class="card-bg-img w-full h-full object-cover transition-opacity duration-500 {% if forloop.first %}opacity-40{% else %}opacity-0{% endif %}">
+                        <div class="card-bg-overlay absolute inset-0 transition-colors duration-500 {% if forloop.first %}bg-gradient-to-r from-gray-950/85 via-gray-950/70 to-gray-950/60{% else %}bg-gray-900/90{% endif %}"></div>
                         {% endif %}
                     </div>
 
@@ -134,9 +149,7 @@
                         {% if event.image %}
                         <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-full object-cover">
                         {% else %}
-                        <div class="w-full h-full flex items-center justify-center bg-indigo-900/60 text-indigo-300 text-xs font-bold">
-                            {{ event.title|slice:":2"|upper }}
-                        </div>
+                        <img src="{% static 'images/Picture eventify black.png' %}" alt="{{ event.title }}" class="w-full h-full object-cover">
                         {% endif %}
                     </div>
 
@@ -170,8 +183,10 @@
 
         if (bgSlides.length <= 1) return;
 
-        // Stage elements
         const elCategory = document.getElementById('hero-category');
+        const elCatMore = document.getElementById('hero-category-more');
+        const elCatTooltip = document.getElementById('hero-category-tooltip');
+        const elCatList = document.getElementById('hero-category-list');
         const elDateText = document.getElementById('hero-date-text');
         const elLocationText = document.getElementById('hero-location-text');
         const elTitle = document.getElementById('hero-title');
@@ -202,7 +217,23 @@
             });
 
             // 2. Update Content Info with quick transition
-            if (elCategory) elCategory.textContent = item.dataset.category || 'Event';
+            const catsStr = item.dataset.categories || '';
+            const cats = catsStr ? catsStr.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
+            if (elCategory) elCategory.textContent = cats[0] || 'Event';
+            if (elCatMore && elCatList) {
+                if (cats.length > 1) {
+                    elCatMore.textContent = '+' + (cats.length - 1);
+                    elCatMore.classList.remove('hidden');
+                    elCatList.innerHTML = cats.map(function (c) {
+                        return '<span class="inline-block text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">' + c + '</span>';
+                    }).join('');
+                } else {
+                    elCatMore.classList.add('hidden');
+                    elCatList.innerHTML = cats[0]
+                        ? '<span class="inline-block text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">' + cats[0] + '</span>'
+                        : '';
+                }
+            }
             if (elDateText) elDateText.textContent = item.dataset.date || '';
             if (elLocationText) elLocationText.textContent = item.dataset.location || 'TBA';
             if (elTitle) elTitle.textContent = item.dataset.title || '';

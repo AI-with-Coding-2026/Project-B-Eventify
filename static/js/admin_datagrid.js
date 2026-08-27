@@ -158,8 +158,8 @@
     /* ── Initialise ────────────────────────────────────────────── */
 
     function init() {
-        // Initialise sorting on every data-grid table
-        document.querySelectorAll('[data-datagrid]').forEach(initSorting);
+        // Initialise sorting on every data-grid table (skip tables with data-no-init)
+        document.querySelectorAll('[data-datagrid]:not([data-no-init])').forEach(initSorting);
 
         // Initialise search & filter on wrappers
         document.querySelectorAll('[data-datagrid-wrapper]').forEach(function (wrapper) {

@@ -644,7 +644,7 @@
 
     {% if filtered_events %}
     <div class="overflow-x-auto">
-        <table data-datagrid class="min-w-full divide-y divide-gray-100 text-sm">
+        <table data-datagrid data-no-init class="min-w-full divide-y divide-gray-100 text-sm">
             <thead class="bg-indigo-50 text-left text-xs font-semibold uppercase tracking-wide text-indigo-700">
                 <tr>
                     <th scope="col" class="px-4 py-3"><button type="button" data-sort="0">Event</button></th>
@@ -700,6 +700,7 @@
                 role="menu"
             >
                 <a
+                    id="exportPdfLink"
                     href="{% url 'organizer_export_pdf' %}{% if selected_organizer %}?organizer={{ selected_organizer }}{% endif %}"
                     class="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition"
                     role="menuitem"
@@ -710,6 +711,7 @@
                     <span>Export PDF</span>
                 </a>
                 <a
+                    id="exportExcelLink"
                     href="{% url 'organizer_export_excel' %}{% if selected_organizer %}?organizer={{ selected_organizer }}{% endif %}"
                     class="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition"
                     role="menuitem"
@@ -1032,6 +1034,97 @@
                     activeFilterBadge.classList.add('hidden');
                 }
             }
+
+            // Update export URLs to include current filter state
+            updateExportLinks(query);
+        }
+
+        // 4. Dynamic Export URL Updates
+        const exportPdfLink = document.getElementById('exportPdfLink');
+        const exportExcelLink = document.getElementById('exportExcelLink');
+        const basePdfUrl = '{% url "organizer_export_pdf" %}';
+        const baseExcelUrl = '{% url "organizer_export_excel" %}';
+        const selectedOrganizerParam = '{{ selected_organizer|default:"" }}';
+
+        function updateExportLinks(searchQuery) {
+            if (!exportPdfLink && !exportExcelLink) return;
+
+            const params = new URLSearchParams();
+            if (selectedOrganizerParam) {
+                params.set('organizer', selectedOrganizerParam);
+            }
+            if (searchQuery) {
+                params.set('search', searchQuery);
+            }
+            // Gather active category filters
+            if (!selectedCategories.has('') && selectedCategories.size > 0) {
+                const cats = Array.from(selectedCategories).join(',');
+                params.set('category', cats);
+            }
+
+            const qs = params.toString();
+            const suffix = qs ? '?' + qs : '';
+
+            if (exportPdfLink) exportPdfLink.href = basePdfUrl + suffix;
+            if (exportExcelLink) exportExcelLink.href = baseExcelUrl + suffix;
+        }
+
+        // 5. Column Header Sorting (inline, since admin_datagrid.js skips data-no-init tables)
+        if (datagridTable) {
+            const sortButtons = datagridTable.querySelectorAll('thead [data-sort]');
+            sortButtons.forEach(function (btn) {
+                btn.style.cursor = 'pointer';
+                btn.style.userSelect = 'none';
+
+                const indicator = document.createElement('span');
+                indicator.className = 'sort-indicator';
+                indicator.style.marginLeft = '4px';
+                indicator.style.opacity = '0.35';
+                indicator.style.fontSize = '0.85em';
+                indicator.textContent = '↓';
+                btn.appendChild(indicator);
+
+                btn.addEventListener('click', function () {
+                    const colIndex = Number(btn.dataset.sort);
+                    const currentDir = datagridTable.dataset.sortCol === String(colIndex)
+                        ? datagridTable.dataset.sortDir
+                        : null;
+                    const direction = currentDir === 'asc' ? 'desc' : 'asc';
+                    const tbody = datagridTable.tBodies[0];
+                    if (!tbody) return;
+
+                    const rows = Array.from(tbody.rows);
+                    rows.sort(function (a, b) {
+                        const aText = (a.cells[colIndex] || {textContent: ''}).textContent.trim().toLowerCase();
+                        const bText = (b.cells[colIndex] || {textContent: ''}).textContent.trim().toLowerCase();
+                        const aNum = parseFloat(aText.replace(/[^0-9.\-]/g, ''));
+                        const bNum = parseFloat(bText.replace(/[^0-9.\-]/g, ''));
+                        let cmp;
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                            cmp = aNum - bNum;
+                        } else {
+                            cmp = aText.localeCompare(bText);
+                        }
+                        return direction === 'asc' ? cmp : -cmp;
+                    });
+
+                    rows.forEach(function (row) { tbody.appendChild(row); });
+                    datagridTable.dataset.sortCol = String(colIndex);
+                    datagridTable.dataset.sortDir = direction;
+
+                    sortButtons.forEach(function (b) {
+                        const ind = b.querySelector('.sort-indicator');
+                        if (!ind) return;
+                        if (Number(b.dataset.sort) === colIndex) {
+                            ind.style.opacity = '1';
+                            ind.textContent = direction === 'asc' ? '↑' : '↓';
+                        } else {
+                            ind.style.opacity = '0.35';
+                            ind.textContent = '↓';
+                        }
+                    });
+                });
+            });
         }
 
         // Initial renders
