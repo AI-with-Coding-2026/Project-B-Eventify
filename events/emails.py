@@ -6,6 +6,7 @@ import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
 
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.urls import reverse
 
@@ -31,23 +32,12 @@ def _get_logo_src():
 
 
 def send_booking_confirmation_email(ticket):
-    """Send a booking confirmation email for a saved Ticket via Brevo API."""
+    """Send a booking confirmation email for a saved Ticket via Brevo API with fallback."""
     attendee_email = (getattr(ticket.attendee, 'email', '') or '').strip()
     if not attendee_email:
         raise ValueError(
             'Cannot send booking confirmation without an attendee email.'
         )
-
-    api_key = os.environ.get('BREVO_API_KEY')
-    if not api_key:
-        print("BREVO_API_KEY is missing. Email skipped.")
-        return None
-
-    configuration = sib_api_v3_sdk.Configuration()
-    configuration.api_key['api-key'] = api_key
-    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
-        sib_api_v3_sdk.ApiClient(configuration)
-    )
 
     unit_price = Decimal(ticket.event.price)
     total_price = unit_price * ticket.quantity
@@ -71,26 +61,49 @@ def send_booking_confirmation_email(ticket):
 
     html_body = render_to_string(BOOKING_CONFIRMATION_HTML, context)
 
-    sender = {
-        "name": "Eventify",
-        "email": settings.DEFAULT_FROM_EMAIL,
-    }
-    to = [{"email": attendee_email, "name": ticket.attendee.username}]
-    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-        to=to,
-        sender=sender,
-        subject=subject,
-        text_content=text_body,
-        html_content=html_body,
-    )
+    api_key = getattr(settings, 'BREVO_API_KEY', '') or os.environ.get('BREVO_API_KEY', '')
+    if api_key:
+        try:
+            configuration = sib_api_v3_sdk.Configuration()
+            configuration.api_key['api-key'] = api_key
+            api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+                sib_api_v3_sdk.ApiClient(configuration)
+            )
 
+            sender = {
+                "name": "Eventify",
+                "email": settings.DEFAULT_FROM_EMAIL,
+            }
+            to = [{"email": attendee_email, "name": ticket.attendee.username}]
+            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=to,
+                sender=sender,
+                subject=subject,
+                text_content=text_body,
+                html_content=html_body,
+            )
+
+            response = api_instance.send_transac_email(send_smtp_email)
+            print(f"Confirmation email sent successfully via Brevo API to {attendee_email}!")
+            return response
+        except ApiException as e:
+            print(f"Failed to send confirmation email via Brevo API: {e}")
+
+    # Fallback to standard Django email backend
     try:
-        response = api_instance.send_transac_email(send_smtp_email)
-        print("Confirmation email sent successfully via Brevo API!")
-        return response
-    except ApiException as e:
-        print(f"Failed to send email via Brevo API: {e}")
-        raise e
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=text_body,
+            from_email=f"Eventify <{settings.DEFAULT_FROM_EMAIL}>",
+            to=[attendee_email],
+        )
+        msg.attach_alternative(html_body, "text/html")
+        msg.send(fail_silently=False)
+        print(f"Confirmation email sent via Django email backend to {attendee_email}.")
+    except Exception as fallback_err:
+        print(f"[ERROR] Failed to send booking confirmation email: {fallback_err}")
+
+    return None
 
 
 def send_booking_cancellation_email(attendee, event, cancelled_quantity, remaining_quantity=0):
@@ -99,17 +112,6 @@ def send_booking_cancellation_email(attendee, event, cancelled_quantity, remaini
     if not attendee_email:
         print("Cannot send booking cancellation email without an attendee email.")
         return None
-
-    api_key = os.environ.get('BREVO_API_KEY')
-    if not api_key:
-        print("[WARNING] BREVO_API_KEY is missing. Cancellation email skipped.")
-        return None
-
-    configuration = sib_api_v3_sdk.Configuration()
-    configuration.api_key['api-key'] = api_key
-    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
-        sib_api_v3_sdk.ApiClient(configuration)
-    )
 
     browse_events_url = f"{settings.SITE_URL}{reverse('event_list')}"
     context = {
@@ -132,23 +134,46 @@ def send_booking_cancellation_email(attendee, event, cancelled_quantity, remaini
 
     html_body = render_to_string(BOOKING_CANCELLATION_HTML, context)
 
-    sender = {
-        "name": "Eventify",
-        "email": settings.DEFAULT_FROM_EMAIL,
-    }
-    to = [{"email": attendee_email, "name": attendee.username}]
-    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-        to=to,
-        sender=sender,
-        subject=subject,
-        text_content=text_body,
-        html_content=html_body,
-    )
+    api_key = getattr(settings, 'BREVO_API_KEY', '') or os.environ.get('BREVO_API_KEY', '')
+    if api_key:
+        try:
+            configuration = sib_api_v3_sdk.Configuration()
+            configuration.api_key['api-key'] = api_key
+            api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+                sib_api_v3_sdk.ApiClient(configuration)
+            )
 
+            sender = {
+                "name": "Eventify",
+                "email": settings.DEFAULT_FROM_EMAIL,
+            }
+            to = [{"email": attendee_email, "name": attendee.username}]
+            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=to,
+                sender=sender,
+                subject=subject,
+                text_content=text_body,
+                html_content=html_body,
+            )
+
+            response = api_instance.send_transac_email(send_smtp_email)
+            print(f"Cancellation email sent successfully via Brevo API to {attendee_email}!")
+            return response
+        except ApiException as e:
+            print(f"Failed to send cancellation email via Brevo API: {e}")
+
+    # Fallback to standard Django email backend
     try:
-        response = api_instance.send_transac_email(send_smtp_email)
-        print("Cancellation email sent successfully via Brevo API!")
-        return response
-    except ApiException as e:
-        print(f"Failed to send cancellation email via Brevo API: {e}")
-        return None
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=text_body,
+            from_email=f"Eventify <{settings.DEFAULT_FROM_EMAIL}>",
+            to=[attendee_email],
+        )
+        msg.attach_alternative(html_body, "text/html")
+        msg.send(fail_silently=False)
+        print(f"Cancellation email sent via Django email backend to {attendee_email}.")
+    except Exception as fallback_err:
+        print(f"[ERROR] Failed to send booking cancellation email: {fallback_err}")
+
+    return None
