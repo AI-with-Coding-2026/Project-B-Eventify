@@ -14,20 +14,26 @@
             {% if event.image %}
             <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
             {% else %}
-            <div class="w-full h-full bg-indigo-50 flex items-center justify-center text-indigo-300">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-                </svg>
+            <div class="w-full h-full">
+                {% include "events/partials/event_image_placeholder.html" %}
             </div>
             {% endif %}
         </div>
 
         <!-- Center: Event info -->
         <div class="ticket-card-body ticket-card-body--wide">
-            <div class="flex flex-nowrap items-center gap-2 mb-2">
-                <span class="min-w-0 truncate inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700">
-                    {{ event.category_label }}
-                </span>
+            <div class="flex flex-nowrap items-center justify-between gap-2 mb-2">
+                <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+                    {% for cat in event.categories.all %}
+                        <span class="truncate inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700">
+                            {{ cat.name }}
+                        </span>
+                    {% empty %}
+                        <span class="truncate inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-gray-100 text-gray-500">
+                            Uncategorized
+                        </span>
+                    {% endfor %}
+                </div>
                 <span class="shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ event.serial_number }}</span>
             </div>
 
@@ -58,6 +64,10 @@
                     {{ event.location }}
                 </p>
                 {% endif %}
+
+                <p class="flex items-center gap-1.5 font-medium">
+                    <span class="text-indigo-600 font-semibold">{{ event.tickets_remaining }} Available Ticket{{ event.tickets_remaining|pluralize }}</span>
+                </p>
             </div>
         </div>
     </a>

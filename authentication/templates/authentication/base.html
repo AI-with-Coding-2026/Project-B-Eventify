@@ -11,9 +11,8 @@
 
     <nav class="bg-indigo-600 text-white shadow">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="{% url 'home' %}" class="flex items-center gap-2.5 text-xl font-bold tracking-tight hover:text-indigo-100 transition">
-                <img src="{% static 'images/eventify_no_background.png' %}" alt="Eventify Logo" class="h-8 w-auto object-contain">
-                <span>Eventify</span>
+            <a href="{% url 'home' %}" class="flex items-center hover:opacity-90 transition">
+                <img src="{% static 'images/eventify_no_background.png' %}" alt="Eventify" class="h-14 w-auto object-contain">
             </a>
             <button class="md:hidden" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
                 ☰

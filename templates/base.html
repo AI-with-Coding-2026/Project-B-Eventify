@@ -458,16 +458,20 @@
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
             {% if user.is_authenticated %}
                 {% if user.is_admin %}
-                    <a href="{% url 'admin_dashboard' %}" class="flex items-center hover:opacity-90 transition">
+                    <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-2.5 hover:opacity-95 transition">
                 {% elif user.is_organizer %}
-                    <a href="{% url 'organizer_dashboard' %}" class="flex items-center hover:opacity-90 transition">
+                    <a href="{% url 'organizer_dashboard' %}" class="flex items-center gap-2.5 hover:opacity-95 transition">
                 {% else %}
-                    <a href="{% url 'attendee_dashboard' %}" class="flex items-center hover:opacity-90 transition">
+                    <a href="{% url 'attendee_dashboard' %}" class="flex items-center gap-2.5 hover:opacity-95 transition">
                 {% endif %}
             {% else %}
-                <a href="{% url 'home' %}" class="flex items-center hover:opacity-90 transition">
+                <a href="{% url 'home' %}" class="flex items-center gap-2.5 hover:opacity-95 transition">
             {% endif %}
-                <img src="{% static 'images/eventify_no_background.png' %}" alt="Eventify" class="h-16 w-auto object-contain">
+                <img
+                    src="{% static 'images/eventify_no_background.png' %}"
+                    alt="Eventify"
+                    class="h-14 w-auto object-contain brightness-0 invert drop-shadow-sm"
+                >
             </a>
             <button class="md:hidden text-2xl focus:outline-none" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
                 ☰

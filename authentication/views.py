@@ -179,9 +179,26 @@ def login_view(request):
             messages.error(request, 'Invalid username or password')
         else:
             if not user.is_admin and not user.email_verified:
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                verification_path = reverse(
+                    'verify_email',
+                    kwargs={
+                        'uidb64': uid,
+                        'token': token,
+                    },
+                )
+                site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
+                verification_url = f'{site_url}{verification_path}'
+
+                try:
+                    send_verification_email(user, verification_url)
+                except Exception as e:
+                    print(f"Failed to send verification email: {e}")
+
                 messages.error(
                     request,
-                    'Please verify your email address before logging in.',
+                    'Please verify your email address before logging in. A new verification link has been sent to your email.',
                 )
                 return render(request, 'authentication/login.html')
 
@@ -204,7 +221,15 @@ def unauthorized(request):
     return render(request, 'authentication/unauthorized.html', status=403)
 
 
-@role_required(UserRole.ORGANIZER)
+@organizer_required
+def request_organizer_approval(request):
+    """Allow an organizer to submit or re-submit a request to the admin for event creation approval."""
+    if request.user.organizer_status != OrganizerApprovalStatus.APPROVED:
+        request.user.organizer_status = OrganizerApprovalStatus.PENDING
+        request.user.save(update_fields=['organizer_status'])
+        messages.success(request, 'Your request for event creation access has been submitted to the administrator.')
+    return redirect('organizer_dashboard')
+
 
 @organizer_required
 def organizer_dashboard(request):

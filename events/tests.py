@@ -200,24 +200,32 @@ class OrganizerEventPermissionTests(TestCase):
             'strong-pass-123',
             role=UserRole.ATTENDEE,
         )
+        self.music_category = Category.objects.create(
+            name='Music',
+            slug='music',
+        )
+        self.tech_category = Category.objects.create(
+            name='Tech',
+            slug='tech',
+        )
         self.event_a = Event.objects.create(
             organizer=self.organizer_a,
             title='Organizer A Event',
             description='Owned by A',
-            date=timezone.now(),
+            date=timezone.now() + timedelta(days=2),
             price='10.00',
-            category='music',
         )
+        self.event_a.categories.add(self.music_category)
 
     def test_organizer_sees_only_own_events(self):
-        Event.objects.create(
+        event_b = Event.objects.create(
             organizer=self.organizer_b,
             title='Organizer B Event',
             description='Owned by B',
-            date=timezone.now(),
+            date=timezone.now() + timedelta(days=2),
             price='20.00',
-            category='tech',
         )
+        event_b.categories.add(self.tech_category)
         self.client.force_login(self.organizer_a)
 
         response = self.client.get(reverse('organizer_event_list'))
@@ -236,53 +244,34 @@ class OrganizerEventPermissionTests(TestCase):
                 'description': 'Live night',
                 'date': (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M'),
                 'price': '15.00',
-                'category': 'music',
+                'categories': [self.music_category.pk],
             },
         )
 
-        self.assertRedirects(response, reverse('organizer_event_list'))
+        self.assertRedirects(response, reverse('my_events'))
         event = Event.objects.get(title='New Concert')
         self.assertEqual(event.organizer, self.organizer_a)
+        self.assertIn(self.music_category, event.categories.all())
 
-    def test_organizer_can_enter_custom_category_when_other_is_selected(self):
+    def test_organizer_can_select_multiple_categories(self):
         self.client.force_login(self.organizer_a)
 
         response = self.client.post(
             reverse('event_create'),
             {
-                'title': 'Comedy Night',
-                'description': 'Stand up',
+                'title': 'Tech Music Night',
+                'description': 'Music and Tech',
                 'date': (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M'),
                 'price': '20.00',
-                'category': 'other',
-                'custom_category': 'Comedy',
+                'categories': [self.music_category.pk, self.tech_category.pk],
             },
         )
 
-        self.assertRedirects(response, reverse('organizer_event_list'))
-        event = Event.objects.get(title='Comedy Night')
-        self.assertEqual(event.category, 'other')
-        self.assertEqual(event.custom_category, 'Comedy')
-        self.assertEqual(event.category_label, 'Comedy')
-
-    def test_other_category_requires_custom_name(self):
-        self.client.force_login(self.organizer_a)
-
-        response = self.client.post(
-            reverse('event_create'),
-            {
-                'title': 'Needs Category',
-                'description': 'Missing custom name',
-                'date': (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M'),
-                'price': '10.00',
-                'category': 'other',
-                'custom_category': '',
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Please enter a category name.')
-        self.assertFalse(Event.objects.filter(title='Needs Category').exists())
+        self.assertRedirects(response, reverse('my_events'))
+        event = Event.objects.get(title='Tech Music Night')
+        self.assertEqual(event.categories.count(), 2)
+        self.assertIn(self.music_category, event.categories.all())
+        self.assertIn(self.tech_category, event.categories.all())
 
     def test_cannot_create_event_with_past_date(self):
         self.client.force_login(self.organizer_a)
@@ -295,13 +284,32 @@ class OrganizerEventPermissionTests(TestCase):
                 'description': 'Event in past',
                 'date': past_date,
                 'price': '10.00',
-                'category': 'music',
+                'categories': [self.music_category.pk],
             },
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Event date and time cannot be in the past.')
         self.assertFalse(Event.objects.filter(title='Past Event').exists())
+
+    def test_cannot_create_event_more_than_six_months_ahead(self):
+        self.client.force_login(self.organizer_a)
+
+        far_future_date = (timezone.now() + timedelta(days=200)).strftime('%Y-%m-%dT%H:%M')
+        response = self.client.post(
+            reverse('event_create'),
+            {
+                'title': 'Far Future Event',
+                'description': 'Event in far future',
+                'date': far_future_date,
+                'price': '10.00',
+                'categories': [self.music_category.pk],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Event date cannot be more than 6 months in the future.')
+        self.assertFalse(Event.objects.filter(title='Far Future Event').exists())
 
     def test_organizer_cannot_edit_another_organizer_event(self):
         self.client.force_login(self.organizer_b)
@@ -355,15 +363,19 @@ class AttendeeTicketBookingTests(TestCase):
             'strong-pass-123',
             role=UserRole.ATTENDEE,
         )
+        self.arts_category = Category.objects.create(
+            name='Arts',
+            slug='arts',
+        )
         self.event = Event.objects.create(
             organizer=self.organizer,
             title='Bookable Show',
             description='Open for booking',
             date=timezone.now() + timedelta(days=1),
             price='25.00',
-            category='arts',
             max_tickets=3,
         )
+        self.event.categories.add(self.arts_category)
 
     def test_attendee_can_browse_events(self):
         self.client.force_login(self.attendee)
@@ -488,9 +500,9 @@ class AttendeeTicketBookingTests(TestCase):
             description='Already finished',
             date=timezone.now() - timedelta(days=1),
             price='20.00',
-            category='music',
             max_tickets=5,
         )
+        expired_event.categories.add(self.arts_category)
         self.client.force_login(self.attendee)
         response = self.client.get(reverse('event_detail', kwargs={'pk': expired_event.pk}))
         self.assertEqual(response.status_code, 200)
@@ -745,20 +757,22 @@ class EventAdminDeleteActionTests(TestCase):
             'strong-pass-123',
             role=UserRole.ATTENDEE,
         )
+        self.music_category = Category.objects.create(name='Music', slug='music')
+        self.tech_category = Category.objects.create(name='Tech', slug='tech')
         self.event1 = Event.objects.create(
             organizer=self.organizer,
             title='Delete Me 1',
-            date=timezone.now(),
+            date=timezone.now() + timedelta(days=2),
             price='10.00',
-            category='music',
         )
+        self.event1.categories.add(self.music_category)
         self.event2 = Event.objects.create(
             organizer=self.organizer,
             title='Delete Me 2',
-            date=timezone.now(),
+            date=timezone.now() + timedelta(days=2),
             price='20.00',
-            category='tech',
         )
+        self.event2.categories.add(self.tech_category)
         # Using the custom admin site for events
         self.changelist_url = reverse('eventify_admin:events_event_changelist')
 
@@ -822,20 +836,24 @@ class EventAdminDeleteActionTests(TestCase):
 class EventListViewTest(TestCase):
     def setUp(self):
         now = timezone.now()
+        self.tech_cat = Category.objects.create(name="Tech", slug="tech")
+        self.music_cat = Category.objects.create(name="Music", slug="music")
         self.event1 = Event.objects.create(
             title="Tech Conference",
             description="All about technology",
+            location="Berlin",
             date=now + timedelta(days=2),
             price=50.00,
-            category="tech"
         )
+        self.event1.categories.add(self.tech_cat)
         self.event2 = Event.objects.create(
             title="Music Festival",
             description="Live music",
+            location="London",
             date=now + timedelta(days=10),
             price=150.00,
-            category="music"
         )
+        self.event2.categories.add(self.music_cat)
 
     def test_event_list_view(self):
         response = self.client.get(reverse('event_list'))
@@ -862,16 +880,84 @@ class EventListViewTest(TestCase):
         self.assertContains(response, "Tech Conference")
         self.assertNotContains(response, "Music Festival")
 
+    def test_event_list_location_and_sort(self):
+        now = timezone.now()
+        # Location filter test
+        res_loc = self.client.get(reverse('event_list'), {'location': 'Berlin'})
+        self.assertEqual(res_loc.status_code, 200)
+        self.assertContains(res_loc, "Tech Conference")
+        self.assertNotContains(res_loc, "Music Festival")
+
+        # Sort test
+        res_sort = self.client.get(reverse('event_list'), {'sort': 'date_desc'})
+        self.assertEqual(res_sort.status_code, 200)
+        events = list(res_sort.context['events'])
+        self.assertEqual(events[0].title, "Music Festival")
+        self.assertEqual(events[1].title, "Tech Conference")
+
+    def test_event_list_excludes_past_events(self):
+        organizer = User.objects.create_user(
+            'past_test_org',
+            'past_test_org@example.com',
+            'strong-pass-123',
+            role=UserRole.ORGANIZER,
+        )
+        future_event = Event.objects.create(
+            organizer=organizer,
+            title="Future Event",
+            date=timezone.now() + timedelta(days=1),
+            price=10,
+            max_tickets=10,
+        )
+        future_event.categories.add(self.tech_cat)
+
+        past_event = Event.objects.create(
+            organizer=organizer,
+            title="Past Event",
+            date=timezone.now() - timedelta(days=1),
+            price=10,
+            max_tickets=10,
+        )
+        past_event.categories.add(self.tech_cat)
+
+        response = self.client.get(reverse("event_list"))
+        self.assertContains(response, "Future Event")
+        self.assertNotContains(response, "Past Event")
+
+        # Past event can still be opened directly via event_detail
+        detail_response = self.client.get(
+            reverse("event_detail", kwargs={"pk": past_event.pk})
+        )
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, "Past Event")
+
+    def test_event_api_list(self):
+        response = self.client.get(reverse('event_api_list'))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIsInstance(data, list)
+        self.assertTrue(len(data) >= 2)
+        self.assertIn('categories', data[0])
+        self.assertIn('tickets_available', data[0])
+
+    def test_event_page_api(self):
+        response = self.client.get(reverse('event_page_api'), {'page': 1})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('grid_html', data)
+        self.assertIn('list_html', data)
+        self.assertIn('has_next', data)
+
     def test_event_list_displays_six_events_per_page(self):
         now = timezone.now()
         for i in range(3, 10):
-            Event.objects.create(
+            e = Event.objects.create(
                 title=f"Event {i}",
                 description=f"Description {i}",
                 date=now + timedelta(days=i),
                 price=10.00 * i,
-                category="tech",
             )
+            e.categories.add(self.tech_cat)
         response = self.client.get(reverse('event_list'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['events']), 6)
@@ -893,14 +979,15 @@ class BookingConfirmationEmailTests(TestCase):
             'strong-pass-123',
             role=UserRole.ORGANIZER,
         )
+        self.music_cat = Category.objects.create(name='Email Music', slug='email-music')
         self.event = Event.objects.create(
             organizer=self.organizer,
             title='Email Concert',
-            date=timezone.now(),
+            date=timezone.now() + timedelta(days=1),
             price=Decimal('25.00'),
-            category='music',
             max_tickets=10,
         )
+        self.event.categories.add(self.music_cat)
         self.ticket = Ticket.objects.create(
             event=self.event,
             attendee=self.attendee,

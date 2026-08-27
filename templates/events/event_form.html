@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-    {{ page_title }} | Eventify
+    {{ page_title|default:"Event Form" }} | Eventify
 {% endblock %}
 
 {% block content %}
@@ -10,8 +10,8 @@
         <div class="flex items-center gap-2 mb-1">
             <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Event Management</span>
         </div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 display">{{ page_title }}</h1>
-        <p class="text-sm text-gray-500 mt-1">Fill in the event details and upload a high quality poster.</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 display">{{ page_title|default:"Save Event" }}</h1>
+        <p class="text-sm text-gray-500 mt-1">Fill in the event details and select one or more categories.</p>
     </div>
     <div class="flex items-center gap-3">
         <a href="{% if event %}{% url 'event_detail' event.pk %}{% elif user.is_admin %}{% url 'admin_dashboard' %}{% else %}{% url 'my_events' %}{% endif %}"
@@ -27,76 +27,73 @@
 
 <div class="pb-12">
     <div class="mx-auto max-w-3xl px-0">
-        <div class="rounded-2xl border border-indigo-100 bg-white p-6 shadow-sm sm:p-8">
-            {% if event and event.image %}
-                <div class="mb-6 rounded-xl border border-indigo-100 bg-indigo-50 p-4">
-                    <p class="mb-3 text-sm font-medium text-indigo-700">Current poster:</p>
-                    <img
-                        src="{{ event.image.url }}"
-                        alt="{{ event.title }}"
-                        class="max-h-[300px] w-full rounded-xl object-cover shadow-sm"
-                    >
-                </div>
-            {% endif %}
-
-            <form method="post" enctype="multipart/form-data" class="space-y-6">
+        <div class="rounded-2xl border border-indigo-100 bg-white p-6 shadow-sm sm:p-8 animate-fade-slide">
+            <form method="post" enctype="multipart/form-data" class="space-y-6" id="event-form">
                 {% csrf_token %}
 
                 {% for field in form %}
-                    {% if field.name == "custom_category" %}
-                    {% else %}
                     <div class="form-group">
                         <label
                             for="{{ field.id_for_label }}"
                             class="block text-sm font-semibold text-gray-900 mb-2"
                         >
                             {{ field.label }}
+                            {% if field.field.required %}
+                                <span class="text-red-500">*</span>
+                            {% endif %}
                         </label>
 
-                        {% if field.name == "category" %}
-                            <div class="flex flex-wrap gap-3">
-                                {% for choice in field.field.choices %}
-                                    {% if choice.0 %}
-                                    <label class="cursor-pointer">
+                        {% if field.name == "categories" %}
+                            <!-- Category Checkboxes Grid -->
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="categories-container">
+                                {% for checkbox in field %}
+                                    <label class="category-checkbox-card relative flex items-center gap-3 p-3 rounded-xl border border-indigo-100 bg-indigo-50/30 hover:bg-indigo-50/70 hover:border-indigo-300 cursor-pointer transition select-none">
                                         <input
-                                            type="radio"
-                                            name="{{ field.html_name }}"
-                                            value="{{ choice.0 }}"
-                                            {% if field.value|stringformat:"s" == choice.0 %}checked{% endif %}
-                                            class="peer sr-only category-choice"
+                                            type="checkbox"
+                                            name="{{ field.name }}"
+                                            value="{{ checkbox.data.value }}"
+                                            {% if checkbox.data.selected %}checked{% endif %}
+                                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600"
                                         >
-                                        <span class="inline-flex items-center rounded-full border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 peer-checked:shadow-sm hover:border-indigo-300">
-                                            {{ choice.1 }}
+                                        <span class="text-sm font-medium text-gray-700">
+                                            {{ checkbox.choice_label }}
                                         </span>
                                     </label>
-                                    {% endif %}
+                                {% empty %}
+                                    <p class="col-span-full text-sm text-gray-500 italic">No categories available.</p>
                                 {% endfor %}
                             </div>
-                            <div id="custom-category-wrap" class="mt-3">
-                                <label
-                                    for="{{ form.custom_category.id_for_label }}"
-                                    class="block text-sm font-semibold text-gray-900 mb-2"
-                                >
-                                    Custom category
-                                </label>
-                                {{ form.custom_category }}
-                                {% for error in form.custom_category.errors %}
-                                    <p class="mt-2 text-sm font-medium text-red-600">
-                                        {{ error }}
-                                    </p>
-                                {% endfor %}
-                            </div>
+
                         {% elif field.name == "image" %}
-                            {{ field }}
-                            <div class="mt-2.5 flex items-start gap-2.5 text-xs text-indigo-700 bg-indigo-50/90 border border-indigo-100/90 p-3.5 rounded-xl">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                                </svg>
-                                <div>
-                                    <strong class="font-bold text-indigo-950">Recommended Image Aspect Ratio: 16:9</strong>
-                                    <p class="text-indigo-700/90 mt-0.5">Landscape orientation (e.g. 1200×675 px or 1920×1080 px) looks best on ticket cards and the hero showcase carousel without cropping.</p>
+                            <!-- Interactive Image Dropzone / Preview -->
+                            <div class="space-y-3">
+                                {% if event and event.image %}
+                                    <div id="current-image-preview" class="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
+                                        <p class="text-xs font-semibold text-indigo-700 mb-2">Current Poster Image:</p>
+                                        <img
+                                            src="{{ event.image.url }}"
+                                            alt="{{ event.title }}"
+                                            class="max-h-56 w-full rounded-lg object-contain bg-white shadow-sm"
+                                        >
+                                    </div>
+                                {% endif %}
+
+                                <!-- Image live preview for newly selected files -->
+                                <div id="image-live-preview-box" class="hidden rounded-xl border border-green-200 bg-green-50/50 p-3">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-xs font-semibold text-green-800">New Image Preview:</p>
+                                        <button type="button" id="clear-selected-image" class="text-xs text-red-600 hover:text-red-800 font-medium cursor-pointer">
+                                            ✕ Remove Selection
+                                        </button>
+                                    </div>
+                                    <img id="image-live-preview-img" src="" alt="Preview" class="max-h-56 w-full rounded-lg object-contain bg-white shadow-sm">
+                                </div>
+
+                                <div class="relative">
+                                    {{ field }}
                                 </div>
                             </div>
+
                         {% else %}
                             {{ field }}
                         {% endif %}
@@ -108,12 +105,14 @@
                         {% endif %}
 
                         {% for error in field.errors %}
-                            <p class="mt-2 text-sm font-medium text-red-600">
+                            <p class="mt-2 text-sm font-medium text-red-600 flex items-center gap-1">
+                                <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
                                 {{ error }}
                             </p>
                         {% endfor %}
                     </div>
-                    {% endif %}
                 {% endfor %}
 
                 <div class="flex flex-col gap-3 pt-4 sm:flex-row">
@@ -121,7 +120,7 @@
                         type="submit"
                         class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200"
                     >
-                        Save Event
+                        {{ submit_label|default:"Save Event" }}
                     </button>
 
                     <a
@@ -149,9 +148,10 @@
     .form-group input[type="file"] {
         width: 100%;
         padding: 0.625rem 1rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
+        border: 1px solid #dbeeff;
+        border-radius: 0.75rem;
         font-size: 0.875rem;
+        background-color: #ffffff;
         transition: border-color 0.2s, box-shadow 0.2s;
     }
 
@@ -160,8 +160,8 @@
     .form-group select:focus,
     .form-group input[type="file"]:focus {
         outline: none;
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        border-color: #2c7be5;
+        box-shadow: 0 0 0 3px rgba(44, 123, 229, 0.15);
     }
 
     .form-group textarea {
@@ -169,35 +169,64 @@
         min-height: 120px;
     }
 
-    .form-group input[type="file"] {
-        padding: 0.5rem;
+    .category-checkbox-card:has(input:checked) {
+        background-color: #eef2ff;
+        border-color: #6366f1;
+        box-shadow: 0 1px 3px rgba(99, 102, 241, 0.1);
+    }
+    .category-checkbox-card:has(input:checked) span {
+        color: #4338ca;
+        font-weight: 600;
     }
 </style>
+
 <script>
-    (function () {
-        const wrap = document.getElementById("custom-category-wrap");
-        const choices = document.querySelectorAll(".category-choice");
-        const customInput = wrap ? wrap.querySelector("input") : null;
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Date input constraints: min = today/now, max = today + 6 months
+    const dateInput = document.getElementById('id_date');
+    if (dateInput) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        const minDate = now.toISOString().slice(0, 16);
+        dateInput.min = minDate;
 
-        function toggleCustomCategory() {
-            const selected = document.querySelector(".category-choice:checked");
-            const showOther = selected && selected.value === "other";
-            if (!wrap) {
-                return;
-            }
-            wrap.classList.toggle("hidden", !showOther);
-            if (customInput) {
-                customInput.required = Boolean(showOther);
-                if (!showOther) {
-                    customInput.value = "";
-                }
-            }
-        }
+        const maxDateObj = new Date();
+        maxDateObj.setMonth(maxDateObj.getMonth() + 6);
+        maxDateObj.setMinutes(maxDateObj.getMinutes() - maxDateObj.getTimezoneOffset());
+        const maxDate = maxDateObj.toISOString().slice(0, 16);
+        dateInput.max = maxDate;
+    }
 
-        choices.forEach(function (choice) {
-            choice.addEventListener("change", toggleCustomCategory);
+    // 2. Image Live Preview
+    const imageInput = document.querySelector('input[type="file"]');
+    const previewBox = document.getElementById('image-live-preview-box');
+    const previewImg = document.getElementById('image-live-preview-img');
+    const clearBtn = document.getElementById('clear-selected-image');
+
+    if (imageInput && previewBox && previewImg) {
+        imageInput.addEventListener('change', function () {
+            const file = this.files && this.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    previewImg.src = e.target.result;
+                    previewBox.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewBox.classList.add('hidden');
+                previewImg.src = '';
+            }
         });
-        toggleCustomCategory();
-    })();
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+                imageInput.value = '';
+                previewBox.classList.add('hidden');
+                previewImg.src = '';
+            });
+        }
+    }
+});
 </script>
 {% endblock %}
