@@ -56,10 +56,10 @@ class CategoryForm(forms.ModelForm):
 class EventForm(forms.ModelForm):
     categories = forms.ModelMultipleChoiceField(
         queryset=Category.objects.all(),
-        required=True,
+        required=False,
         widget=forms.CheckboxSelectMultiple,
         label="Categories",
-        help_text="Select one or more categories for this event.",
+        help_text="Select one or more categories for this event, or specify a custom category under 'Other'.",
     )
 
     max_tickets = forms.IntegerField(
@@ -127,18 +127,49 @@ class EventForm(forms.ModelForm):
             ),
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        categories = cleaned_data.get("categories")
+        custom_category = self.data.get("custom_category", "").strip()
+
+        if not categories and not custom_category:
+            self.add_error(
+                "categories",
+                "Please select at least one category or specify a custom category under 'Other'."
+            )
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=commit)
+        custom_cat_name = self.data.get("custom_category", "").strip()[:15]
+        if custom_cat_name:
+            new_cat, _ = Category.objects.get_or_create(name=custom_cat_name)
+            if commit:
+                instance.categories.add(new_cat)
+            else:
+                old_save_m2m = getattr(self, "save_m2m", None)
+
+                def new_save_m2m():
+                    if old_save_m2m:
+                        old_save_m2m()
+                    instance.categories.add(new_cat)
+
+                self.save_m2m = new_save_m2m
+        return instance
+
     def clean_max_tickets(self):
         value = self.cleaned_data.get("max_tickets")
         return value or 1
 
     def clean_date(self):
         date = self.cleaned_data.get("date")
-        if date and not self.instance.pk:
+        if date:
             now = timezone.now()
-            if date < now:
-                raise forms.ValidationError("Event date and time cannot be in the past.")
-            if date > now + timedelta(days=183):
-                raise forms.ValidationError("Event date cannot be more than 6 months in the future.")
+            if not self.instance.pk or (self.instance.pk and self.instance.date != date):
+                if date < now:
+                    raise forms.ValidationError("Event date and time cannot be in the past.")
+                if date > now + timedelta(days=183):
+                    raise forms.ValidationError("Event date cannot be more than 6 months in the future.")
         return date
 
     def clean_image(self):

@@ -24,6 +24,11 @@ urlpatterns = [
         name='organizer_dashboard',
     ),
     path(
+        'dashboard/organizer/request-approval/',
+        views.request_organizer_approval,
+        name='request_organizer_approval',
+    ),
+    path(
         'dashboard/organizer/api/stats/',
         views.organizer_dashboard_stats_api,
         name='organizer_dashboard_stats_api',

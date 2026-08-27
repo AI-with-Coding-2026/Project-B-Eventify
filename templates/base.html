@@ -221,12 +221,12 @@
             position: relative;
             margin: 0;
             border-left: 2px dashed transparent;
-            background-image: linear-gradient(to bottom, #d1d5db 55%, transparent 45%);
+            background-image: linear-gradient(to bottom, #9ca3af 55%, transparent 45%);
             background-size: 2px 22px;
             background-repeat: repeat-y;
             background-position: center;
         }
-        /* Top half-circle cutout */
+        /* Top half-circle cutout (true semicircular notch into ticket) */
         .ticket-card-perforation::before {
             content: '';
             position: absolute;
@@ -235,12 +235,12 @@
             width: 18px;
             height: 9px;
             background: #f3f4f6;
-            border: 1px solid #e0e7ff;
+            border: 1px solid #d1d5db;
             border-top: none;
             border-radius: 0 0 9px 9px;
-            z-index: 2;
+            z-index: 10;
         }
-        /* Bottom half-circle cutout */
+        /* Bottom half-circle cutout (true semicircular notch into ticket) */
         .ticket-card-perforation::after {
             content: '';
             position: absolute;
@@ -249,13 +249,13 @@
             width: 18px;
             height: 9px;
             background: #f3f4f6;
-            border: 1px solid #e0e7ff;
+            border: 1px solid #d1d5db;
             border-bottom: none;
             border-radius: 9px 9px 0 0;
-            z-index: 2;
+            z-index: 10;
         }
 
-        /* Darker Right-Side Stub (Neutral Grey) */
+        /* Ticket Stub (#bab9b8) */
         .ticket-card-stub {
             width: 120px;
             flex-shrink: 0;
@@ -265,15 +265,17 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            background: #efefef;
+            background: #bab9b8;
+            color: #111827;
             border-radius: 0 15px 15px 0;
         }
 
         .ticket-card--wide .ticket-card-stub {
             width: 145px;
             padding: 20px 16px;
-            background: #f1f5f9;
-            border-left: 1px solid #e2e8f0;
+            background: #bab9b8;
+            border-left: 1px solid #a8a29e;
+            color: #111827;
         }
 
         /* ── Full Image Display Fix for standard cards ── */
@@ -328,12 +330,12 @@
             height: 2px;
             width: 100%;
             position: relative;
-            background-image: linear-gradient(to right, #d1d5db 55%, transparent 45%);
+            background-image: linear-gradient(to right, #9ca3af 55%, transparent 45%);
             background-size: 22px 2px;
             background-repeat: repeat-x;
             background-position: center;
         }
-        /* Left half-circle cutout */
+        /* Left half-circle cutout (true semicircular notch into ticket) */
         .ticket-card-vert-perforation::before {
             content: '';
             position: absolute;
@@ -342,12 +344,12 @@
             width: 9px;
             height: 18px;
             background: #f3f4f6;
-            border: 1px solid #e0e7ff;
+            border: 1px solid #d1d5db;
             border-left: none;
             border-radius: 0 9px 9px 0;
-            z-index: 2;
+            z-index: 10;
         }
-        /* Right half-circle cutout */
+        /* Right half-circle cutout (true semicircular notch into ticket) */
         .ticket-card-vert-perforation::after {
             content: '';
             position: absolute;
@@ -356,14 +358,15 @@
             width: 9px;
             height: 18px;
             background: #f3f4f6;
-            border: 1px solid #e0e7ff;
+            border: 1px solid #d1d5db;
             border-right: none;
             border-radius: 9px 0 0 9px;
-            z-index: 2;
+            z-index: 10;
         }
-        /* Darker Bottom Stub (Neutral Grey) */
+        /* Bottom Stub (#bab9b8) */
         .ticket-card-vert-stub {
-            background: #efefef;
+            background: #bab9b8;
+            color: #111827;
             padding: 14px 16px;
             border-radius: 0 0 15px 15px;
             display: flex;
@@ -436,9 +439,10 @@
                 justify-content: space-between !important;
                 border-radius: 0 0 15px 15px !important;
                 border-left: none !important;
-                border-top: 1px solid #e2e8f0 !important;
+                border-top: 1px solid #a8a29e !important;
                 padding: 14px 18px !important;
-                background: #f8fafc !important;
+                background: #bab9b8 !important;
+                color: #111827 !important;
             }
         }
 
@@ -447,6 +451,20 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+        }
+
+        @keyframes bellRing {
+            0%, 100% { transform: rotate(0); }
+            15% { transform: rotate(14deg); }
+            30% { transform: rotate(-14deg); }
+            45% { transform: rotate(10deg); }
+            60% { transform: rotate(-8deg); }
+            75% { transform: rotate(4deg); }
+            85% { transform: rotate(-2deg); }
+        }
+        .animate-bell-ring {
+            animation: bellRing 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+            transform-origin: top center;
         }
     </style>
 </head>
@@ -458,38 +476,65 @@
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
             {% if user.is_authenticated %}
                 {% if user.is_admin %}
-                    <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-2.5 hover:opacity-95 transition">
+                    <a href="{% url 'admin_dashboard' %}" class="relative flex items-center gap-2.5 group transition">
                 {% elif user.is_organizer %}
-                    <a href="{% url 'organizer_dashboard' %}" class="flex items-center gap-2.5 hover:opacity-95 transition">
+                    <a href="{% url 'organizer_dashboard' %}" class="relative flex items-center gap-2.5 group transition">
                 {% else %}
-                    <a href="{% url 'attendee_dashboard' %}" class="flex items-center gap-2.5 hover:opacity-95 transition">
+                    <a href="{% url 'attendee_dashboard' %}" class="relative flex items-center gap-2.5 group transition">
                 {% endif %}
             {% else %}
-                <a href="{% url 'home' %}" class="flex items-center gap-2.5 hover:opacity-95 transition">
+                <a href="{% url 'home' %}" class="relative flex items-center gap-2.5 group transition">
             {% endif %}
                 <img
                     src="{% static 'images/eventify_no_background.png' %}"
                     alt="Eventify"
-                    class="h-14 w-auto object-contain"
+                    class="h-14 w-auto object-contain transition duration-300 hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.55)]"
                 >
             </a>
-            <button class="md:hidden text-2xl focus:outline-none" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
-                ☰
-            </button>
+
+            <!-- Mobile Controls (Phone View: Notification Bell + Hamburger) -->
+            <div class="flex items-center gap-3 md:hidden">
+                {% if user.is_authenticated %}
+                    <div class="relative inline-block" id="notification-dropdown-container-mobile">
+                        <button id="notification-bell-btn-mobile" class="relative p-1 text-white hover:text-indigo-200 transition focus:outline-none flex items-center cursor-pointer">
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span id="notification-badge-mobile" class="hidden absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full animate-pulse">0</span>
+                        </button>
+                        <div id="notification-menu-mobile" class="absolute right-0 mt-2 w-80 max-w-[90vw] bg-white border border-gray-100 rounded-2xl shadow-2xl divide-y divide-gray-100 overflow-hidden z-50 transition-all duration-200 ease-out origin-top-right transform opacity-0 scale-95 -translate-y-2 pointer-events-none">
+                            <div class="px-4 py-2.5 bg-gray-50 text-xs font-bold text-gray-700 flex items-center justify-between">
+                                <span>Recent Notifications</span>
+                                <span class="text-[10px] text-indigo-600 font-semibold">Live</span>
+                            </div>
+                            <div id="notification-list-box-mobile" class="max-h-64 overflow-y-auto divide-y divide-gray-50">
+                                <div class="px-4 py-4 text-center text-xs text-gray-400">No new notifications.</div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+                <button class="text-2xl focus:outline-none text-white hover:text-indigo-200 transition" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                    ☰
+                </button>
+            </div>
+
             <div class="hidden md:flex items-center gap-6 font-medium">
                 <a href="{% url 'event_list' %}" class="hover:text-indigo-200 transition">Events</a>
                 {% if user.is_authenticated %}
                     <!-- Notification Bell (Desktop) -->
                     <div class="relative inline-block" id="notification-dropdown-container">
-                        <button id="notification-bell-btn" class="relative p-1 text-white hover:text-indigo-200 transition focus:outline-none flex items-center">
+                        <button id="notification-bell-btn" class="relative p-1 text-white hover:text-indigo-200 transition focus:outline-none flex items-center cursor-pointer">
                             <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                             </svg>
                             <span id="notification-badge" class="hidden absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full animate-pulse">0</span>
                         </button>
-                        <div id="notification-menu" class="hidden absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl divide-y divide-gray-100 overflow-hidden z-50">
-                            <div class="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-700">Recent Notifications</div>
-                            <div id="notification-list-box" class="max-h-60 overflow-y-auto divide-y divide-gray-50">
+                        <div id="notification-menu" class="absolute right-0 mt-2 w-80 max-w-[90vw] bg-white border border-gray-100 rounded-2xl shadow-2xl divide-y divide-gray-100 overflow-hidden z-50 transition-all duration-200 ease-out origin-top-right transform opacity-0 scale-95 -translate-y-2 pointer-events-none">
+                            <div class="px-4 py-2.5 bg-gray-50 text-xs font-bold text-gray-700 flex items-center justify-between">
+                                <span>Recent Notifications</span>
+                                <span class="text-[10px] text-indigo-600 font-semibold">Live</span>
+                            </div>
+                            <div id="notification-list-box" class="max-h-64 overflow-y-auto divide-y divide-gray-50">
                                 <div class="px-4 py-4 text-center text-xs text-gray-400">No new notifications.</div>
                             </div>
                         </div>
@@ -503,21 +548,6 @@
         <div id="mobile-menu" class="hidden md:hidden bg-indigo-700 px-4 py-3 space-y-2">
             <a href="{% url 'event_list' %}" class="block hover:text-indigo-200 py-1 transition">Events</a>
             {% if user.is_authenticated %}
-                <!-- Notification Bell (Mobile) -->
-                <div class="relative inline-block" id="notification-dropdown-container-mobile">
-                    <button id="notification-bell-btn-mobile" class="relative p-1 text-white hover:text-indigo-200 transition focus:outline-none flex items-center">
-                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        <span id="notification-badge-mobile" class="hidden absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full animate-pulse">0</span>
-                    </button>
-                    <div id="notification-menu-mobile" class="hidden absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl divide-y divide-gray-100 overflow-hidden z-50">
-                        <div class="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-700">Recent Notifications</div>
-                        <div id="notification-list-box-mobile" class="max-h-60 overflow-y-auto divide-y divide-gray-50">
-                            <div class="px-4 py-4 text-center text-xs text-gray-400">No new notifications.</div>
-                        </div>
-                    </div>
-                </div>
                 <a href="{% url 'logout' %}" class="block hover:text-indigo-200 py-1 transition">Log out</a>
             {% else %}
                 <a href="{% url 'login' %}" class="block hover:text-indigo-200 py-1 transition">Log in</a>
@@ -809,19 +839,52 @@
                     container.innerHTML = '';
                     data.notifications.forEach(function (item) {
                         var readClass = item.is_read ? 'bg-white' : 'bg-indigo-50/60 font-medium';
+                        var badgeHtml = '';
+                        if (item.notification_type === 'event_request') {
+                            badgeHtml = '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 shrink-0">Event Request</span>';
+                        } else if (item.notification_type === 'organizer_request') {
+                            badgeHtml = '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 shrink-0">Organizer Request</span>';
+                        } else if (item.notification_type === 'event_approval' || item.notification_type === 'organizer_approval') {
+                            badgeHtml = '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0">Approved</span>';
+                        } else if (item.notification_type === 'event_denial' || item.notification_type === 'organizer_denial') {
+                            badgeHtml = '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-800 shrink-0">Update</span>';
+                        } else if (item.notification_type === 'booking') {
+                            badgeHtml = '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 shrink-0">Booking</span>';
+                        } else if (item.notification_type === 'cancellation') {
+                            badgeHtml = '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 shrink-0">Cancelled</span>';
+                        }
+
                         var el = document.createElement('div');
                         el.className = 'px-4 py-3 text-xs text-gray-700 cursor-pointer hover:bg-gray-50 transition ' + readClass;
-                        el.innerHTML = '<p class="font-semibold text-gray-900 mb-0.5">' + item.title + '</p>'
+                        el.innerHTML = '<div class="flex items-center justify-between gap-2 mb-0.5">'
+                            + '<p class="font-semibold text-gray-900 truncate">' + item.title + '</p>'
+                            + badgeHtml
+                            + '</div>'
                             + '<p class="text-gray-500 line-clamp-2">' + item.message + '</p>'
                             + '<p class="text-gray-400 mt-1 text-[10px]">' + item.created_at + '</p>';
-                        if (!item.is_read) {
-                            el.addEventListener('click', function () {
+
+                        el.addEventListener('click', function () {
+                            var destUrl = null;
+                            if (item.notification_type === 'event_request') {
+                                destUrl = '/auth/event-requests/';
+                            } else if (item.notification_type === 'organizer_request') {
+                                destUrl = '/auth/organizer-requests/';
+                            } else if (item.event_id) {
+                                destUrl = '/events/' + item.event_id + '/';
+                            }
+
+                            if (!item.is_read) {
                                 fetch('/events/api/notifications/' + item.id + '/read/', {
                                     method: 'POST',
                                     headers: { 'X-CSRFToken': '{{ csrf_token }}' }
-                                }).then(function () { fetchNotifications(); });
-                            });
-                        }
+                                }).then(function () {
+                                    if (destUrl) window.location.href = destUrl;
+                                    else fetchNotifications();
+                                });
+                            } else if (destUrl) {
+                                window.location.href = destUrl;
+                            }
+                        });
                         container.appendChild(el);
                     });
                 } else {
@@ -829,16 +892,69 @@
                 }
             }
 
+            function triggerBellAnimation(btn) {
+                if (!btn) return;
+                var svg = btn.querySelector('svg');
+                if (svg) {
+                    svg.classList.remove('animate-bell-ring');
+                    void svg.offsetWidth; // Force reflow
+                    svg.classList.add('animate-bell-ring');
+                    setTimeout(function () {
+                        svg.classList.remove('animate-bell-ring');
+                    }, 800);
+                }
+            }
+
+            function markAllRead() {
+                if (badge) badge.classList.add('hidden');
+                if (badgeMobile) badgeMobile.classList.add('hidden');
+                fetch('/events/api/notifications/mark-all-read/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                }).then(function () {
+                    // Update rendered notification items to read state
+                    document.querySelectorAll('#notification-list-box > div, #notification-list-box-mobile > div').forEach(function(item) {
+                        item.classList.remove('bg-indigo-50/60', 'font-medium');
+                        item.classList.add('bg-white');
+                    });
+                }).catch(function() {});
+            }
+
+            function openNotifMenu(m) {
+                if (!m) return;
+                m.classList.remove('opacity-0', 'scale-95', '-translate-y-2', 'pointer-events-none');
+                m.classList.add('opacity-100', 'scale-100', 'translate-y-0', 'pointer-events-auto');
+            }
+
+            function closeNotifMenu(m) {
+                if (!m) return;
+                m.classList.add('opacity-0', 'scale-95', '-translate-y-2', 'pointer-events-none');
+                m.classList.remove('opacity-100', 'scale-100', 'translate-y-0', 'pointer-events-auto');
+            }
+
+            function isNotifMenuOpen(m) {
+                return m && m.classList.contains('opacity-100');
+            }
+
             // Desktop toggle
             if (bellBtn && menu) {
                 bellBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
-                    menu.classList.toggle('hidden');
-                    if (menuMobile) menuMobile.classList.add('hidden');
-                    fetchNotifications();
+                    triggerBellAnimation(bellBtn);
+                    var isOpen = isNotifMenuOpen(menu);
+                    if (isOpen) {
+                        closeNotifMenu(menu);
+                    } else {
+                        closeNotifMenu(menuMobile);
+                        openNotifMenu(menu);
+                        markAllRead();
+                    }
                 });
-                document.addEventListener('click', function () {
-                    menu.classList.add('hidden');
+                document.addEventListener('click', function (e) {
+                    var container = document.getElementById('notification-dropdown-container');
+                    if (container && !container.contains(e.target)) {
+                        closeNotifMenu(menu);
+                    }
                 });
                 menu.addEventListener('click', function (e) { e.stopPropagation(); });
             }
@@ -847,15 +963,31 @@
             if (bellBtnMobile && menuMobile) {
                 bellBtnMobile.addEventListener('click', function (e) {
                     e.stopPropagation();
-                    menuMobile.classList.toggle('hidden');
-                    if (menu) menu.classList.add('hidden');
-                    fetchNotifications();
+                    triggerBellAnimation(bellBtnMobile);
+                    var isOpen = isNotifMenuOpen(menuMobile);
+                    if (isOpen) {
+                        closeNotifMenu(menuMobile);
+                    } else {
+                        closeNotifMenu(menu);
+                        openNotifMenu(menuMobile);
+                        markAllRead();
+                    }
                 });
-                document.addEventListener('click', function () {
-                    menuMobile.classList.add('hidden');
+                document.addEventListener('click', function (e) {
+                    var containerMobile = document.getElementById('notification-dropdown-container-mobile');
+                    if (containerMobile && !containerMobile.contains(e.target)) {
+                        closeNotifMenu(menuMobile);
+                    }
                 });
                 menuMobile.addEventListener('click', function (e) { e.stopPropagation(); });
             }
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    closeNotifMenu(menu);
+                    closeNotifMenu(menuMobile);
+                }
+            });
 
             // Initial load + refresh every 15 seconds
             fetchNotifications();
