@@ -839,19 +839,52 @@
                     container.innerHTML = '';
                     data.notifications.forEach(function (item) {
                         var readClass = item.is_read ? 'bg-white' : 'bg-indigo-50/60 font-medium';
+                        var badgeHtml = '';
+                        if (item.notification_type === 'event_request') {
+                            badgeHtml = '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 shrink-0">Event Request</span>';
+                        } else if (item.notification_type === 'organizer_request') {
+                            badgeHtml = '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 shrink-0">Organizer Request</span>';
+                        } else if (item.notification_type === 'event_approval' || item.notification_type === 'organizer_approval') {
+                            badgeHtml = '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0">Approved</span>';
+                        } else if (item.notification_type === 'event_denial' || item.notification_type === 'organizer_denial') {
+                            badgeHtml = '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-800 shrink-0">Update</span>';
+                        } else if (item.notification_type === 'booking') {
+                            badgeHtml = '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 shrink-0">Booking</span>';
+                        } else if (item.notification_type === 'cancellation') {
+                            badgeHtml = '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 shrink-0">Cancelled</span>';
+                        }
+
                         var el = document.createElement('div');
                         el.className = 'px-4 py-3 text-xs text-gray-700 cursor-pointer hover:bg-gray-50 transition ' + readClass;
-                        el.innerHTML = '<p class="font-semibold text-gray-900 mb-0.5">' + item.title + '</p>'
+                        el.innerHTML = '<div class="flex items-center justify-between gap-2 mb-0.5">'
+                            + '<p class="font-semibold text-gray-900 truncate">' + item.title + '</p>'
+                            + badgeHtml
+                            + '</div>'
                             + '<p class="text-gray-500 line-clamp-2">' + item.message + '</p>'
                             + '<p class="text-gray-400 mt-1 text-[10px]">' + item.created_at + '</p>';
-                        if (!item.is_read) {
-                            el.addEventListener('click', function () {
+
+                        el.addEventListener('click', function () {
+                            var destUrl = null;
+                            if (item.notification_type === 'event_request') {
+                                destUrl = '/auth/event-requests/';
+                            } else if (item.notification_type === 'organizer_request') {
+                                destUrl = '/auth/organizer-requests/';
+                            } else if (item.event_id) {
+                                destUrl = '/events/' + item.event_id + '/';
+                            }
+
+                            if (!item.is_read) {
                                 fetch('/events/api/notifications/' + item.id + '/read/', {
                                     method: 'POST',
                                     headers: { 'X-CSRFToken': '{{ csrf_token }}' }
-                                }).then(function () { fetchNotifications(); });
-                            });
-                        }
+                                }).then(function () {
+                                    if (destUrl) window.location.href = destUrl;
+                                    else fetchNotifications();
+                                });
+                            } else if (destUrl) {
+                                window.location.href = destUrl;
+                            }
+                        });
                         container.appendChild(el);
                     });
                 } else {
