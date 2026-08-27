@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="flex gap-6">
+    <!-- Sidebar -->
+    <aside class="w-56 shrink-0">
+        <nav class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-1.5 sticky top-4">
+            <a href="{% url 'admin_dashboard' %}"
+                class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:translate-x-1 {% if request.resolver_match.url_name == 'admin_dashboard' %}bg-indigo-50 text-indigo-700 font-bold shadow-2xs{% else %}text-gray-600 hover:bg-gray-50 hover:text-indigo-600{% endif %}">
+                <span>Dashboard</span>
+            </a>
+            <a href="{% url 'category_list' %}"
+                class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:translate-x-1 {% if request.resolver_match.url_name == 'category_list' %}bg-indigo-50 text-indigo-700 font-bold shadow-2xs{% else %}text-gray-600 hover:bg-gray-50 hover:text-indigo-600{% endif %}">
+                <span>Categories</span>
+            </a>
+            <a href="{% url 'admin_user_list' %}"
+                class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:translate-x-1 {% if request.resolver_match.url_name == 'admin_user_list' %}bg-indigo-50 text-indigo-700 font-bold shadow-2xs{% else %}text-gray-600 hover:bg-gray-50 hover:text-indigo-600{% endif %}">
+                <span>Users</span>
+            </a>
+            <a href="{% url 'event_request_list' %}"
+               class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:translate-x-1 {% if request.resolver_match.url_name == 'event_request_list' %}bg-indigo-50 text-indigo-700 font-bold shadow-2xs{% else %}text-gray-600 hover:bg-gray-50 hover:text-indigo-600{% endif %}">
+                <span>Event Requests</span>
+                {% if pending_event_count %}
+                <span class="ml-2 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-bold text-white shadow-2xs">
+                    {{ pending_event_count }}
+                </span>
+                {% endif %}
+            </a>
+            <a href="{% url 'organizer_request_list' %}"
+                class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:translate-x-1 {% if request.resolver_match.url_name == 'organizer_request_list' %}bg-indigo-50 text-indigo-700 font-bold shadow-2xs{% else %}text-gray-600 hover:bg-gray-50 hover:text-indigo-600{% endif %}">
+                <span>Organizer Requests</span>
+            </a>
+            <a href="{% url 'analytics_dashboard' %}"
+                class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:translate-x-1 {% if request.resolver_match.url_name == 'analytics_dashboard' %}bg-indigo-50 text-indigo-700 font-bold shadow-2xs{% else %}text-gray-600 hover:bg-gray-50 hover:text-indigo-600{% endif %}">
+                <span>Analytics</span>
+            </a>
+            <a href="{% url 'admin_booking_list' %}"
+                class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:translate-x-1 {% if request.resolver_match.url_name == 'admin_booking_list' %}bg-indigo-50 text-indigo-700 font-bold shadow-2xs{% else %}text-gray-600 hover:bg-gray-50 hover:text-indigo-600{% endif %}">
+                <span>Bookings</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Page content -->
+    <div class="flex-1 min-w-0">
+        {% block admin_content %}{% endblock %}
+    </div>
+</div>
+<script src="{% static 'js/admin_datagrid.js' %}?v=2"></script>
+{% endblock %}

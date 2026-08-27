@@ -4,6 +4,16 @@ from . import views
 urlpatterns = [
     path('register/', views.register, name='register'),
     path('register/success/', views.register_success, name='register_success'),
+    path(
+        'verification-pending/',
+        views.verification_pending,
+        name='verification_pending',
+    ),
+    path(
+        'verify-email/<uidb64>/<token>/',
+        views.verify_email,
+        name='verify_email',
+    ),
     path('', views.home, name='home'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
@@ -19,6 +29,16 @@ urlpatterns = [
         name='organizer_dashboard_stats_api',
     ),
     path(
+        'dashboard/organizer/export/excel/',
+        views.organizer_export_excel,
+        name='organizer_export_excel',
+    ),
+    path(
+        'dashboard/organizer/export/pdf/',
+        views.organizer_export_pdf,
+        name='organizer_export_pdf',
+    ),
+    path(
         'dashboard/attendee/',
         views.attendee_dashboard,
         name='attendee_dashboard',
@@ -32,6 +52,46 @@ urlpatterns = [
         'dashboard/attendee/bookings/<int:pk>/cancel/',
         views.cancel_booking,
         name='cancel_booking',
+    ),
+    path(
+        'admin/users/',
+        views.admin_user_list,
+        name='admin_user_list',
+    ),
+    path(
+        'admin/event-requests/',
+        views.event_request_list,
+        name='event_request_list',
+    ),
+    path(
+        'admin/event-requests/<int:pk>/approve/',
+        views.event_request_approve,
+        name='event_request_approve',
+    ),
+    path(
+        'admin/event-requests/<int:pk>/deny/',
+        views.event_request_deny,
+        name='event_request_deny',
+    ),
+    path(
+        'admin/organizer-requests/',
+        views.organizer_request_list,
+        name='organizer_request_list',
+    ),
+    path(
+        'admin/organizer-requests/<int:pk>/approve/',
+        views.organizer_request_approve,
+        name='organizer_request_approve',
+    ),
+    path(
+        'admin/organizer-requests/<int:pk>/deny/',
+        views.organizer_request_deny,
+        name='organizer_request_deny',
+    ),
+    path(
+        'admin/analytics/',
+        views.analytics_dashboard,
+        name='analytics_dashboard',
     ),
     path(
         'admin/users/<int:pk>/delete/',

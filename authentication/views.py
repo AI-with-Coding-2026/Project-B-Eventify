@@ -1,291 +1,673 @@
-from django.contrib.auth.decorators import login_not_required
-from django.contrib.auth import authenticate, login, logout
+import threading
+from urllib.parse import urlparse
 from django.contrib import messages
-from django.shortcuts import redirect, render, get_object_or_404
+from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
-from django.http import JsonResponse, HttpResponse
-from django.shortcuts import redirect, render
 from django.utils import timezone
-from events.models import Category, Event, EventBooking, Ticket
-from .decorators import admin_required, role_required
+from django.utils.http import url_has_allowed_host_and_scheme
 
-from decimal import Decimal
-import json
+from authentication.decorators import (
+    admin_required,
+    attendee_required,
+    organizer_required,
+    role_required,
+    organizer_or_admin_required,
+    approved_organizer_required,
+)
+from authentication.models import UserRole
+from .emails import send_booking_confirmation_email
+from .forms import BookingForm, CategoryForm, EventForm, TicketForm
+from .models import Category, Event, EventBooking, EventPublishStatus, Ticket
 
-from .decorators import admin_required, organizer_required, role_required
-from .forms import UserRegistrationForm
-from .models import User, UserRole
 
-@login_not_required
-def register(request):
-    if request.user.is_authenticated:
-        if request.user.is_admin:
-            return redirect('admin_dashboard')
-        return redirect('home')
-    if request.method == 'POST':
-        form = UserRegistrationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            return redirect('register_success')
+def _user_can_manage_event(user, event):
+    if user.is_admin:
+        return True
+    return (
+        user.role == UserRole.ORGANIZER
+        and event.organizer_id == user.id
+    )
+
+
+def _user_can_see_unpublished_event(user, event):
+    if event.is_published:
+        return True
+    if not user.is_authenticated:
+        return False
+    if user.is_admin:
+        return True
+    return user.role == UserRole.ORGANIZER and event.organizer_id == user.id
+
+
+def _user_has_booked_event(user, event):
+    return Ticket.objects.filter(
+        attendee=user,
+        event=event,
+    ).exists() or EventBooking.objects.filter(
+        user=user,
+        event=event,
+    ).exists()
+
+
+# Map URL path prefixes to human-readable back-button labels.
+_BACK_LABEL_MAP = [
+    ('/admin/', 'Back to Admin Dashboard'),
+    ('/dashboard/organizer/', 'Back to Organizer Dashboard'),
+    ('/dashboard/attendee/bookings/', 'Back to My Bookings'),
+    ('/dashboard/attendee/', 'Back to Attendee Dashboard'),
+    ('/events/organizer/', 'Back to Organizer Events'),
+    ('/my-bookings/', 'Back to My Bookings'),
+    ('/bookings/', 'Back to My Bookings'),
+    ('/events/mine/', 'Back to My Events'),
+    ('/events/my-tickets/', 'Back to My Tickets'),
+    ('/events/', 'Back to Events'),
+]
+
+def get_user_bookings(user_id):
+    """
+    Fetch all bookings for a given user ID, combining current Ticket
+    records and legacy EventBooking records into one list.
+    """
+    tickets = Ticket.objects.filter(
+        attendee_id=user_id
+    ).select_related('event').order_by('-booked_at')
+
+    legacy_bookings = EventBooking.objects.filter(
+        user_id=user_id
+    ).select_related('event').order_by('-booked_at')
+
+    bookings = []
+
+    for ticket in tickets:
+        bookings.append({
+            'event': ticket.event,
+            'quantity': ticket.quantity,
+            'booked_at': ticket.booked_at,
+            'source': 'ticket',
+        })
+
+    for booking in legacy_bookings:
+        bookings.append({
+            'event': booking.event,
+            'quantity': 1,
+           'booked_at': booking.booked_at,
+            'source': 'legacy',
+        })
+
+    bookings.sort(key=lambda b: b['booked_at'], reverse=True)
+
+    return bookings
+
+def _resolve_back_navigation(request):
+    """Return (back_url, back_label) from the HTTP Referer header.
+
+    Falls back to the event list if the referer is missing, external,
+    or points at the current page itself.
+    """
+    from django.urls import reverse
+
+    default_url = reverse('event_list')
+    default_label = 'Back to Events'
+
+    referer = request.META.get('HTTP_REFERER', '')
+    if not referer:
+        return default_url, default_label
+
+    # Reject external / unsafe URLs.
+    if not url_has_allowed_host_and_scheme(
+        referer,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return default_url, default_label
+
+    parsed_path = urlparse(referer).path
+
+    # Don't link back to the same detail page.
+    if parsed_path == request.path:
+        return default_url, default_label
+
+    # Pick the most specific matching label.
+    for prefix, label in _BACK_LABEL_MAP:
+        if parsed_path.startswith(prefix):
+            return referer, label
+
+    # Home page or any other internal page – still honour the referer.
+    return referer, 'Back'
+
+
+def event_list(request):
+    events = Event.objects.filter(
+        publish_status=EventPublishStatus.APPROVED
+    ).order_by('date')
+
+    search_query = request.GET.get('search', '')
+    selected_category = request.GET.get('category', '')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    max_price = request.GET.get('max_price', '')
+
+    if search_query:
+        events = events.filter(title__icontains=search_query)
+
+    if selected_category:
+        events = events.filter(category=selected_category)
+
+    if max_price:
+        events = events.filter(price__lte=max_price)
+
+    if start_date and end_date:
+        events = events.filter(date__date__range=(start_date, end_date))
     else:
-        form = UserRegistrationForm()
-    return render(
-        request,
-        'authentication/register.html',
-        {'form': form}
-    )
+        if start_date:
+            events = events.filter(date__date__gte=start_date)
+        if end_date:
+            events = events.filter(date__date__lte=end_date)
 
-@login_not_required
-def register_success(request):
-    return render(request, 'authentication/register_success.html')
+    today = timezone.now().date()
+    past_events = events.filter(date__date__lt=today).order_by('-date')
+    events = events.filter(date__date__gte=today)
+    selling_fast_threshold = 10  # tweak this number as needed
 
-@login_not_required
-def home(request):
-    return render(request, 'authentication/home.html')
+    paginator = Paginator(events, 6)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
-@admin_required
-def admin_dashboard(request):
-    users = User.objects.all()
-    organizers = users.filter(role=UserRole.ORGANIZER)
-    attendees = users.filter(role=UserRole.ATTENDEE)
-    upcoming_events = Event.objects.filter(
+    filter_params = request.GET.copy()
+    filter_params.pop('page', None)
+    filter_query_string = filter_params.urlencode()
+
+    featured_events = Event.objects.filter(
+        publish_status=EventPublishStatus.APPROVED,
         date__gte=timezone.now()
-    ).order_by('date')[:3]
-    context = {
-        'total_users': users.count(),
-        'admin_count': users.filter(role=UserRole.ADMIN).count(),
-        'organizer_count': organizers.count(),
-        'attendee_count': attendees.count(),
-        'organizers': organizers.order_by('username'),
-        'attendees': attendees.order_by('username'),
-        'events': Event.objects.select_related('organizer').order_by('date'),
-        'tickets': Ticket.objects.select_related('attendee', 'event').order_by('-booked_at'),
-        'bookings': EventBooking.objects.select_related('user', 'event').order_by('-booked_at'),
-        'categories': Category.objects.order_by('name'),
-        'upcoming_events': upcoming_events,
-    }
-    return render(request, 'authentication/admin_dashboard.html', context)
-
-
-@admin_required
-def user_delete(request, pk):
-    """Allow admins to delete organizers and attendees after confirmation."""
-    target = get_object_or_404(User, pk=pk)
-
-    if target.pk == request.user.pk:
-        messages.error(request, 'You cannot delete your own account.')
-        return redirect('admin_dashboard')
-
-    if target.role == UserRole.ADMIN:
-        messages.error(request, 'Admin accounts cannot be deleted from the dashboard.')
-        return redirect('admin_dashboard')
-
-    if request.method == 'POST':
-        username = target.username
-        target.delete()
-        messages.success(request, f'User "{username}" deleted successfully.')
-        return redirect('admin_dashboard')
-
-    return render(
-        request,
-        'authentication/user_confirm_delete.html',
-        {'target_user': target},
-    )
-
-
-@login_not_required
-def login_view(request):
-    if request.method == 'POST':
-        user = authenticate(
-            request,
-            username=request.POST.get('username'),
-            password=request.POST.get('password'),
-        )
-        if user is None:
-            messages.error(request, 'Invalid username or password')
-        else:
-            login(request, user)
-            if user.is_admin:
-                return redirect('admin_dashboard')
-            if user.is_organizer:
-                return redirect('organizer_dashboard')
-            return redirect('attendee_dashboard')
-    return render(request, 'authentication/login.html')
-
-def logout_view(request):
-    logout(request)
-    return redirect('login')
-
-def unauthorized(request):
-    return render(request, 'authentication/unauthorized.html', status=403)
-
-@organizer_required
-def organizer_dashboard(request):
-    """Dashboard showing ticket sales performance, revenue, and charts for the organizer's events."""
-    events = Event.objects.filter(organizer=request.user).order_by('-date')
-    upcoming_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')[:3]
-
-    total_events = events.count()
-    total_tickets_sold = sum(event.tickets_sold for event in events)
-    total_tickets_remaining = sum(event.tickets_remaining for event in events)
-    total_revenue = sum((event.revenue for event in events), Decimal('0.00'))
-
-    # Chronological order for chart rendering (oldest to newest)
-    chart_events = list(reversed(list(events)))
-    chart_labels = [e.title for e in chart_events]
-    chart_tickets_sold = [e.tickets_sold for e in chart_events]
-    chart_tickets_remaining = [e.tickets_remaining for e in chart_events]
-    chart_revenue = [float(e.revenue) for e in chart_events]
+    ).order_by('date')[:5]
 
     context = {
-        'upcoming_events': upcoming_events,
-        'events': events,
-        'total_events': total_events,
-        'total_tickets_sold': total_tickets_sold,
-        'total_tickets_remaining': total_tickets_remaining,
-        'total_revenue': total_revenue,
-        'chart_labels_json': json.dumps(chart_labels),
-        'chart_tickets_sold_json': json.dumps(chart_tickets_sold),
-        'chart_tickets_remaining_json': json.dumps(chart_tickets_remaining),
-        'chart_revenue_json': json.dumps(chart_revenue),
+        'events': page_obj,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'categories': Event.get_all_category_choices(),
+        'search_query': search_query,
+        'selected_category': selected_category,
+        'max_price': max_price,
+        'start_date': start_date,
+        'end_date': end_date,
+        'filter_query_string': filter_query_string,
+        'past_events': past_events,
+        'selling_fast_threshold': selling_fast_threshold,
+        'featured_events': featured_events,
     }
-    return render(request, 'authentication/organizer_dashboard.html', context)
+    return render(request, 'events/event_list.html', context)
 
+def event_detail(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    user = request.user
 
-@organizer_required
-def organizer_dashboard_stats_api(request):
-    """JSON API endpoint returning live statistics and chart data for the organizer's events."""
-    events = Event.objects.filter(organizer=request.user).order_by('-date')
+    if not _user_can_see_unpublished_event(user, event):
+        raise PermissionDenied("This event is not currently published.")
 
-    upcoming_events = Event.objects.filter(
-    date__gte=timezone.now()
-    ).order_by('date')[:3]
+    user_has_booked = False
 
-    total_events = events.count()
-    total_tickets_sold = sum(event.tickets_sold for event in events)
-    total_tickets_remaining = sum(event.tickets_remaining for event in events)
-    total_revenue = float(sum((event.revenue for event in events), Decimal('0.00')))
+    if user.is_authenticated:
+        user_has_booked = _user_has_booked_event(user, event)
 
-    chart_events = list(reversed(list(events)))
-    chart_labels = [e.title for e in chart_events]
-    chart_tickets_sold = [e.tickets_sold for e in chart_events]
-    chart_tickets_remaining = [e.tickets_remaining for e in chart_events]
-    chart_revenue = [float(e.revenue) for e in chart_events]
+    context = {
+        'event': event,
+        'can_manage': user.is_authenticated and _user_can_manage_event(user, event),
+        'can_review_event': user.is_authenticated and user.is_admin,
+        'can_book': (
+            user.is_authenticated
+            and user.role == UserRole.ATTENDEE
+            and not user_has_booked
+            and not event.is_sold_out
+            and not event.is_expired
+            and event.is_published
+        ),
+        'user_has_booked': user_has_booked,
+        'is_past_event': event.is_expired,
+    }
+    return render(request, 'events/event_detail.html', context)
 
-    events_data = [
-        {
-            'pk': e.pk,
-            'title': e.title,
-            'price': str(e.price),
-            'tickets_sold': e.tickets_sold,
-            'tickets_remaining': e.tickets_remaining,
-            'max_tickets': e.max_tickets,
-            'revenue': float(e.revenue),
-            'is_sold_out': e.is_sold_out,
-        }
-        for e in events
-    ]
-
-    return JsonResponse({
-        'total_events': total_events,
-        'total_tickets_sold': total_tickets_sold,
-        'total_tickets_remaining': total_tickets_remaining,
-        'total_revenue': total_revenue,
-        'chart_labels': chart_labels,
-        'chart_tickets_sold': chart_tickets_sold,
-        'chart_tickets_remaining': chart_tickets_remaining,
-        'chart_revenue': chart_revenue,
-        'events': events_data,
-    })
 
 @role_required(UserRole.ATTENDEE)
-def attendee_dashboard(request):
-    upcoming_events = Event.objects.filter(
-        date__gte=timezone.now()
-    ).order_by('date')[:3]
-    return render(request, 'authentication/attendee_dashboard.html', {
-        'upcoming_events': upcoming_events,
-    })
-
-@role_required(UserRole.ATTENDEE)
-def my_bookings(request):
-    now = timezone.now()
-    tickets = (
-        Ticket.objects.filter(attendee=request.user)
-        .select_related('event')
-    )
-    legacy_bookings = (
-        EventBooking.objects.filter(user=request.user)
-        .select_related('event')
-    )
-
-    upcoming_tickets = list(
-        tickets.filter(event__date__gte=now).order_by('event__date')
-    )
-    past_tickets = list(
-        tickets.filter(event__date__lt=now).order_by('-event__date')
-    )
-
-    upcoming_legacy = [
-        b for b in legacy_bookings.filter(event__date__gte=now).order_by('event__date')
-        if not any(t.event_id == b.event_id for t in upcoming_tickets)
-    ]
-    past_legacy = [
-        b for b in legacy_bookings.filter(event__date__lt=now).order_by('-event__date')
-        if not any(t.event_id == b.event_id for t in past_tickets)
-    ]
+def book_event(request, pk):
+    """Keep the legacy endpoint from bypassing the ticket-capacity flow."""
+    return redirect('book_ticket', pk=pk)
 
 
-    upcoming_bookings = sorted(
-        upcoming_tickets + upcoming_legacy,
-        key=lambda x: x.event.date,
-    )
-    past_bookings = sorted(
-        past_tickets + past_legacy,
-        key=lambda x: x.event.date,
-        reverse=True,
-    )
+@attendee_required
+def book_ticket(request, pk):
+    """Book tickets without allowing a request to exceed event capacity."""
+    event = get_object_or_404(Event, pk=pk)
 
-    next_booking = upcoming_bookings[0] if upcoming_bookings else None
+    if event.is_expired:
+        messages.error(request, 'Booking is not available because this event has ended.')
+        return redirect('event_detail', pk=pk)
 
-    return render(request, 'authentication/my_bookings.html', {
-        'upcoming_bookings': upcoming_bookings,
-        'past_bookings': past_bookings,
-        'total_bookings': len(upcoming_bookings) + len(past_bookings),
-        'next_booking': next_booking,
-    })
-
-
-# 2. دالة إغلاق/إلغاء الحجز (دالة مستقلة تبدأ من بداية السطر)
-@role_required(UserRole.ATTENDEE)
-def cancel_booking(request, pk):
-    ticket = get_object_or_404(Ticket, pk=pk, attendee=request.user)
+    if _user_has_booked_event(request.user, event):
+        messages.info(request, 'You have already booked this event.')
+        return redirect('event_detail', pk=pk)
 
     if request.method == 'POST':
         try:
-            cancel_quantity = int(request.POST.get('cancel_quantity', ticket.quantity))
+            quantity = int(request.POST.get('quantity', 1))
         except (TypeError, ValueError):
-            cancel_quantity = ticket.quantity
+            quantity = 0
 
-        if cancel_quantity < 1 or cancel_quantity > ticket.quantity:
-            messages.error(request, 'Invalid ticket quantity to cancel.')
-            return redirect('cancel_booking', pk=pk)
-
-        if cancel_quantity >= ticket.quantity:
-            ticket.delete()
-            messages.success(request, 'Booking cancelled successfully.')
+        if quantity < 1:
+            messages.error(request, 'Choose at least one ticket.')
         else:
-            ticket.quantity -= cancel_quantity
-            ticket.save()
+            with transaction.atomic():
+                tickets_sold = event.tickets_sold
+                remaining = event.max_tickets - tickets_sold
+
+                if quantity > remaining:
+                    if remaining <= 0:
+                        messages.error(request, 'This event is sold out.')
+                    else:
+                        messages.error(
+                            request,
+                            f'Only {remaining} ticket(s) remain for this event.',
+                        )
+                elif _user_has_booked_event(request.user, event):
+                    messages.info(request, 'You have already booked this event.')
+                else:
+                    ticket = Ticket.objects.create(
+                        event=event,
+                        attendee=request.user,
+                        quantity=quantity,
+                    )
+                    EventBooking.objects.get_or_create(
+                        user=request.user,
+                        event=event,
+                    )
+                    
+                   
+                    threading.Thread(
+                        target=send_booking_confirmation_email,
+                        args=(ticket,)
+                    ).start()
+
+                    messages.success(
+                        request,
+                        f'Ticket booked for "{event.title}". Confirmation email is on its way.',
+                    )
+
+                    return redirect('attendee_dashboard')
+
+    return render(
+        request,
+        'events/book_ticket.html',
+        {'event': event},
+    )
+
+
+@attendee_required
+def my_tickets(request):
+    """Redirect legacy my_tickets endpoint to unified my_bookings page."""
+    return redirect('my_bookings')
+
+
+@organizer_required
+def organizer_event_list(request):
+    """Show only events owned by the logged-in organizer."""
+    events = Event.objects.filter(organizer=request.user).order_by('-date')
+    return render(
+        request,
+        'events/organizer_event_list.html',
+        {'events': events},
+    )
+
+
+@approved_organizer_required
+def event_create(request):
+    """Create an event and assign the logged-in organizer as owner."""
+    if request.method == 'POST':
+        form = EventForm(request.POST, request.FILES)
+        if form.is_valid():
+            event = form.save(commit=False)
+            event.organizer = request.user
+            if request.user.is_admin:
+                event.publish_status = EventPublishStatus.APPROVED
+            else:
+                event.publish_status = EventPublishStatus.PENDING
+            event.save()
+            if request.user.is_admin:
+                messages.success(request, 'Event created successfully.')
+                return redirect('admin_dashboard')
             messages.success(
                 request,
-                f'Cancelled {cancel_quantity} ticket(s). {ticket.quantity} remaining.',
+                'Event submitted. It will appear in the system after an admin approves it.',
+            )
+            return redirect('organizer_event_list')
+    else:
+        form = EventForm()
+
+    return render(
+        request,
+        'events/event_form.html',
+        {
+            'form': form,
+            'page_title': 'Create Event',
+            'submit_label': 'Create Event',
+        },
+    )
+
+
+@organizer_or_admin_required
+def event_edit(request, pk):
+    """Edit an event. Admins can edit any event, organizers only their own."""
+    if request.user.is_admin:
+        event = get_object_or_404(Event, pk=pk)
+    else:
+        event = get_object_or_404(Event, pk=pk, organizer=request.user)
+
+    if request.method == 'POST':
+        form = EventForm(request.POST, request.FILES, instance=event)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Event updated successfully.')
+            
+            if request.user.is_admin:
+                return redirect('admin_dashboard')
+            return redirect('my_events') # التعديل هنا أيضاً ليأخذه لصفحة My Events
+    else:
+        form = EventForm(instance=event)
+
+    return render(
+        request,
+        'events/event_form.html',
+        {
+            'form': form,
+            'event': event,
+            'page_title': 'Edit Event',
+            'submit_label': 'Update Event',
+        },
+    )
+
+
+@organizer_or_admin_required
+def event_delete(request, pk):
+    """Delete an event only if it belongs to the logged-in organizer."""
+    event = get_object_or_404(Event, pk=pk, organizer=request.user)
+
+    if request.method == 'POST':
+        event.delete()
+        messages.success(request, 'Event deleted successfully.')
+        if request.user.is_admin:
+            return redirect('admin_dashboard')
+        return redirect('my_events') # التعديل هنا ليعود لصفحة My Events بعد الحذف
+
+    return render(
+        request,
+        'events/event_confirm_delete.html',
+        {'event': event},
+    )
+
+@admin_required
+def category_list(request):
+    categories = Category.objects.all()
+    return render(request, 'events/category_list.html', {'categories': categories})
+
+
+@admin_required
+def category_create(request):
+    if request.method == 'POST':
+        form = CategoryForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+
+            messages.success(
+                request,
+                'Category created successfully.',
             )
 
-        return redirect('my_bookings')
+            return redirect('admin_dashboard')
 
-    return render(request, 'authentication/booking_confirm_cancel.html', {
-        'ticket': ticket,
-        'quantity_range': range(1, ticket.quantity + 1),
+    else:
+        form = CategoryForm()
+
+    return render(
+        request,
+        'events/category_form.html',
+        {
+            'form': form,
+            'page_title': 'Create Category',
+            'submit_label': 'Save Category',
+        },
+    )
+
+
+@admin_required
+def category_update(request, pk):
+    """Allow admins to edit an existing category name/description."""
+    category = get_object_or_404(Category, pk=pk)
+
+    if request.method == 'POST':
+        form = CategoryForm(request.POST, instance=category)
+
+        if form.is_valid():
+            form.save()
+
+            messages.success(
+                request,
+                'Category updated successfully.'
+            )
+
+            return redirect('category_update', pk=category.pk)
+
+    else:
+        form = CategoryForm(instance=category)
+
+    return render(
+        request,
+        'events/category_form.html',
+        {
+            'form': form,
+            'category': category,
+            'page_title': 'Edit Category',
+            'submit_label': 'Update Category',
+        },
+    )
+
+
+@admin_required
+def category_delete(request, pk):
+    """Allow admins to delete an existing category after confirmation."""
+    category = get_object_or_404(Category, pk=pk)
+
+    if request.method == 'POST':
+        category.delete()
+        messages.success(
+            request,
+            'Category deleted successfully.'
+        )
+        return redirect('category_list')
+
+    return render(
+        request,
+        'events/category_confirm_delete.html',
+        {'category': category},
+    )
+
+
+@role_required(UserRole.ORGANIZER)
+def my_events(request):
+    events = Event.objects.filter(
+        organizer=request.user
+    )
+
+    return render(
+        request,
+        "events/my_events.html",
+        {
+            "events": events,
+        },
+    )
+
+
+@admin_required
+def ticket_edit(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+
+    if request.method == "POST":
+        form = TicketForm(request.POST, instance=ticket)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Ticket updated successfully.")
+            return redirect("admin_booking_list")
+    else:
+        form = TicketForm(instance=ticket)
+
+    return render(
+        request,
+        "events/ticket_form.html",
+        {
+            "form": form,
+            "ticket": ticket,
+            "page_title": "Edit Ticket",
+            "submit_label": "Update Ticket",
+        },
+    )
+
+
+@admin_required
+def ticket_delete(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+
+    if request.method == "POST":
+        EventBooking.objects.filter(user=ticket.attendee, event=ticket.event).delete()
+        ticket.delete()
+        messages.success(request, "Ticket deleted successfully.")
+        return redirect("admin_booking_list")
+
+    return render(
+        request,
+        "events/ticket_confirm_delete.html",
+        {
+            "ticket": ticket,
+        },
+    )
+
+
+@admin_required
+def booking_edit(request, pk):
+    booking = get_object_or_404(EventBooking, pk=pk)
+
+    if request.method == "POST":
+        form = BookingForm(request.POST, instance=booking)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Booking updated successfully.")
+            return redirect("admin_booking_list")
+    else:
+        form = BookingForm(instance=booking)
+
+    return render(
+        request,
+        "events/booking_form.html",
+        {
+            "form": form,
+            "booking": booking,
+            "page_title": "Edit Booking",
+            "submit_label": "Update Booking",
+        },
+    )
+
+
+@admin_required
+def booking_delete(request, pk):
+    booking = get_object_or_404(EventBooking, pk=pk)
+
+    if request.method == "POST":
+        Ticket.objects.filter(attendee=booking.user, event=booking.event).delete()
+        booking.delete()
+        messages.success(request, "Booking deleted successfully.")
+        return redirect("admin_booking_list")
+
+    return render(
+        request,
+        "events/booking_confirm_delete.html",
+        {
+            "booking": booking,
+        },
+    )
+
+@admin_required
+def admin_booking_list(request):
+    for ticket in Ticket.objects.select_related('attendee', 'event').all():
+        EventBooking.objects.get_or_create(
+            user=ticket.attendee,
+            event=ticket.event,
+            defaults={'booked_at': ticket.booked_at}
+        )
+    bookings = EventBooking.objects.select_related('user', 'event').order_by('-booked_at')
+    return render(request, 'events/admin_booking_list.html', {'bookings': bookings})
+
+create_event = event_create
+edit_event = event_edit
+delete_event = event_delete
+
+
+# =========================================================
+# Real-Time Notification APIs
+# =========================================================
+
+import json
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import Notification
+
+
+@login_required
+def user_notifications_api(request):
+    """API endpoint to fetch the top 5 recent notifications for the logged-in user."""
+    notifications = Notification.objects.filter(recipient=request.user)
+    unread_count = notifications.filter(is_read=False).count()
+
+    notifications_data = [
+        {
+            'id': n.id,
+            'title': n.title,
+            'message': n.message,
+            'is_read': n.is_read,
+            'created_at': n.created_at.strftime('%Y-%m-%d %H:%M')
+        }
+        for n in notifications[:5]
+    ]
+    return JsonResponse({
+        'unread_count': unread_count,
+        'notifications': notifications_data
     })
+
+
+@login_required
+def mark_notification_as_read(request, pk):
+    """API endpoint to mark a specific notification as read."""
+    if request.method == 'POST':
+        notification = get_object_or_404(Notification, pk=pk, recipient=request.user)
+        notification.is_read = True
+        notification.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=400)
+
+
+@login_required
+def save_fcm_token(request):
+    """Save the user's FCM token for push notifications."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            token = data.get('token')
+            if token:
+                request.user.fcm_token = token
+                request.user.save()
+                return JsonResponse({'status': 'success', 'message': 'Token saved successfully'})
+            return JsonResponse({'status': 'error', 'message': 'No token provided'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)

@@ -1,12 +1,29 @@
+from events.models import Event, EventPublishStatus
+
+
 def dashboard_link(request):
     """Expose the role-appropriate dashboard URL name to all templates."""
+    context = {
+        'user_dashboard_url': 'home',
+        'pending_event_count': 0,
+        'can_publish_events': False,
+    }
+
     if not request.user.is_authenticated:
-        return {'user_dashboard_url': 'home'}
+        return context
+
+    context['can_publish_events'] = getattr(request.user, 'can_publish_events', False)
 
     if request.user.is_admin:
-        return {'user_dashboard_url': 'admin_dashboard'}
+        context['user_dashboard_url'] = 'admin_dashboard'
+        context['pending_event_count'] = Event.objects.filter(
+            publish_status=EventPublishStatus.PENDING,
+        ).count()
+        return context
 
     if request.user.is_organizer:
-        return {'user_dashboard_url': 'organizer_dashboard'}
+        context['user_dashboard_url'] = 'organizer_dashboard'
+        return context
 
-    return {'user_dashboard_url': 'attendee_dashboard'}
+    context['user_dashboard_url'] = 'attendee_dashboard'
+    return context

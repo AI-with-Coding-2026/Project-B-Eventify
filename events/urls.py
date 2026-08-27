@@ -5,16 +5,6 @@ from . import views
 urlpatterns = [
     path('', views.event_list, name='event_list'),
     path(
-        'api/events/',
-        views.event_api_list,
-        name='event_api_list',
-    ),
-    path(
-        'api/event-page/',
-        views.event_page_api,
-        name='event_page_api',
-    ),
-    path(
         'my-tickets/',
         views.my_tickets,
         name='my_tickets',
@@ -113,5 +103,29 @@ urlpatterns = [
         'bookings/<int:pk>/delete/',
         views.booking_delete,
         name='booking_delete',
+    ),
+    path(
+        'admin/bookings/',
+        views.admin_booking_list,
+        name='admin_booking_list'
+    ),
+
+    # Real-Time Notification Endpoints
+    path(
+        'api/notifications/',
+        views.user_notifications_api,
+        name='user_notifications_api'
+    ),
+    path(
+        'api/notifications/<int:pk>/read/',
+        views.mark_notification_as_read,
+        name='mark_notification_as_read'
+    ),
+
+    # Firebase: Save FCM Token
+    path(
+        'api/save-fcm-token/',
+        views.save_fcm_token,
+        name='save_fcm_token',
     ),
 ]

@@ -4,6 +4,12 @@ from django.db.models import Sum
 from django.utils.text import slugify
 
 
+class EventPublishStatus(models.TextChoices):
+    PENDING = 'pending', 'Pending'
+    APPROVED = 'approved', 'Approved'
+    DENIED = 'denied', 'Denied'
+
+
 class Category(models.Model):
     # Category name must be unique to avoid duplicates (e.g., Music, Sports)
     name = models.CharField(
@@ -87,10 +93,11 @@ class Event(models.Model):
         db_table="event_category",
     )
 
-    @property
-    def category_label(self):
-        names = self.categories.values_list("name", flat=True)
-        return ", ".join(names) if names else "Uncategorized"
+    publish_status = models.CharField(
+        max_length=20,
+        choices=EventPublishStatus.choices,
+        default=EventPublishStatus.APPROVED,
+    )
 
     def __str__(self):
         return self.title
@@ -102,9 +109,11 @@ class Event(models.Model):
     @property
     def tickets_sold(self):
         from django.db.models import Sum
-        bookings_count = self.bookings.count()
+        legacy_bookings = self.bookings.exclude(
+            user__in=self.tickets.values_list('attendee_id', flat=True)
+        ).count()
         tickets_count = self.tickets.aggregate(total=Sum('quantity'))['total'] or 0
-        return bookings_count + tickets_count
+        return legacy_bookings + tickets_count
 
     @property
     def tickets_remaining(self):
@@ -122,6 +131,49 @@ class Event(models.Model):
     def is_expired(self):
         from django.utils import timezone
         return self.date < timezone.now()
+
+    @property
+    def is_selling_fast(self):
+        """Returns True if the event is active, has sold tickets, and <= 20% of tickets remain."""
+        if self.is_expired or self.is_sold_out or self.max_tickets <= 0:
+            return False
+        if self.tickets_sold <= 0:
+            return False
+        return (self.tickets_remaining / self.max_tickets) <= 0.20
+
+    @property
+    def description_bullets(self):
+        """Return description formatted into clean bullet points."""
+        if not self.description:
+            return []
+        import re
+        lines = [line.strip() for line in self.description.splitlines() if line.strip()]
+        if not lines:
+            return []
+
+        if len(lines) == 1 and ('.' in lines[0] or '!' in lines[0] or '?' in lines[0]):
+            sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', lines[0]) if s.strip()]
+            if len(sentences) > 1:
+                lines = sentences
+
+        bullets = []
+        for line in lines:
+            cleaned = re.sub(r'^(?:[•\-\*\>]\s*|\d+[\.\)]\s*)', '', line).strip()
+            if cleaned:
+                bullets.append(cleaned)
+        return bullets or [self.description.strip()]
+
+    @property
+    def is_published(self):
+        return self.publish_status == EventPublishStatus.APPROVED
+
+    @property
+    def is_pending_publish(self):
+        return self.publish_status == EventPublishStatus.PENDING
+
+    @property
+    def is_denied_publish(self):
+        return self.publish_status == EventPublishStatus.DENIED
 
 
 
@@ -155,6 +207,10 @@ class Ticket(models.Model):
     def __str__(self):
         return f'{self.attendee} → {self.event} ({self.quantity})'
 
+    @property
+    def user(self):
+        return self.attendee
+
 
 class EventBooking(models.Model):
     user = models.ForeignKey(
@@ -177,3 +233,36 @@ class EventBooking(models.Model):
 
     def __str__(self):
         return f"{self.user.username} → {self.event.title}"
+
+
+# =========================================================
+# Notification Storage Model
+# =========================================================
+
+class Notification(models.Model):
+    """Model to log real-time booking and cancellation events for organizers."""
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    event = models.ForeignKey(
+        'Event',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notifications'
+    )
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notification for {self.recipient.username} - {self.title}"
+

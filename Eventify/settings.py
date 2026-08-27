@@ -71,6 +71,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'authentication.context_processors.dashboard_link',
+                'events.context_processors.firebase_config',
             ],
         },
     },
